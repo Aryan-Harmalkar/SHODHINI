@@ -8,6 +8,7 @@ let currentSessionUser = null;
 const isWeb = Platform.OS === 'web';
 const WEB_USERS_KEY = 'shodhini_users';
 const WEB_SESSION_KEY = 'shodhini_current_user';
+const WEB_COMPLAINTS_KEY = 'shodhini_complaints';
 
 function getWebUsers() {
   try {
@@ -26,9 +27,25 @@ function saveWebUsers(users) {
   }
 }
 
+function getWebComplaints() {
+  try {
+    const raw = localStorage.getItem(WEB_COMPLAINTS_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveWebComplaints(complaints) {
+  try {
+    localStorage.setItem(WEB_COMPLAINTS_KEY, JSON.stringify(complaints));
+  } catch (e) {
+    console.error('Error saving web complaints:', e);
+  }
+}
+
 export async function initDatabase() {
   if (isWeb) {
-    // Check if web session exists
     try {
       const savedSession = localStorage.getItem(WEB_SESSION_KEY);
       if (savedSession) {
@@ -55,6 +72,18 @@ export async function initDatabase() {
       CREATE TABLE IF NOT EXISTS sessions (
         id INTEGER PRIMARY KEY CHECK (id = 1),
         user_id INTEGER,
+        FOREIGN KEY (user_id) REFERENCES users(id)
+      );
+
+      CREATE TABLE IF NOT EXISTS complaints (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        user_id INTEGER NOT NULL,
+        category TEXT NOT NULL,
+        description TEXT NOT NULL,
+        location TEXT NOT NULL,
+        status TEXT DEFAULT 'Submitted',
+        eco_points INTEGER DEFAULT 0,
+        created_at TEXT DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (user_id) REFERENCES users(id)
       );
     `);
@@ -109,7 +138,6 @@ export async function getCurrentUser() {
 export async function signUpUser({ role, name, phone, identifier, area = '', password }) {
   if (isWeb) {
     const users = getWebUsers();
-    // Check duplicate
     const exists = users.find(
       (u) =>
         u.role === role &&
@@ -145,7 +173,6 @@ export async function signUpUser({ role, name, phone, identifier, area = '', pas
   }
 
   try {
-    // Check duplicate
     const existing = db.getFirstSync(
       `SELECT id FROM users WHERE role = ? AND (phone = ? OR LOWER(identifier) = LOWER(?))`,
       [role, phone, identifier]
@@ -161,8 +188,6 @@ export async function signUpUser({ role, name, phone, identifier, area = '', pas
     );
 
     const userId = result.lastInsertRowId;
-
-    // Save session
     db.runSync(`INSERT OR REPLACE INTO sessions (id, user_id) VALUES (1, ?)`, [userId]);
 
     const user = db.getFirstSync(
@@ -217,9 +242,7 @@ export async function loginUser({ role, identifier, password }) {
       throw new Error('Invalid credentials or account does not exist.');
     }
 
-    // Save session
     db.runSync(`INSERT OR REPLACE INTO sessions (id, user_id) VALUES (1, ?)`, [user.id]);
-
     currentSessionUser = user;
     return user;
   } catch (error) {
@@ -246,5 +269,53 @@ export async function logoutUser() {
   } catch (e) {
     console.error('Error logging out:', e);
     return false;
+  }
+}
+
+// Complaints & Eco Points operations
+export async function getUserComplaints(userId) {
+  if (isWeb) {
+    const all = getWebComplaints();
+    return all.filter((c) => c.user_id === userId);
+  }
+
+  if (!db) {
+    await initDatabase();
+  }
+
+  try {
+    const rows = db.getAllSync(
+      `SELECT id, user_id, category, description, location, status, eco_points, created_at 
+       FROM complaints 
+       WHERE user_id = ? 
+       ORDER BY id DESC`,
+      [userId]
+    );
+    return rows || [];
+  } catch (e) {
+    console.error('Error getting user complaints:', e);
+    return [];
+  }
+}
+
+export async function getUserEcoPoints(userId) {
+  if (isWeb) {
+    const userComplaints = getWebComplaints().filter((c) => c.user_id === userId);
+    return userComplaints.reduce((sum, item) => sum + (item.eco_points || 0), 0);
+  }
+
+  if (!db) {
+    await initDatabase();
+  }
+
+  try {
+    const row = db.getFirstSync(
+      `SELECT SUM(eco_points) as total FROM complaints WHERE user_id = ?`,
+      [userId]
+    );
+    return row?.total || 0;
+  } catch (e) {
+    console.error('Error calculating eco points:', e);
+    return 0;
   }
 }
