@@ -15,6 +15,7 @@ import WastePickupScreen from './WastePickupScreen';
 import RecycleScreen from './RecycleScreen';
 import ScoreboardScreen from './ScoreboardScreen';
 import RewardsScreen from './RewardsScreen';
+import CollectorTasksScreen from './CollectorTasksScreen';
 import ComplaintCard from '../components/ComplaintCard';
 import {
   getUserEcoPoints,
@@ -29,6 +30,7 @@ export default function HomeScreen({ user, onLogout }) {
   const [sidebarVisible, setSidebarVisible] = useState(false);
   const [ecoPoints, setEcoPoints] = useState(0);
   const [rewardsTab, setRewardsTab] = useState('redeem');
+  const [collectorTasksTab, setCollectorTasksTab] = useState('available');
 
   const handleNavigate = (screen) => {
     if (screen === 'rewards_redeem') {
@@ -43,6 +45,21 @@ export default function HomeScreen({ user, onLogout }) {
     } else if (screen === 'rewards') {
       setRewardsTab('redeem');
       setCurrentScreen('rewards');
+    } else if (screen === 'collector_tasks_available') {
+      setCollectorTasksTab('available');
+      setCurrentScreen('collector_tasks');
+    } else if (screen === 'collector_tasks_pending') {
+      setCollectorTasksTab('pending');
+      setCurrentScreen('collector_tasks');
+    } else if (screen === 'collector_track_location') {
+      setCollectorTasksTab('location');
+      setCurrentScreen('collector_tasks');
+    } else if (screen === 'collector_tasks_completed') {
+      setCollectorTasksTab('completed');
+      setCurrentScreen('collector_tasks');
+    } else if (screen === 'collector_tasks') {
+      setCollectorTasksTab('available');
+      setCurrentScreen('collector_tasks');
     } else {
       setCurrentScreen(screen);
     }
@@ -291,6 +308,58 @@ export default function HomeScreen({ user, onLogout }) {
     }
   }
 
+  if (isCollector) {
+    if (currentScreen === 'collector_tasks') {
+      return (
+        <>
+          <CollectorTasksScreen
+            user={user}
+            initialTab={collectorTasksTab}
+            complaints={collectorComplaints}
+            updatingId={updatingId}
+            onUpdateStatus={handleStatusUpdate}
+            onBackToHome={() => setCurrentScreen('home')}
+            onOpenSidebar={() => setSidebarVisible(true)}
+            onRefresh={loadCollectorData}
+          />
+          <Sidebar
+            visible={sidebarVisible}
+            onClose={() => setSidebarVisible(false)}
+            currentScreen={currentScreen}
+            onNavigate={handleNavigate}
+            user={user}
+            ecoPoints={ecoPoints}
+            onLogout={onLogout}
+            isCollector={true}
+          />
+        </>
+      );
+    }
+
+    if (currentScreen === 'scoreboard') {
+      return (
+        <>
+          <ScoreboardScreen
+            user={user}
+            ecoPoints={ecoPoints}
+            onBackToHome={() => setCurrentScreen('home')}
+            onOpenSidebar={() => setSidebarVisible(true)}
+          />
+          <Sidebar
+            visible={sidebarVisible}
+            onClose={() => setSidebarVisible(false)}
+            currentScreen={currentScreen}
+            onNavigate={handleNavigate}
+            user={user}
+            ecoPoints={ecoPoints}
+            onLogout={onLogout}
+            isCollector={true}
+          />
+        </>
+      );
+    }
+  }
+
   const filteredCollectorComplaints = collectorComplaints.filter((c) => {
     if (collectorFilter === 'ACTIVE') return c.status !== 'Completed';
     if (collectorFilter === 'COMPLETED') return c.status === 'Completed';
@@ -304,15 +373,13 @@ export default function HomeScreen({ user, onLogout }) {
     <View style={styles.container}>
       <View style={styles.topBar}>
         <View style={styles.topLeft}>
-          {!isCollector && (
-            <TouchableOpacity
-              style={styles.hamburgerBtn}
-              onPress={() => setSidebarVisible(true)}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.hamburgerIcon}>☰</Text>
-            </TouchableOpacity>
-          )}
+          <TouchableOpacity
+            style={styles.hamburgerBtn}
+            onPress={() => setSidebarVisible(true)}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.hamburgerIcon}>☰</Text>
+          </TouchableOpacity>
           <Text style={styles.appName}>SHODHINI</Text>
         </View>
 
@@ -489,6 +556,58 @@ export default function HomeScreen({ user, onLogout }) {
 
         {isCollector && (
           <View style={styles.collectorFeedContainer}>
+            {/* Quick Operations Strip for Collector */}
+            <View style={styles.collectorOpsCard}>
+              <View style={styles.opsHeaderRow}>
+                <Text style={styles.opsTitle}>📋 Field Operations & Routing</Text>
+                <TouchableOpacity
+                  style={styles.openSidebarQuickBtn}
+                  onPress={() => setSidebarVisible(true)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.openSidebarQuickText}>Menu ☰</Text>
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.opsGrid}>
+                <TouchableOpacity
+                  style={styles.opsTile}
+                  onPress={() => handleNavigate('collector_tasks_available')}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.opsTileIcon}>🔔</Text>
+                  <Text style={[styles.opsTileNumber, { color: '#0284c7' }]}>
+                    {collectorComplaints.filter((c) => !c.status || c.status === 'Submitted').length}
+                  </Text>
+                  <Text style={styles.opsTileLabel}>Available</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.opsTile}
+                  onPress={() => handleNavigate('collector_tasks_pending')}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.opsTileIcon}>⏳</Text>
+                  <Text style={[styles.opsTileNumber, { color: '#d97706' }]}>
+                    {collectorComplaints.filter((c) => c.status === 'In Progress' || c.status === 'Assigned').length}
+                  </Text>
+                  <Text style={styles.opsTileLabel}>Pending</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.opsTile}
+                  onPress={() => handleNavigate('collector_track_location')}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.opsTileIcon}>📍</Text>
+                  <Text style={[styles.opsTileNumber, { color: tokens.colors.accent }]}>
+                    {collectorComplaints.filter((c) => c.status !== 'Completed').length}
+                  </Text>
+                  <Text style={styles.opsTileLabel}>Track Route</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
             <View style={styles.feedHeaderRow}>
               <View>
                 <Text style={styles.sectionHeader}>Complaints in Your Area</Text>
@@ -556,17 +675,16 @@ export default function HomeScreen({ user, onLogout }) {
         )}
       </ScrollView>
 
-      {!isCollector && (
-        <Sidebar
-          visible={sidebarVisible}
-          onClose={() => setSidebarVisible(false)}
-          currentScreen={currentScreen}
-          onNavigate={handleNavigate}
-          user={user}
-          ecoPoints={ecoPoints}
-          onLogout={onLogout}
-        />
-      )}
+      <Sidebar
+        visible={sidebarVisible}
+        onClose={() => setSidebarVisible(false)}
+        currentScreen={currentScreen}
+        onNavigate={handleNavigate}
+        user={user}
+        ecoPoints={ecoPoints}
+        onLogout={onLogout}
+        isCollector={isCollector}
+      />
     </View>
   );
 }
@@ -882,6 +1000,68 @@ const styles = StyleSheet.create({
     fontSize: tokens.typography.size.sm,
     color: tokens.colors.muted,
     lineHeight: 18,
+  },
+  collectorOpsCard: {
+    backgroundColor: tokens.colors.background,
+    borderRadius: tokens.radius.xl,
+    padding: tokens.spacing.md,
+    marginBottom: tokens.spacing.md,
+    borderWidth: 1,
+    borderColor: tokens.colors.border,
+    ...tokens.shadow.sm,
+  },
+  opsHeaderRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: tokens.spacing.sm,
+  },
+  opsTitle: {
+    fontSize: tokens.typography.size.sm,
+    fontWeight: tokens.typography.weight.bold,
+    color: tokens.colors.text,
+  },
+  openSidebarQuickBtn: {
+    backgroundColor: tokens.colors.surface,
+    paddingHorizontal: tokens.spacing.sm,
+    paddingVertical: 4,
+    borderRadius: tokens.radius.sm,
+    borderWidth: 1,
+    borderColor: tokens.colors.border,
+  },
+  openSidebarQuickText: {
+    fontSize: tokens.typography.size.xs,
+    fontWeight: tokens.typography.weight.bold,
+    color: tokens.colors.accent,
+  },
+  opsGrid: {
+    flexDirection: 'row',
+    gap: tokens.spacing.sm,
+  },
+  opsTile: {
+    flex: 1,
+    backgroundColor: tokens.colors.surface,
+    borderRadius: tokens.radius.md,
+    paddingVertical: tokens.spacing.sm,
+    paddingHorizontal: tokens.spacing.xs,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: tokens.colors.border,
+  },
+  opsTileIcon: {
+    fontSize: 20,
+    marginBottom: 2,
+  },
+  opsTileNumber: {
+    fontSize: tokens.typography.size.base,
+    fontWeight: tokens.typography.weight.extrabold,
+  },
+  opsTileLabel: {
+    fontSize: 10,
+    color: tokens.colors.muted,
+    marginTop: 2,
+    fontWeight: tokens.typography.weight.medium,
   },
   collectorFeedContainer: {
     marginTop: tokens.spacing.md,
