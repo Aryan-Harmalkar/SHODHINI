@@ -6,11 +6,22 @@ export default function ComplaintCard({ item, updatingId, onUpdateStatus }) {
   const isCompleted = item.status === 'Completed';
   const isInProgress = item.status === 'In Progress' || item.status === 'Assigned';
   const isUpdating = updatingId === item.id;
+  const isAdminReview =
+    item.status === 'Pending Admin' ||
+    Boolean(item.description && item.description.includes('[PENDING ADMIN CROSS-VERIFICATION'));
 
   const getStatusColor = () => {
     if (isCompleted) return tokens.colors.accent;
+    if (isAdminReview) return '#d97706';
     if (isInProgress) return '#d97706';
     return '#0284c7';
+  };
+
+  const getStatusLabel = () => {
+    if (isCompleted) return 'Completed';
+    if (isAdminReview) return '🛡️ Admin Review';
+    if (isInProgress) return 'In Progress';
+    return item.status || 'Submitted';
   };
 
   return (
@@ -25,10 +36,18 @@ export default function ComplaintCard({ item, updatingId, onUpdateStatus }) {
 
         <View style={[styles.badge, { backgroundColor: getStatusColor() + '15' }]}>
           <Text style={[styles.badgeText, { color: getStatusColor() }]}>
-            {item.status || 'Submitted'}
+            {getStatusLabel()}
           </Text>
         </View>
       </View>
+
+      {isAdminReview && (
+        <View style={styles.adminReviewBanner}>
+          <Text style={styles.adminReviewBannerText}>
+            🛡️ Low AI confidence (&lt;20%). Held for Municipal Admin cross-verification.
+          </Text>
+        </View>
+      )}
 
       <Text style={styles.description}>{item.description}</Text>
 
@@ -128,6 +147,19 @@ const styles = StyleSheet.create({
   badgeText: {
     fontSize: 10,
     fontWeight: tokens.typography.weight.bold,
+  },
+  adminReviewBanner: {
+    backgroundColor: '#fffbeb',
+    borderRadius: tokens.radius.sm,
+    padding: 6,
+    marginBottom: tokens.spacing.xs,
+    borderLeftWidth: 3,
+    borderLeftColor: '#f59e0b',
+  },
+  adminReviewBannerText: {
+    fontSize: 10,
+    color: '#92400e',
+    fontWeight: tokens.typography.weight.medium,
   },
   description: {
     fontSize: tokens.typography.size.xs,

@@ -304,6 +304,9 @@ export async function fileComplaint({
   description,
   latitude = null,
   longitude = null,
+  aiAnalysis = null,
+  imageUrl = null,
+  requiresAdminVerification = false,
 }) {
   const {
     data: { session },
@@ -315,17 +318,44 @@ export async function fileComplaint({
 
   const activeUserId = session.user.id;
 
+  // Build structured description with AI details and optional user text
+  const userText = (description || '').trim();
+  let fullDescription = userText;
+
+  if (aiAnalysis) {
+    const headerPrefix = requiresAdminVerification
+      ? `[PENDING ADMIN CROSS-VERIFICATION - AI Sureness: ${aiAnalysis.confidence}%]`
+      : `[AI VERIFIED - ${aiAnalysis.confidence}% Sureness]`;
+
+    const aiReport = [
+      headerPrefix,
+      userText ? `User Notes: ${userText}` : null,
+      `• AI Classification: ${aiAnalysis.classification}`,
+      `• Contamination Rating: ${aiAnalysis.contaminationRating}`,
+      aiAnalysis.hazardWarning ? `• Warning: ${aiAnalysis.hazardWarning}` : null,
+      aiAnalysis.suggestedTools?.length ? `• Suggested Tools: ${aiAnalysis.suggestedTools.join(', ')}` : null,
+      aiAnalysis.predictedCleanTimeFormatted ? `• Predicted Clean Time: ${aiAnalysis.predictedCleanTimeFormatted}` : null,
+    ].filter(Boolean).join('\n');
+
+    fullDescription = aiReport;
+  } else if (!userText) {
+    fullDescription = `${category} reported at live geotag location.`;
+  }
+
+  // Attempt insert with core schema fields guaranteed to succeed
+  const insertPayload = {
+    citizen_id: activeUserId,
+    area_id: areaId,
+    category: category || aiAnalysis?.category || 'Roadside waste',
+    description: fullDescription,
+    latitude,
+    longitude,
+    status: 'Submitted',
+  };
+
   const { data, error } = await supabase
     .from('complaints')
-    .insert({
-      citizen_id: activeUserId,
-      area_id: areaId,
-      category,
-      description,
-      latitude,
-      longitude,
-      status: 'Submitted',
-    })
+    .insert(insertPayload)
     .select()
     .single();
 

@@ -151,6 +151,10 @@ export default function MyComplaintsScreen({
           filtered.map((item) => {
             const isDone = item.status === 'Completed';
             const isInProgress = item.status === 'In Progress';
+            const isAdminReview =
+              item.status === 'Pending Admin' ||
+              Boolean(item.description && item.description.includes('[PENDING ADMIN CROSS-VERIFICATION'));
+
             return (
               <View key={item.id} style={styles.complaintCard}>
                 <View style={styles.complaintHeader}>
@@ -160,6 +164,8 @@ export default function MyComplaintsScreen({
                       styles.statusPill,
                       isDone
                         ? styles.statusDone
+                        : isAdminReview
+                        ? styles.statusAdminReview
                         : isInProgress
                         ? styles.statusInProgress
                         : styles.statusSubmitted,
@@ -170,15 +176,29 @@ export default function MyComplaintsScreen({
                         styles.statusPillText,
                         isDone
                           ? styles.statusDoneText
+                          : isAdminReview
+                          ? styles.statusAdminReviewText
                           : isInProgress
                           ? styles.statusInProgressText
                           : styles.statusSubmittedText,
                       ]}
                     >
-                      {isDone ? '✓ Completed' : item.status || 'Submitted'}
+                      {isDone
+                        ? '✓ Completed'
+                        : isAdminReview
+                        ? '🛡️ Admin Review'
+                        : item.status || 'Submitted'}
                     </Text>
                   </View>
                 </View>
+
+                {isAdminReview && (
+                  <View style={styles.adminNoticeStrip}>
+                    <Text style={styles.adminNoticeStripText}>
+                      🛡️ Low AI sureness (&lt;20%). Held for Municipal Admin cross-verification before field dispatch.
+                    </Text>
+                  </View>
+                )}
 
                 <Text style={styles.complaintDesc}>{item.description}</Text>
 
@@ -443,6 +463,27 @@ const styles = StyleSheet.create({
     color: '#1565c0',
     fontWeight: tokens.typography.weight.bold,
     fontSize: tokens.typography.size.xs,
+  },
+  statusAdminReview: {
+    backgroundColor: '#fef3c7',
+  },
+  statusAdminReviewText: {
+    color: '#92400e',
+    fontWeight: tokens.typography.weight.bold,
+    fontSize: tokens.typography.size.xs,
+  },
+  adminNoticeStrip: {
+    backgroundColor: '#fffbeb',
+    borderRadius: tokens.radius.sm,
+    padding: 6,
+    marginBottom: tokens.spacing.xs,
+    borderLeftWidth: 3,
+    borderLeftColor: '#f59e0b',
+  },
+  adminNoticeStripText: {
+    fontSize: 10,
+    color: '#78350f',
+    lineHeight: 14,
   },
   complaintDesc: {
     fontSize: tokens.typography.size.sm,
