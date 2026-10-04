@@ -343,12 +343,8 @@ export default function HomeScreen({ user, onLogout }) {
           <Text style={styles.welcomeText}>Welcome, {user?.name || 'User'}!</Text>
 
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Phone:</Text>
-            <Text style={styles.infoValue}>{user?.phone || 'N/A'}</Text>
-          </View>
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Identifier:</Text>
-            <Text style={styles.infoValue}>{user?.identifier || user?.email || 'N/A'}</Text>
+            <Text style={styles.infoLabel}>Phone Number:</Text>
+            <Text style={styles.infoValue}>📱 {user?.phone || 'N/A'}</Text>
           </View>
           {user?.area && (
             <View style={styles.infoRow}>

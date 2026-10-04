@@ -80,11 +80,10 @@ export async function getCurrentUser() {
 
       return {
         id: userId,
-        email: session.user.email,
-        identifier: session.user.email,
         role: defaultRole,
         name: defaultName,
         phone: defaultPhone,
+        identifier: defaultPhone,
         area_id: defaultAreaId,
         area: defaultAreaId ? `Ward ${defaultAreaId}` : '',
         eco_points: 0,
@@ -93,11 +92,10 @@ export async function getCurrentUser() {
 
     return {
       id: profile.id,
-      email: session.user.email,
-      identifier: session.user.email,
       role: profile.role,
       name: profile.name,
       phone: profile.phone,
+      identifier: profile.phone,
       area_id: profile.area_id,
       area: profile.areas?.name || (profile.area_id ? `Ward ${profile.area_id}` : ''),
       eco_points: profile.eco_points || 0,
@@ -110,22 +108,43 @@ export async function getCurrentUser() {
 }
 
 /**
- * Normalize identifier to email format for Supabase Auth
+ * Normalize phone number to 10 digits
  */
-function normalizeEmail(identifier) {
-  const clean = (identifier || '').trim().toLowerCase();
-  if (clean.includes('@')) {
-    return clean;
+export function normalizePhone(rawPhone) {
+  if (!rawPhone) return '';
+  const digits = String(rawPhone).replace(/\D/g, '');
+  if (digits.length === 12 && digits.startsWith('91')) {
+    return digits.slice(2);
   }
-  return `${clean.replace(/[^a-z0-9_]/g, '')}@shodhini.app`;
+  if (digits.length === 11 && digits.startsWith('0')) {
+    return digits.slice(1);
+  }
+  return digits;
 }
 
 /**
- * Sign up user with Supabase Auth & create profile
+ * Convert phone number to Supabase internal email
  */
-export async function signUpUser({ role, name, phone, identifier, areaId, password }) {
-  const email = normalizeEmail(identifier);
+function phoneToEmail(phone) {
+  const clean = normalizePhone(phone);
+  return `${clean}@shodhini.app`;
+}
+
+/**
+ * Sign up user with Phone Number & create profile
+ */
+export async function signUpUser({ role, name, phone, areaId, password }) {
+  const cleanPhone = normalizePhone(phone);
   const cleanPass = (password || '').trim();
+
+  if (!cleanPhone || cleanPhone.length < 10) {
+    throw new Error('Please enter a valid 10-digit mobile phone number.');
+  }
+  if (!cleanPass || cleanPass.length < 6) {
+    throw new Error('Password must be at least 6 characters long.');
+  }
+
+  const email = phoneToEmail(cleanPhone);
 
   const { data: authData, error: authError } = await supabase.auth.signUp({
     email,
@@ -134,13 +153,19 @@ export async function signUpUser({ role, name, phone, identifier, areaId, passwo
       data: {
         role,
         name: name.trim(),
-        phone: phone.trim(),
+        phone: cleanPhone,
         area_id: areaId,
       },
     },
   });
 
   if (authError) {
+    if (
+      authError.message?.toLowerCase().includes('already registered') ||
+      authError.message?.toLowerCase().includes('already exists')
+    ) {
+      throw new Error('An account with this phone number already exists. Please log in.');
+    }
     throw new Error(authError.message);
   }
 
@@ -159,7 +184,7 @@ export async function signUpUser({ role, name, phone, identifier, areaId, passwo
 
     if (signInError) {
       throw new Error(
-        'Account created, but email confirmation is enabled in your Supabase project. Please disable "Confirm email" in Supabase Dashboard (Authentication -> Providers -> Email).'
+        'Account created, but verification is required in your Supabase project. Please disable "Confirm email" in Supabase Dashboard (Authentication -> Providers -> Email).'
       );
     }
     session = signInData.session;
@@ -171,7 +196,7 @@ export async function signUpUser({ role, name, phone, identifier, areaId, passwo
       id: userId,
       role,
       name: name.trim(),
-      phone: phone.trim(),
+      phone: cleanPhone,
       area_id: areaId || null,
       eco_points: 0,
     });
@@ -188,22 +213,49 @@ export async function signUpUser({ role, name, phone, identifier, areaId, passwo
 }
 
 /**
- * Login user with Supabase Auth
+ * Login user with Phone Number & password
  */
-export async function loginUser({ role, identifier, password }) {
-  const email = normalizeEmail(identifier);
+export async function loginUser({ role, phone, identifier, password }) {
+  const rawInput = phone || identifier || '';
+  const cleanPhone = normalizePhone(rawInput);
   const cleanPass = (password || '').trim();
 
-  const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-    email,
+  if (!cleanPhone && !rawInput.includes('@')) {
+    throw new Error('Please enter your mobile phone number.');
+  }
+
+  // 1. Primary attempt: cleanPhone@shodhini.app
+  const primaryEmail = cleanPhone ? phoneToEmail(cleanPhone) : rawInput.trim().toLowerCase();
+  let { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+    email: primaryEmail,
     password: cleanPass,
   });
+
+  // 2. Fallback attempt: if user previously signed up with other format
+  if (authError && rawInput && rawInput !== cleanPhone) {
+    const fallbackEmail = rawInput.includes('@')
+      ? rawInput.trim().toLowerCase()
+      : `${rawInput.trim().toLowerCase().replace(/[^a-z0-9_]/g, '')}@shodhini.app`;
+
+    const fallbackRes = await supabase.auth.signInWithPassword({
+      email: fallbackEmail,
+      password: cleanPass,
+    });
+
+    if (!fallbackRes.error) {
+      authData = fallbackRes.data;
+      authError = null;
+    }
+  }
 
   if (authError) {
     if (authError.message?.toLowerCase().includes('email not confirmed')) {
       throw new Error(
-        'Email is not confirmed. Please disable "Confirm email" in Supabase Dashboard (Authentication -> Providers -> Email).'
+        'Account verification is required. Please check Supabase Auth settings.'
       );
+    }
+    if (authError.message?.toLowerCase().includes('invalid login credentials')) {
+      throw new Error('Invalid phone number or password. Please verify your credentials.');
     }
     throw new Error(authError.message || 'Invalid credentials or account does not exist.');
   }

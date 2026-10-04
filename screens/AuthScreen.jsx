@@ -23,7 +23,6 @@ export default function AuthScreen({ onAuthSuccess }) {
   // Form fields
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
-  const [identifier, setIdentifier] = useState('');
   const [selectedAreaId, setSelectedAreaId] = useState(null);
   const [selectedAreaName, setSelectedAreaName] = useState('');
   const [password, setPassword] = useState('');
@@ -66,17 +65,35 @@ export default function AuthScreen({ onAuthSuccess }) {
     setErrorMessage('');
   };
 
+  const handlePhoneChange = (val) => {
+    let cleaned = val.replace(/\D/g, '');
+    if (cleaned.length === 12 && cleaned.startsWith('91')) {
+      cleaned = cleaned.slice(2);
+    }
+    if (cleaned.length === 11 && cleaned.startsWith('0')) {
+      cleaned = cleaned.slice(1);
+    }
+    if (cleaned.length > 10) {
+      cleaned = cleaned.slice(0, 10);
+    }
+    setPhone(cleaned);
+  };
+
   const handleSubmit = async () => {
     setErrorMessage('');
 
     if (mode === 'login') {
-      if (!identifier.trim() || !password.trim()) {
-        setErrorMessage('Please enter both your identifier and password.');
+      if (!phone.trim() || !password.trim()) {
+        setErrorMessage('Please enter both your phone number and password.');
+        return;
+      }
+      if (phone.trim().length < 10) {
+        setErrorMessage('Please enter a valid 10-digit mobile phone number.');
         return;
       }
       setLoading(true);
       try {
-        const user = await loginUser({ role, identifier, password });
+        const user = await loginUser({ role, phone: phone.trim(), password: password.trim() });
         onAuthSuccess(user);
       } catch (err) {
         setErrorMessage(err.message || 'Login failed.');
@@ -84,8 +101,16 @@ export default function AuthScreen({ onAuthSuccess }) {
         setLoading(false);
       }
     } else {
-      if (!name.trim() || !phone.trim() || !identifier.trim() || !password.trim() || !selectedAreaId) {
-        setErrorMessage('Please fill out all fields.');
+      if (!name.trim() || !phone.trim() || !password.trim() || !selectedAreaId) {
+        setErrorMessage('Please fill out all required fields.');
+        return;
+      }
+      if (phone.trim().length < 10) {
+        setErrorMessage('Please enter a valid 10-digit mobile phone number.');
+        return;
+      }
+      if (password.trim().length < 6) {
+        setErrorMessage('Password must be at least 6 characters long.');
         return;
       }
       setLoading(true);
@@ -94,7 +119,6 @@ export default function AuthScreen({ onAuthSuccess }) {
           role,
           name: name.trim(),
           phone: phone.trim(),
-          identifier: identifier.trim(),
           areaId: selectedAreaId,
           password: password.trim(),
         });
@@ -187,8 +211,11 @@ export default function AuthScreen({ onAuthSuccess }) {
 
           {mode === 'signup' && (
             <>
-              {renderInput('Full Name', name, setName, 'name', { autoCapitalize: 'words' })}
-              {renderInput('Phone Number', phone, setPhone, 'phone', { keyboardType: 'phone-pad' })}
+              {renderInput('Full Name', name, setName, 'name', {
+                autoCapitalize: 'words',
+                placeholder: 'Enter your full name',
+                placeholderTextColor: tokens.colors.muted,
+              })}
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>
                   {role === 'worker' ? 'Operating / Work Area' : 'Your Area / Ward'}
@@ -208,15 +235,33 @@ export default function AuthScreen({ onAuthSuccess }) {
             </>
           )}
 
-          {renderInput(
-            mode === 'signup' ? 'Email / Username' : 'Username / Email / Phone',
-            identifier,
-            setIdentifier,
-            'identifier',
-            { autoCapitalize: 'none', autoCorrect: false }
-          )}
+          {/* Mobile Phone Number with Country Code */}
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Mobile Phone Number</Text>
+            <View style={[styles.phoneInputRow, focusedInput === 'phone' && styles.inputFocused]}>
+              <View style={styles.phonePrefixBadge}>
+                <Text style={styles.phonePrefixText}>🇮🇳 +91</Text>
+              </View>
+              <TextInput
+                style={styles.phoneInputFlex}
+                value={phone}
+                onChangeText={handlePhoneChange}
+                onFocus={() => setFocusedInput('phone')}
+                onBlur={() => setFocusedInput(null)}
+                placeholder="10-digit mobile number"
+                placeholderTextColor={tokens.colors.muted}
+                keyboardType="phone-pad"
+                maxLength={10}
+              />
+            </View>
+          </View>
 
-          {renderInput('Password', password, setPassword, 'password', { secureTextEntry: true })}
+          {/* Password */}
+          {renderInput('Password', password, setPassword, 'password', {
+            secureTextEntry: true,
+            placeholder: mode === 'login' ? 'Enter your password' : 'Create password (min 6 chars)',
+            placeholderTextColor: tokens.colors.muted,
+          })}
 
           <TouchableOpacity
             style={[styles.submitButton, loading && styles.submitButtonDisabled]}
@@ -228,7 +273,7 @@ export default function AuthScreen({ onAuthSuccess }) {
               <ActivityIndicator color={tokens.colors.background} />
             ) : (
               <Text style={styles.submitButtonText}>
-                {mode === 'login' ? 'Log In' : 'Sign Up'}
+                {mode === 'login' ? 'Log In with Phone' : 'Sign Up with Phone'}
               </Text>
             )}
           </TouchableOpacity>
@@ -239,7 +284,9 @@ export default function AuthScreen({ onAuthSuccess }) {
             activeOpacity={0.7}
           >
             <Text style={styles.switchModeText}>
-              {mode === 'login' ? "Don't have an account? Sign Up" : 'Already have an account? Log In'}
+              {mode === 'login'
+                ? "Don't have an account? Sign Up with Phone"
+                : 'Already registered? Log In with Phone'}
             </Text>
           </TouchableOpacity>
         </View>
@@ -430,6 +477,39 @@ const styles = StyleSheet.create({
   inputFocused: {
     borderColor: tokens.colors.borderFocus,
     borderWidth: 2,
+  },
+  phoneInputRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: tokens.colors.background,
+    borderWidth: 1,
+    borderColor: tokens.colors.border,
+    borderRadius: tokens.radius.md,
+    overflow: 'hidden',
+    minHeight: 44,
+  },
+  phonePrefixBadge: {
+    backgroundColor: tokens.colors.surface,
+    paddingHorizontal: tokens.spacing.md,
+    paddingVertical: tokens.spacing.sm,
+    borderRightWidth: 1,
+    borderRightColor: tokens.colors.border,
+    justifyContent: 'center',
+    alignItems: 'center',
+    minHeight: 44,
+  },
+  phonePrefixText: {
+    fontSize: tokens.typography.size.sm,
+    fontWeight: tokens.typography.weight.bold,
+    color: tokens.colors.text,
+  },
+  phoneInputFlex: {
+    flex: 1,
+    paddingHorizontal: tokens.spacing.md,
+    paddingVertical: tokens.spacing.sm,
+    fontSize: tokens.typography.size.base,
+    color: tokens.colors.text,
+    minHeight: 44,
   },
   areaPickerBtn: {
     flexDirection: 'row',
