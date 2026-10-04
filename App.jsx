@@ -108,6 +108,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     borderRadius: 28,
     overflow: 'hidden',
+    position: 'relative',
     borderWidth: 8,
     borderColor: '#334155',
     shadowColor: '#000',
@@ -119,6 +120,8 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: '#ffffff',
+    position: 'relative',
+    overflow: 'hidden',
   },
   centerContainer: {
     flex: 1,

@@ -1,11 +1,11 @@
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 import {
   StyleSheet,
   Text,
   View,
   TouchableOpacity,
-  Modal,
   ScrollView,
+  Animated,
 } from 'react-native';
 import { tokens } from '../lib/theme';
 
@@ -20,273 +20,302 @@ export default function Sidebar({
   isCollector = false,
 }) {
   const isWorker = isCollector || user?.role === 'worker';
+  const slideAnim = useRef(new Animated.Value(-290)).current;
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (visible) {
+      Animated.parallel([
+        Animated.timing(slideAnim, {
+          toValue: 0,
+          duration: 220,
+          useNativeDriver: true,
+        }),
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 220,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    } else {
+      slideAnim.setValue(-290);
+      fadeAnim.setValue(0);
+    }
+  }, [visible]);
+
+  if (!visible) return null;
 
   return (
-    <Modal
-      visible={visible}
-      animationType="fade"
-      transparent={true}
-      onRequestClose={onClose}
-    >
-      <View style={styles.overlay}>
-        {/* Backdrop */}
+    <View style={styles.overlay}>
+      {/* Backdrop */}
+      <Animated.View style={[styles.backdrop, { opacity: fadeAnim }]}>
         <TouchableOpacity
-          style={styles.backdrop}
+          style={StyleSheet.absoluteFillObject}
           activeOpacity={1}
           onPress={onClose}
         />
+      </Animated.View>
 
-        {/* Drawer Content */}
-        <View style={styles.drawer}>
-          {/* Minimal Drawer Header */}
-          <View style={styles.drawerHeader}>
-            <View style={styles.userInfo}>
-              <Text style={styles.userName}>{user?.name || 'User'}</Text>
-              <Text style={styles.userRole}>
-                {isWorker ? 'Sanitation Worker' : 'Citizen'} • {user?.area || (user?.area_id ? `Ward ${user.area_id}` : 'Ward 1')}
-              </Text>
-            </View>
-            <TouchableOpacity
-              style={styles.closeBtn}
-              onPress={onClose}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.closeIcon}>✕</Text>
-            </TouchableOpacity>
+      {/* Drawer Content — Strictly contained inside the mobile frame */}
+      <Animated.View style={[styles.drawer, { transform: [{ translateX: slideAnim }] }]}>
+        {/* Minimal Drawer Header */}
+        <View style={styles.drawerHeader}>
+          <View style={styles.userInfo}>
+            <Text style={styles.userName}>{user?.name || 'User'}</Text>
+            <Text style={styles.userRole}>
+              {isWorker ? 'Sanitation Worker' : 'Citizen'} • {user?.area || (user?.area_id ? `Ward ${user.area_id}` : 'Ward 1')}
+            </Text>
           </View>
-
-          {/* Quick Status / Points Strip */}
-          {isWorker ? (
-            <View style={styles.workerStatusStrip}>
-              <View style={styles.dutyDot} />
-              <Text style={styles.workerStatusText}>Active Duty • {user?.area || 'Ward 1'}</Text>
-            </View>
-          ) : (
-            <TouchableOpacity
-              style={styles.ecoPointsStrip}
-              activeOpacity={0.7}
-              onPress={() => {
-                onNavigate('rewards');
-                onClose();
-              }}
-            >
-              <Text style={styles.ecoPointsText}>🌱 {ecoPoints} Eco Points</Text>
-              <Text style={styles.ecoPointsArrow}>Redeem →</Text>
-            </TouchableOpacity>
-          )}
-
-          {/* Menu Items List */}
-          <ScrollView style={styles.menuList} showsVerticalScrollIndicator={false}>
-            {isWorker ? (
-              /* COLLECTOR MENU */
-              <>
-                <TouchableOpacity
-                  style={[styles.menuItem, currentScreen === 'home' && styles.activeMenuItem]}
-                  onPress={() => { onNavigate('home'); onClose(); }}
-                  activeOpacity={0.7}
-                >
-                  <Text style={styles.menuIcon}>🏠</Text>
-                  <Text style={[styles.menuText, currentScreen === 'home' && styles.activeMenuText]}>
-                    Dashboard
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[styles.menuItem, currentScreen === 'collector_tasks_available' && styles.activeMenuItem]}
-                  onPress={() => { onNavigate('collector_tasks_available'); onClose(); }}
-                  activeOpacity={0.7}
-                >
-                  <Text style={styles.menuIcon}>🔔</Text>
-                  <Text style={[styles.menuText, currentScreen === 'collector_tasks_available' && styles.activeMenuText]}>
-                    Tasks Available
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[styles.menuItem, currentScreen === 'collector_tasks_pending' && styles.activeMenuItem]}
-                  onPress={() => { onNavigate('collector_tasks_pending'); onClose(); }}
-                  activeOpacity={0.7}
-                >
-                  <Text style={styles.menuIcon}>⏳</Text>
-                  <Text style={[styles.menuText, currentScreen === 'collector_tasks_pending' && styles.activeMenuText]}>
-                    Pending Tasks
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[styles.menuItem, currentScreen === 'collector_track_location' && styles.activeMenuItem]}
-                  onPress={() => { onNavigate('collector_track_location'); onClose(); }}
-                  activeOpacity={0.7}
-                >
-                  <Text style={styles.menuIcon}>📍</Text>
-                  <Text style={[styles.menuText, currentScreen === 'collector_track_location' && styles.activeMenuText]}>
-                    Track Location
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[styles.menuItem, currentScreen === 'collector_tasks_completed' && styles.activeMenuItem]}
-                  onPress={() => { onNavigate('collector_tasks_completed'); onClose(); }}
-                  activeOpacity={0.7}
-                >
-                  <Text style={styles.menuIcon}>✅</Text>
-                  <Text style={[styles.menuText, currentScreen === 'collector_tasks_completed' && styles.activeMenuText]}>
-                    Completed Tasks
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[styles.menuItem, currentScreen === 'scoreboard' && styles.activeMenuItem]}
-                  onPress={() => { onNavigate('scoreboard'); onClose(); }}
-                  activeOpacity={0.7}
-                >
-                  <Text style={styles.menuIcon}>🏆</Text>
-                  <Text style={[styles.menuText, currentScreen === 'scoreboard' && styles.activeMenuText]}>
-                    Ward Scoreboard
-                  </Text>
-                </TouchableOpacity>
-              </>
-            ) : (
-              /* CITIZEN MENU */
-              <>
-                <TouchableOpacity
-                  style={[styles.menuItem, currentScreen === 'home' && styles.activeMenuItem]}
-                  onPress={() => { onNavigate('home'); onClose(); }}
-                  activeOpacity={0.7}
-                >
-                  <Text style={styles.menuIcon}>🏠</Text>
-                  <Text style={[styles.menuText, currentScreen === 'home' && styles.activeMenuText]}>Home</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[styles.menuItem, currentScreen === 'complaint' && styles.activeMenuItem]}
-                  onPress={() => { onNavigate('complaint'); onClose(); }}
-                  activeOpacity={0.7}
-                >
-                  <Text style={styles.menuIcon}>📸</Text>
-                  <Text style={[styles.menuText, currentScreen === 'complaint' && styles.activeMenuText]}>
-                    Report Waste
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[styles.menuItem, currentScreen === 'my_complaints' && styles.activeMenuItem]}
-                  onPress={() => { onNavigate('my_complaints'); onClose(); }}
-                  activeOpacity={0.7}
-                >
-                  <Text style={styles.menuIcon}>📋</Text>
-                  <Text style={[styles.menuText, currentScreen === 'my_complaints' && styles.activeMenuText]}>
-                    My Complaints
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[styles.menuItem, currentScreen === 'scoreboard' && styles.activeMenuItem]}
-                  onPress={() => { onNavigate('scoreboard'); onClose(); }}
-                  activeOpacity={0.7}
-                >
-                  <Text style={styles.menuIcon}>🏆</Text>
-                  <Text style={[styles.menuText, currentScreen === 'scoreboard' && styles.activeMenuText]}>
-                    Scoreboard
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[styles.menuItem, (currentScreen === 'rewards' || currentScreen.startsWith('rewards_')) && styles.activeMenuItem]}
-                  onPress={() => { onNavigate('rewards'); onClose(); }}
-                  activeOpacity={0.7}
-                >
-                  <Text style={styles.menuIcon}>🎁</Text>
-                  <Text style={[styles.menuText, (currentScreen === 'rewards' || currentScreen.startsWith('rewards_')) && styles.activeMenuText]}>
-                    Rewards & Coupons
-                  </Text>
-                </TouchableOpacity>
-
-                {/* Indented Sub-items */}
-                <View style={styles.subMenuList}>
-                  <TouchableOpacity
-                    style={styles.subMenuItem}
-                    onPress={() => { onNavigate('rewards_redeem'); onClose(); }}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={styles.subMenuDot}>•</Text>
-                    <Text style={styles.subMenuText}>Redeem Points</Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={styles.subMenuItem}
-                    onPress={() => { onNavigate('rewards_coupons'); onClose(); }}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={styles.subMenuDot}>•</Text>
-                    <Text style={styles.subMenuText}>My Coupons</Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    style={styles.subMenuItem}
-                    onPress={() => { onNavigate('rewards_history'); onClose(); }}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={styles.subMenuDot}>•</Text>
-                    <Text style={styles.subMenuText}>Points History</Text>
-                  </TouchableOpacity>
-                </View>
-
-                <TouchableOpacity
-                  style={[styles.menuItem, currentScreen === 'waste_pickup' && styles.activeMenuItem]}
-                  onPress={() => { onNavigate('waste_pickup'); onClose(); }}
-                  activeOpacity={0.7}
-                >
-                  <Text style={styles.menuIcon}>🚚</Text>
-                  <Text style={[styles.menuText, currentScreen === 'waste_pickup' && styles.activeMenuText]}>
-                    Doorstep Pickup
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[styles.menuItem, currentScreen === 'recycle' && styles.activeMenuItem]}
-                  onPress={() => { onNavigate('recycle'); onClose(); }}
-                  activeOpacity={0.7}
-                >
-                  <Text style={styles.menuIcon}>♻️</Text>
-                  <Text style={[styles.menuText, currentScreen === 'recycle' && styles.activeMenuText]}>
-                    Scrap Recycling
-                  </Text>
-                </TouchableOpacity>
-              </>
-            )}
-          </ScrollView>
-
-          {/* Minimal Drawer Footer */}
-          <View style={styles.drawerFooter}>
-            <TouchableOpacity style={styles.logoutBtn} onPress={() => { onClose(); onLogout(); }} activeOpacity={0.7}>
-              <Text style={styles.logoutText}>🚪 Log Out</Text>
-            </TouchableOpacity>
-          </View>
+          <TouchableOpacity
+            style={styles.closeBtn}
+            onPress={onClose}
+            activeOpacity={0.7}
+          >
+            <Text style={styles.closeIcon}>✕</Text>
+          </TouchableOpacity>
         </View>
-      </View>
-    </Modal>
+
+        {/* Quick Status / Points Strip */}
+        {isWorker ? (
+          <View style={styles.workerStatusStrip}>
+            <View style={styles.dutyDot} />
+            <Text style={styles.workerStatusText}>Active Duty • {user?.area || 'Ward 1'}</Text>
+          </View>
+        ) : (
+          <TouchableOpacity
+            style={styles.ecoPointsStrip}
+            activeOpacity={0.7}
+            onPress={() => {
+              onNavigate('rewards');
+              onClose();
+            }}
+          >
+            <Text style={styles.ecoPointsText}>🌱 {ecoPoints} Eco Points</Text>
+            <Text style={styles.ecoPointsArrow}>Redeem →</Text>
+          </TouchableOpacity>
+        )}
+
+        {/* Menu Items List */}
+        <ScrollView style={styles.menuList} showsVerticalScrollIndicator={false}>
+          {isWorker ? (
+            /* COLLECTOR MENU */
+            <>
+              <TouchableOpacity
+                style={[styles.menuItem, currentScreen === 'home' && styles.activeMenuItem]}
+                onPress={() => { onNavigate('home'); onClose(); }}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.menuIcon}>🏠</Text>
+                <Text style={[styles.menuText, currentScreen === 'home' && styles.activeMenuText]}>
+                  Dashboard
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.menuItem, currentScreen === 'collector_tasks_available' && styles.activeMenuItem]}
+                onPress={() => { onNavigate('collector_tasks_available'); onClose(); }}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.menuIcon}>🔔</Text>
+                <Text style={[styles.menuText, currentScreen === 'collector_tasks_available' && styles.activeMenuText]}>
+                  Tasks Available
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.menuItem, currentScreen === 'collector_tasks_pending' && styles.activeMenuItem]}
+                onPress={() => { onNavigate('collector_tasks_pending'); onClose(); }}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.menuIcon}>⏳</Text>
+                <Text style={[styles.menuText, currentScreen === 'collector_tasks_pending' && styles.activeMenuText]}>
+                  Pending Tasks
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.menuItem, currentScreen === 'collector_track_location' && styles.activeMenuItem]}
+                onPress={() => { onNavigate('collector_track_location'); onClose(); }}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.menuIcon}>📍</Text>
+                <Text style={[styles.menuText, currentScreen === 'collector_track_location' && styles.activeMenuText]}>
+                  Track Location
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.menuItem, currentScreen === 'collector_tasks_completed' && styles.activeMenuItem]}
+                onPress={() => { onNavigate('collector_tasks_completed'); onClose(); }}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.menuIcon}>✅</Text>
+                <Text style={[styles.menuText, currentScreen === 'collector_tasks_completed' && styles.activeMenuText]}>
+                  Completed Tasks
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.menuItem, currentScreen === 'scoreboard' && styles.activeMenuItem]}
+                onPress={() => { onNavigate('scoreboard'); onClose(); }}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.menuIcon}>🏆</Text>
+                <Text style={[styles.menuText, currentScreen === 'scoreboard' && styles.activeMenuText]}>
+                  Ward Scoreboard
+                </Text>
+              </TouchableOpacity>
+            </>
+          ) : (
+            /* CITIZEN MENU */
+            <>
+              <TouchableOpacity
+                style={[styles.menuItem, currentScreen === 'home' && styles.activeMenuItem]}
+                onPress={() => { onNavigate('home'); onClose(); }}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.menuIcon}>🏠</Text>
+                <Text style={[styles.menuText, currentScreen === 'home' && styles.activeMenuText]}>Home</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.menuItem, currentScreen === 'complaint' && styles.activeMenuItem]}
+                onPress={() => { onNavigate('complaint'); onClose(); }}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.menuIcon}>📸</Text>
+                <Text style={[styles.menuText, currentScreen === 'complaint' && styles.activeMenuText]}>
+                  Report Waste
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.menuItem, currentScreen === 'my_complaints' && styles.activeMenuItem]}
+                onPress={() => { onNavigate('my_complaints'); onClose(); }}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.menuIcon}>📋</Text>
+                <Text style={[styles.menuText, currentScreen === 'my_complaints' && styles.activeMenuText]}>
+                  My Complaints
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.menuItem, currentScreen === 'scoreboard' && styles.activeMenuItem]}
+                onPress={() => { onNavigate('scoreboard'); onClose(); }}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.menuIcon}>🏆</Text>
+                <Text style={[styles.menuText, currentScreen === 'scoreboard' && styles.activeMenuText]}>
+                  Scoreboard
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.menuItem, (currentScreen === 'rewards' || currentScreen.startsWith('rewards_')) && styles.activeMenuItem]}
+                onPress={() => { onNavigate('rewards'); onClose(); }}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.menuIcon}>🎁</Text>
+                <Text style={[styles.menuText, (currentScreen === 'rewards' || currentScreen.startsWith('rewards_')) && styles.activeMenuText]}>
+                  Rewards & Coupons
+                </Text>
+              </TouchableOpacity>
+
+              {/* Indented Sub-items */}
+              <View style={styles.subMenuList}>
+                <TouchableOpacity
+                  style={styles.subMenuItem}
+                  onPress={() => { onNavigate('rewards_redeem'); onClose(); }}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.subMenuDot}>•</Text>
+                  <Text style={styles.subMenuText}>Redeem Points</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.subMenuItem}
+                  onPress={() => { onNavigate('rewards_coupons'); onClose(); }}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.subMenuDot}>•</Text>
+                  <Text style={styles.subMenuText}>My Coupons</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.subMenuItem}
+                  onPress={() => { onNavigate('rewards_history'); onClose(); }}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.subMenuDot}>•</Text>
+                  <Text style={styles.subMenuText}>Points History</Text>
+                </TouchableOpacity>
+              </View>
+
+              <TouchableOpacity
+                style={[styles.menuItem, currentScreen === 'waste_pickup' && styles.activeMenuItem]}
+                onPress={() => { onNavigate('waste_pickup'); onClose(); }}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.menuIcon}>🚚</Text>
+                <Text style={[styles.menuText, currentScreen === 'waste_pickup' && styles.activeMenuText]}>
+                  Doorstep Pickup
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.menuItem, currentScreen === 'recycle' && styles.activeMenuItem]}
+                onPress={() => { onNavigate('recycle'); onClose(); }}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.menuIcon}>♻️</Text>
+                <Text style={[styles.menuText, currentScreen === 'recycle' && styles.activeMenuText]}>
+                  Scrap Recycling
+                </Text>
+              </TouchableOpacity>
+            </>
+          )}
+        </ScrollView>
+
+        {/* Minimal Drawer Footer */}
+        <View style={styles.drawerFooter}>
+          <TouchableOpacity style={styles.logoutBtn} onPress={() => { onClose(); onLogout(); }} activeOpacity={0.7}>
+            <Text style={styles.logoutText}>🚪 Log Out</Text>
+          </TouchableOpacity>
+        </View>
+      </Animated.View>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   overlay: {
-    flex: 1,
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: 0,
+    right: 0,
+    zIndex: 9999,
     flexDirection: 'row',
   },
   backdrop: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(15, 23, 42, 0.35)',
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: 0,
+    right: 0,
+    backgroundColor: 'rgba(15, 23, 42, 0.45)',
   },
   drawer: {
     width: '78%',
-    maxWidth: 300,
+    maxWidth: 290,
     backgroundColor: tokens.colors.background,
     height: '100%',
-    paddingTop: 44,
+    paddingTop: 16,
     paddingHorizontal: tokens.spacing.md,
     paddingBottom: tokens.spacing.lg,
     ...tokens.shadow.md,
+    zIndex: 10000,
   },
   drawerHeader: {
     flexDirection: 'row',

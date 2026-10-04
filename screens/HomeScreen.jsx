@@ -97,7 +97,7 @@ export default function HomeScreen({ user, onLogout }) {
           table: 'complaints',
           filter: `area_id=eq.${user.area_id}`,
         },
-        async (payload) => {
+        async () => {
           loadCollectorData();
         }
       )
@@ -177,95 +177,52 @@ export default function HomeScreen({ user, onLogout }) {
     }
   };
 
-  if (!isCollector) {
-    if (currentScreen === 'complaint') {
-      return (
-        <>
+  const availableCount = collectorComplaints.filter((c) => !c.status || c.status === 'Submitted').length;
+  const inProgressCount = collectorComplaints.filter((c) => c.status === 'In Progress' || c.status === 'Assigned').length;
+  const activeCount = collectorComplaints.filter((c) => c.status !== 'Completed').length;
+  const completedCount = collectorComplaints.filter((c) => c.status === 'Completed').length;
+
+  const renderContent = () => {
+    if (!isCollector) {
+      if (currentScreen === 'complaint') {
+        return (
           <FileComplaintScreen
             user={user}
             onBackToHome={() => setCurrentScreen('home')}
             onOpenSidebar={() => setSidebarVisible(true)}
           />
-          <Sidebar
-            visible={sidebarVisible}
-            onClose={() => setSidebarVisible(false)}
-            currentScreen={currentScreen}
-            onNavigate={handleNavigate}
-            user={user}
-            ecoPoints={ecoPoints}
-            onLogout={onLogout}
-          />
-        </>
-      );
-    }
-
-    if (currentScreen === 'my_complaints') {
-      return (
-        <>
+        );
+      }
+      if (currentScreen === 'my_complaints') {
+        return (
           <MyComplaintsScreen
             user={user}
             onBackToHome={() => setCurrentScreen('home')}
             onOpenSidebar={() => setSidebarVisible(true)}
             onGoToReport={() => setCurrentScreen('complaint')}
           />
-          <Sidebar
-            visible={sidebarVisible}
-            onClose={() => setSidebarVisible(false)}
-            currentScreen={currentScreen}
-            onNavigate={handleNavigate}
-            user={user}
-            ecoPoints={ecoPoints}
-            onLogout={onLogout}
-          />
-        </>
-      );
-    }
-
-    if (currentScreen === 'waste_pickup') {
-      return (
-        <>
+        );
+      }
+      if (currentScreen === 'waste_pickup') {
+        return (
           <WastePickupScreen
             user={user}
             onBackToHome={() => setCurrentScreen('home')}
             onOpenSidebar={() => setSidebarVisible(true)}
           />
-          <Sidebar
-            visible={sidebarVisible}
-            onClose={() => setSidebarVisible(false)}
-            currentScreen={currentScreen}
-            onNavigate={handleNavigate}
-            user={user}
-            ecoPoints={ecoPoints}
-            onLogout={onLogout}
-          />
-        </>
-      );
-    }
-
-    if (currentScreen === 'recycle') {
-      return (
-        <>
+        );
+      }
+      if (currentScreen === 'recycle') {
+        return (
           <RecycleScreen
             user={user}
             onBackToHome={() => setCurrentScreen('home')}
             onOpenSidebar={() => setSidebarVisible(true)}
           />
-          <Sidebar
-            visible={sidebarVisible}
-            onClose={() => setSidebarVisible(false)}
-            currentScreen={currentScreen}
-            onNavigate={handleNavigate}
-            user={user}
-            ecoPoints={ecoPoints}
-            onLogout={onLogout}
-          />
-        </>
-      );
-    }
-
-    if (currentScreen === 'scoreboard') {
-      return (
-        <>
+        );
+      }
+      if (currentScreen === 'scoreboard') {
+        return (
           <ScoreboardScreen
             user={user}
             ecoPoints={ecoPoints}
@@ -273,22 +230,10 @@ export default function HomeScreen({ user, onLogout }) {
             onOpenSidebar={() => setSidebarVisible(true)}
             isCollector={false}
           />
-          <Sidebar
-            visible={sidebarVisible}
-            onClose={() => setSidebarVisible(false)}
-            currentScreen={currentScreen}
-            onNavigate={handleNavigate}
-            user={user}
-            ecoPoints={ecoPoints}
-            onLogout={onLogout}
-          />
-        </>
-      );
-    }
-
-    if (currentScreen === 'rewards') {
-      return (
-        <>
+        );
+      }
+      if (currentScreen === 'rewards') {
+        return (
           <RewardsScreen
             user={user}
             ecoPoints={ecoPoints}
@@ -297,24 +242,13 @@ export default function HomeScreen({ user, onLogout }) {
             onOpenSidebar={() => setSidebarVisible(true)}
             onNavigatePickup={() => setCurrentScreen('waste_pickup')}
           />
-          <Sidebar
-            visible={sidebarVisible}
-            onClose={() => setSidebarVisible(false)}
-            currentScreen={currentScreen}
-            onNavigate={handleNavigate}
-            user={user}
-            ecoPoints={ecoPoints}
-            onLogout={onLogout}
-          />
-        </>
-      );
+        );
+      }
     }
-  }
 
-  if (isCollector) {
-    if (currentScreen === 'collector_tasks') {
-      return (
-        <>
+    if (isCollector) {
+      if (currentScreen === 'collector_tasks') {
+        return (
           <CollectorTasksScreen
             user={user}
             initialTab={collectorTasksTab}
@@ -325,23 +259,10 @@ export default function HomeScreen({ user, onLogout }) {
             onOpenSidebar={() => setSidebarVisible(true)}
             onRefresh={loadCollectorData}
           />
-          <Sidebar
-            visible={sidebarVisible}
-            onClose={() => setSidebarVisible(false)}
-            currentScreen={currentScreen}
-            onNavigate={handleNavigate}
-            user={user}
-            ecoPoints={0}
-            onLogout={onLogout}
-            isCollector={true}
-          />
-        </>
-      );
-    }
-
-    if (currentScreen === 'scoreboard') {
-      return (
-        <>
+        );
+      }
+      if (currentScreen === 'scoreboard') {
+        return (
           <ScoreboardScreen
             user={user}
             ecoPoints={0}
@@ -349,242 +270,226 @@ export default function HomeScreen({ user, onLogout }) {
             onOpenSidebar={() => setSidebarVisible(true)}
             isCollector={true}
           />
-          <Sidebar
-            visible={sidebarVisible}
-            onClose={() => setSidebarVisible(false)}
-            currentScreen={currentScreen}
-            onNavigate={handleNavigate}
-            user={user}
-            ecoPoints={0}
-            onLogout={onLogout}
-            isCollector={true}
-          />
-        </>
-      );
+        );
+      }
     }
-  }
 
-  const filteredCollectorComplaints = collectorComplaints.filter((c) => {
-    if (collectorFilter === 'ACTIVE') return c.status !== 'Completed';
-    if (collectorFilter === 'COMPLETED') return c.status === 'Completed';
-    return true;
-  });
+    return (
+      <View style={styles.container}>
+        {/* Sleek Minimal Top Bar */}
+        <View style={styles.topBar}>
+          <View style={styles.topLeft}>
+            <TouchableOpacity
+              style={styles.hamburgerBtn}
+              onPress={() => setSidebarVisible(true)}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.hamburgerIcon}>☰</Text>
+            </TouchableOpacity>
+            <Text style={styles.appName}>SHODHINI</Text>
+          </View>
 
-  const availableCount = collectorComplaints.filter((c) => !c.status || c.status === 'Submitted').length;
-  const inProgressCount = collectorComplaints.filter((c) => c.status === 'In Progress' || c.status === 'Assigned').length;
-  const activeCount = collectorComplaints.filter((c) => c.status !== 'Completed').length;
-  const completedCount = collectorComplaints.filter((c) => c.status === 'Completed').length;
+          {!isCollector ? (
+            <TouchableOpacity
+              style={styles.topPointsPill}
+              onPress={() => handleNavigate('rewards')}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.topPointsText}>🌱 {ecoPoints} pts</Text>
+            </TouchableOpacity>
+          ) : (
+            <View style={styles.topDutyPill}>
+              <View style={styles.dutyDot} />
+              <Text style={styles.topDutyText}>{user?.area || 'Ward 1'}</Text>
+            </View>
+          )}
+        </View>
+
+        <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+          {/* Clean Greeting Header */}
+          <View style={styles.greetingHeader}>
+            <Text style={styles.greetingTitle}>Welcome, {user?.name || 'User'}</Text>
+            <Text style={styles.greetingSub}>
+              📍 {user?.area || 'Ward 1'} • {isCollector ? 'Garbage Collector' : 'Citizen Resident'}
+            </Text>
+          </View>
+
+          {/* CITIZEN VIEW: MINIMAL, FAST & PURPOSEFUL */}
+          {!isCollector && (
+            <>
+              {/* Primary Action Button */}
+              <TouchableOpacity
+                style={styles.heroReportBtn}
+                onPress={() => setCurrentScreen('complaint')}
+                activeOpacity={0.85}
+              >
+                <View style={styles.heroLeft}>
+                  <View style={styles.heroIconBox}>
+                    <Text style={styles.heroIcon}>📸</Text>
+                  </View>
+                  <View>
+                    <Text style={styles.heroTitle}>Report Waste Spot</Text>
+                    <Text style={styles.heroSubtitle}>Capture photo & alert area collectors</Text>
+                  </View>
+                </View>
+                <Text style={styles.heroArrow}>→</Text>
+              </TouchableOpacity>
+
+              {/* Clean Services Grid (No bloated multi-line text) */}
+              <Text style={styles.sectionTitle}>Services</Text>
+
+              <View style={styles.gridContainer}>
+                <TouchableOpacity
+                  style={styles.gridCard}
+                  onPress={() => setCurrentScreen('my_complaints')}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.gridCardIcon}>📋</Text>
+                  <Text style={styles.gridCardTitle}>My Reports</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.gridCard}
+                  onPress={() => handleNavigate('scoreboard')}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.gridCardIcon}>🏆</Text>
+                  <Text style={styles.gridCardTitle}>Scoreboard</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.gridCard}
+                  onPress={() => handleNavigate('rewards')}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.gridCardIcon}>🎁</Text>
+                  <Text style={styles.gridCardTitle}>Rewards</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.gridCard}
+                  onPress={() => handleNavigate('waste_pickup')}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.gridCardIcon}>🚚</Text>
+                  <Text style={styles.gridCardTitle}>Doorstep Pickup</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.gridCard}
+                  onPress={() => handleNavigate('recycle')}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.gridCardIcon}>♻️</Text>
+                  <Text style={styles.gridCardTitle}>Scrap Recycling</Text>
+                </TouchableOpacity>
+              </View>
+            </>
+          )}
+
+          {/* COLLECTOR VIEW: CLEAN FIELD OPERATIONS */}
+          {isCollector && (
+            <View style={styles.collectorFeedContainer}>
+              {/* Quick Operations Strip */}
+              <View style={styles.collectorOpsStrip}>
+                <TouchableOpacity
+                  style={styles.opsChip}
+                  onPress={() => handleNavigate('collector_tasks_available')}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.opsChipNumber}>{availableCount}</Text>
+                  <Text style={styles.opsChipLabel}>Available</Text>
+                </TouchableOpacity>
+
+                <View style={styles.opsChipDivider} />
+
+                <TouchableOpacity
+                  style={styles.opsChip}
+                  onPress={() => handleNavigate('collector_tasks_pending')}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.opsChipNumber, { color: '#d97706' }]}>{inProgressCount}</Text>
+                  <Text style={styles.opsChipLabel}>Pending</Text>
+                </TouchableOpacity>
+
+                <View style={styles.opsChipDivider} />
+
+                <TouchableOpacity
+                  style={styles.opsChip}
+                  onPress={() => handleNavigate('collector_track_location')}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.opsChipNumber, { color: tokens.colors.accent }]}>{activeCount}</Text>
+                  <Text style={styles.opsChipLabel}>Map Route</Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Filter Pills */}
+              <View style={styles.collectorFilterRow}>
+                <TouchableOpacity
+                  style={[styles.collectorPill, collectorFilter === 'ALL' && styles.collectorPillActive]}
+                  onPress={() => setCollectorFilter('ALL')}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.collectorPillText, collectorFilter === 'ALL' && styles.collectorPillTextActive]}>
+                    All ({collectorComplaints.length})
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.collectorPill, collectorFilter === 'ACTIVE' && styles.collectorPillActive]}
+                  onPress={() => setCollectorFilter('ACTIVE')}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.collectorPillText, collectorFilter === 'ACTIVE' && styles.collectorPillTextActive]}>
+                    Active ({activeCount})
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.collectorPill, collectorFilter === 'COMPLETED' && styles.collectorPillActive]}
+                  onPress={() => setCollectorFilter('COMPLETED')}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.collectorPillText, collectorFilter === 'COMPLETED' && styles.collectorPillTextActive]}>
+                    Done ({completedCount})
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              {collectorLoading ? (
+                <View style={styles.loadingBox}>
+                  <ActivityIndicator size="small" color={tokens.colors.accent} />
+                  <Text style={styles.loadingBoxText}>Loading area feed...</Text>
+                </View>
+              ) : filteredCollectorComplaints.length === 0 ? (
+                <View style={styles.emptyCollectorBox}>
+                  <Text style={styles.emptyIcon}>🎉</Text>
+                  <Text style={styles.emptyCollectorTitle}>No Complaints Pending</Text>
+                  <Text style={styles.emptyCollectorDesc}>
+                    {user?.area || 'Ward'} currently has no active waste hotspots.
+                  </Text>
+                </View>
+              ) : (
+                filteredCollectorComplaints.map((item) => (
+                  <ComplaintCard
+                    key={item.id}
+                    item={item}
+                    updatingId={updatingId}
+                    onUpdateStatus={handleStatusUpdate}
+                  />
+                ))
+              )}
+            </View>
+          )}
+        </ScrollView>
+      </View>
+    );
+  };
 
   return (
-    <View style={styles.container}>
-      {/* Sleek Minimal Top Bar */}
-      <View style={styles.topBar}>
-        <View style={styles.topLeft}>
-          <TouchableOpacity
-            style={styles.hamburgerBtn}
-            onPress={() => setSidebarVisible(true)}
-            activeOpacity={0.7}
-          >
-            <Text style={styles.hamburgerIcon}>☰</Text>
-          </TouchableOpacity>
-          <Text style={styles.appName}>SHODHINI</Text>
-        </View>
-
-        {!isCollector ? (
-          <TouchableOpacity
-            style={styles.topPointsPill}
-            onPress={() => handleNavigate('rewards')}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.topPointsText}>🌱 {ecoPoints} pts</Text>
-          </TouchableOpacity>
-        ) : (
-          <View style={styles.topDutyPill}>
-            <View style={styles.dutyDot} />
-            <Text style={styles.topDutyText}>{user?.area || 'Ward 1'}</Text>
-          </View>
-        )}
-      </View>
-
-      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {/* Clean Greeting Header */}
-        <View style={styles.greetingHeader}>
-          <Text style={styles.greetingTitle}>Welcome, {user?.name || 'User'}</Text>
-          <Text style={styles.greetingSub}>
-            📍 {user?.area || 'Ward 1'} • {isCollector ? 'Garbage Collector' : 'Citizen Resident'}
-          </Text>
-        </View>
-
-        {/* CITIZEN VIEW: MINIMAL, FAST & PURPOSEFUL */}
-        {!isCollector && (
-          <>
-            {/* Primary Action Button */}
-            <TouchableOpacity
-              style={styles.heroReportBtn}
-              onPress={() => setCurrentScreen('complaint')}
-              activeOpacity={0.85}
-            >
-              <View style={styles.heroLeft}>
-                <View style={styles.heroIconBox}>
-                  <Text style={styles.heroIcon}>📸</Text>
-                </View>
-                <View>
-                  <Text style={styles.heroTitle}>Report Waste Spot</Text>
-                  <Text style={styles.heroSubtitle}>Capture photo & alert area collectors</Text>
-                </View>
-              </View>
-              <Text style={styles.heroArrow}>→</Text>
-            </TouchableOpacity>
-
-            {/* Clean Services Grid (No bloated multi-line text) */}
-            <Text style={styles.sectionTitle}>Services</Text>
-
-            <View style={styles.gridContainer}>
-              <TouchableOpacity
-                style={styles.gridCard}
-                onPress={() => setCurrentScreen('my_complaints')}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.gridCardIcon}>📋</Text>
-                <Text style={styles.gridCardTitle}>My Reports</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.gridCard}
-                onPress={() => handleNavigate('scoreboard')}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.gridCardIcon}>🏆</Text>
-                <Text style={styles.gridCardTitle}>Scoreboard</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.gridCard}
-                onPress={() => handleNavigate('rewards')}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.gridCardIcon}>🎁</Text>
-                <Text style={styles.gridCardTitle}>Rewards</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.gridCard}
-                onPress={() => handleNavigate('waste_pickup')}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.gridCardIcon}>🚚</Text>
-                <Text style={styles.gridCardTitle}>Doorstep Pickup</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.gridCard}
-                onPress={() => handleNavigate('recycle')}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.gridCardIcon}>♻️</Text>
-                <Text style={styles.gridCardTitle}>Scrap Recycling</Text>
-              </TouchableOpacity>
-            </View>
-          </>
-        )}
-
-        {/* COLLECTOR VIEW: CLEAN FIELD OPERATIONS */}
-        {isCollector && (
-          <View style={styles.collectorFeedContainer}>
-            {/* Quick Operations Strip */}
-            <View style={styles.collectorOpsStrip}>
-              <TouchableOpacity
-                style={styles.opsChip}
-                onPress={() => handleNavigate('collector_tasks_available')}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.opsChipNumber}>{availableCount}</Text>
-                <Text style={styles.opsChipLabel}>Available</Text>
-              </TouchableOpacity>
-
-              <View style={styles.opsChipDivider} />
-
-              <TouchableOpacity
-                style={styles.opsChip}
-                onPress={() => handleNavigate('collector_tasks_pending')}
-                activeOpacity={0.7}
-              >
-                <Text style={[styles.opsChipNumber, { color: '#d97706' }]}>{inProgressCount}</Text>
-                <Text style={styles.opsChipLabel}>Pending</Text>
-              </TouchableOpacity>
-
-              <View style={styles.opsChipDivider} />
-
-              <TouchableOpacity
-                style={styles.opsChip}
-                onPress={() => handleNavigate('collector_track_location')}
-                activeOpacity={0.7}
-              >
-                <Text style={[styles.opsChipNumber, { color: tokens.colors.accent }]}>{activeCount}</Text>
-                <Text style={styles.opsChipLabel}>Map Route</Text>
-              </TouchableOpacity>
-            </View>
-
-            {/* Filter Pills */}
-            <View style={styles.collectorFilterRow}>
-              <TouchableOpacity
-                style={[styles.collectorPill, collectorFilter === 'ALL' && styles.collectorPillActive]}
-                onPress={() => setCollectorFilter('ALL')}
-                activeOpacity={0.7}
-              >
-                <Text style={[styles.collectorPillText, collectorFilter === 'ALL' && styles.collectorPillTextActive]}>
-                  All ({collectorComplaints.length})
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[styles.collectorPill, collectorFilter === 'ACTIVE' && styles.collectorPillActive]}
-                onPress={() => setCollectorFilter('ACTIVE')}
-                activeOpacity={0.7}
-              >
-                <Text style={[styles.collectorPillText, collectorFilter === 'ACTIVE' && styles.collectorPillTextActive]}>
-                  Active ({activeCount})
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[styles.collectorPill, collectorFilter === 'COMPLETED' && styles.collectorPillActive]}
-                onPress={() => setCollectorFilter('COMPLETED')}
-                activeOpacity={0.7}
-              >
-                <Text style={[styles.collectorPillText, collectorFilter === 'COMPLETED' && styles.collectorPillTextActive]}>
-                  Done ({completedCount})
-                </Text>
-              </TouchableOpacity>
-            </View>
-
-            {collectorLoading ? (
-              <View style={styles.loadingBox}>
-                <ActivityIndicator size="small" color={tokens.colors.accent} />
-                <Text style={styles.loadingBoxText}>Loading area feed...</Text>
-              </View>
-            ) : filteredCollectorComplaints.length === 0 ? (
-              <View style={styles.emptyCollectorBox}>
-                <Text style={styles.emptyIcon}>🎉</Text>
-                <Text style={styles.emptyCollectorTitle}>No Complaints Pending</Text>
-                <Text style={styles.emptyCollectorDesc}>
-                  {user?.area || 'Ward'} currently has no active waste hotspots.
-                </Text>
-              </View>
-            ) : (
-              filteredCollectorComplaints.map((item) => (
-                <ComplaintCard
-                  key={item.id}
-                  item={item}
-                  updatingId={updatingId}
-                  onUpdateStatus={handleStatusUpdate}
-                />
-              ))
-            )}
-          </View>
-        )}
-      </ScrollView>
-
+    <View style={styles.rootContainer}>
+      {renderContent()}
       <Sidebar
         visible={sidebarVisible}
         onClose={() => setSidebarVisible(false)}
@@ -600,6 +505,13 @@ export default function HomeScreen({ user, onLogout }) {
 }
 
 const styles = StyleSheet.create({
+  rootContainer: {
+    flex: 1,
+    position: 'relative',
+    width: '100%',
+    height: '100%',
+    overflow: 'hidden',
+  },
   container: {
     flex: 1,
     backgroundColor: tokens.colors.surface,
