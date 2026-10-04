@@ -24,14 +24,8 @@ export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar 
   const [selectedAreaName, setSelectedAreaName] = useState('');
   const [areaModalVisible, setAreaModalVisible] = useState(false);
 
-  // Gemini API Key management
-  const [geminiApiKey, setGeminiApiKey] = useState(process.env.EXPO_PUBLIC_GEMINI_API_KEY || '');
-  const [keyModalVisible, setKeyModalVisible] = useState(false);
-  const [tempApiKey, setTempApiKey] = useState(process.env.EXPO_PUBLIC_GEMINI_API_KEY || '');
-
   // Live Photo & Live Geotag States
   const [photoUri, setPhotoUri] = useState(null);
-  const [photoBase64, setPhotoBase64] = useState(null);
   const [photoTimestamp, setPhotoTimestamp] = useState(null);
   const [locationCoords, setLocationCoords] = useState(null);
   const [capturingPhoto, setCapturingPhoto] = useState(false);
@@ -124,7 +118,6 @@ export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar 
       if (!result.canceled && result.assets && result.assets.length > 0) {
         const asset = result.assets[0];
         setPhotoUri(asset.uri);
-        setPhotoBase64(asset.base64 || null);
         setPhotoTimestamp(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
 
         // 3. Immediately trigger Gemini AI Vision Analysis
@@ -149,17 +142,11 @@ export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar 
       const analysis = await analyzeWasteImageWithGemini({
         base64: base64Data,
         imageUri: uri,
-        customApiKey: geminiApiKey,
       });
       setAiResult(analysis);
     } catch (err) {
       console.warn('Gemini AI Analysis warning:', err);
-      // If error was due to missing API key, prompt user
-      if (!geminiApiKey) {
-        setKeyModalVisible(true);
-      } else {
-        setErrorMessage(err.message || 'Gemini Vision AI analysis encountered an error. Please try again.');
-      }
+      setErrorMessage(err.message || 'AI analysis could not complete. Please retry.');
     } finally {
       setAnalyzingAi(false);
     }
@@ -177,7 +164,7 @@ export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar 
     }
 
     if (!aiResult) {
-      setErrorMessage('Please wait for the Gemini AI analysis to complete.');
+      setErrorMessage('Please wait for the AI analysis to complete.');
       return;
     }
 
@@ -244,21 +231,9 @@ export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar 
           <Text style={styles.title}>File Complaint</Text>
         </View>
 
-        <View style={styles.topRight}>
-          <TouchableOpacity
-            style={styles.keyBtn}
-            onPress={() => setKeyModalVisible(true)}
-            activeOpacity={0.7}
-          >
-            <Text style={styles.keyBtnText}>
-              {geminiApiKey ? '✨ Gemini Active' : '🔑 Set Gemini Key'}
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.homeBtn} onPress={onBackToHome} activeOpacity={0.7}>
-            <Text style={styles.homeBtnText}>Home</Text>
-          </TouchableOpacity>
-        </View>
+        <TouchableOpacity style={styles.homeBtn} onPress={onBackToHome} activeOpacity={0.7}>
+          <Text style={styles.homeBtnText}>Home</Text>
+        </TouchableOpacity>
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
@@ -275,8 +250,8 @@ export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar 
             </Text>
             <Text style={styles.successDesc}>
               {successData.isLowConfidence
-                ? `Gemini AI confidence was under 20% (${successData.confidence}%). Your report has been routed to the Municipal Admin for cross-verification before dispatching to ${successData.areaName} collectors.`
-                : `Gemini AI verified (${successData.confidence}% sureness). Dispatched directly to sanitation workers in ${successData.areaName}. You will earn 15 Eco Points once resolved!`}
+                ? `AI confidence was under 20% (${successData.confidence}%). Your report has been routed to the Municipal Admin for cross-verification before dispatching to ${successData.areaName} collectors.`
+                : `AI verified (${successData.confidence}% sureness). Dispatched directly to sanitation workers in ${successData.areaName}. You will earn 15 Eco Points once resolved!`}
             </Text>
             <View style={styles.successBadge}>
               <Text style={styles.successBadgeText}>
@@ -286,9 +261,9 @@ export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar 
           </View>
         ) : (
           <View style={styles.formCard}>
-            <Text style={styles.formHeader}>Live Camera & Gemini AI Analysis</Text>
+            <Text style={styles.formHeader}>Live Camera & AI Waste Analysis</Text>
             <Text style={styles.formSubtitle}>
-              Take a live geotagged photo. Google Gemini AI automatically inspects the image, verifies waste vs. non-waste, calculates contamination, suggests tools for the collector, and predicts clean time.
+              Take a live geotagged photo. The AI automatically inspects the image, verifies waste vs. non-waste, calculates contamination, suggests tools for the collector, and predicts clean time.
             </Text>
 
             {errorMessage ? (
@@ -355,18 +330,18 @@ export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar 
               ) : null}
             </View>
 
-            {/* STEP 2: GEMINI AI VISION ANALYSIS */}
+            {/* STEP 2: AI VISION ANALYSIS */}
             {photoUri && (
               <View style={styles.sectionCard}>
                 <View style={styles.sectionHeaderRow}>
                   <Text style={styles.sectionNumber}>2</Text>
-                  <Text style={styles.sectionTitle}>Gemini AI Waste Analysis</Text>
+                  <Text style={styles.sectionTitle}>AI Waste Analysis</Text>
                 </View>
 
                 {analyzingAi ? (
                   <View style={styles.aiScanningBox}>
                     <ActivityIndicator size="large" color={tokens.colors.accent} />
-                    <Text style={styles.aiScanningTitle}>✨ Gemini Vision AI Analyzing...</Text>
+                    <Text style={styles.aiScanningTitle}>AI Vision Analyzing...</Text>
                     <Text style={styles.aiScanningSubtitle}>
                       Classifying waste type, estimating contamination rating, and predicting cleanup time...
                     </Text>
@@ -391,7 +366,7 @@ export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar 
                               ? '🚫 NON-WASTE DETECTED'
                               : aiResult.confidence < 20
                               ? '⚠️ LOW SURENESS (<20%)'
-                              : '✨ GEMINI VERIFIED WASTE'}
+                              : '✅ AI VERIFIED WASTE'}
                           </Text>
                           <Text style={styles.aiClassificationTitle}>
                             {aiResult.classification}
@@ -429,7 +404,7 @@ export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar 
                             🛡️ Municipal Admin Cross-Verification Required
                           </Text>
                           <Text style={styles.adminReviewNoticeText}>
-                            Gemini AI certainty is below 20%. This complaint will be held for Municipal Admin cross-verification before dispatching to the garbage collector.
+                            AI certainty is below 20%. This complaint will be held for Municipal Admin cross-verification before dispatching to the garbage collector.
                           </Text>
                         </View>
                       )}
@@ -514,7 +489,7 @@ export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar 
               </View>
               <TextInput
                 style={[styles.textArea, focusedInput === 'desc' && styles.inputFocused]}
-                placeholder="Optional: Add nearby landmarks, specific gate numbers, or leave blank to use Gemini AI summary..."
+                placeholder="Optional: Add nearby landmarks, specific gate numbers, or leave blank to use AI summary..."
                 value={description}
                 onChangeText={setDescription}
                 onFocus={() => setFocusedInput('desc')}
@@ -524,7 +499,7 @@ export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar 
                 textAlignVertical="top"
               />
               <Text style={styles.fieldHint}>
-                💡 If left blank, Gemini AI will automatically summarize the waste classification.
+                💡 If left blank, the AI will automatically summarize the waste classification.
               </Text>
             </View>
 
@@ -616,59 +591,6 @@ export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar 
           </View>
         </View>
       </Modal>
-
-      {/* Gemini API Key Modal */}
-      <Modal
-        visible={keyModalVisible}
-        transparent
-        animationType="fade"
-        onRequestClose={() => setKeyModalVisible(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={[styles.modalCard, { maxHeight: '80%' }]}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>✨ Google Gemini API Key</Text>
-              <TouchableOpacity
-                onPress={() => setKeyModalVisible(false)}
-                style={styles.modalCloseBtn}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.modalCloseText}>✕</Text>
-              </TouchableOpacity>
-            </View>
-
-            <Text style={styles.keyModalSubtitle}>
-              Enter your Gemini API key to power live vision analysis. It will be used for image waste classification.
-            </Text>
-
-            <TextInput
-              style={styles.keyInput}
-              placeholder="Paste AIzaSy... key here"
-              value={tempApiKey}
-              onChangeText={setTempApiKey}
-              secureTextEntry
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
-
-            <View style={styles.keyActionsRow}>
-              <TouchableOpacity
-                style={styles.saveKeyBtn}
-                onPress={() => {
-                  setGeminiApiKey(tempApiKey.trim());
-                  setKeyModalVisible(false);
-                  if (photoBase64 && photoUri) {
-                    runGeminiAnalysis(photoBase64, photoUri);
-                  }
-                }}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.saveKeyBtnText}>Save & Apply Key</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
     </View>
   );
 }
@@ -692,11 +614,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
-  topRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
   menuButton: {
     padding: tokens.spacing.xs,
     marginRight: tokens.spacing.sm,
@@ -714,19 +631,6 @@ const styles = StyleSheet.create({
     fontSize: tokens.typography.size.base,
     fontWeight: tokens.typography.weight.bold,
     color: tokens.colors.text,
-  },
-  keyBtn: {
-    backgroundColor: tokens.colors.surface,
-    paddingVertical: 6,
-    paddingHorizontal: 10,
-    borderRadius: tokens.radius.full,
-    borderWidth: 1,
-    borderColor: tokens.colors.border,
-  },
-  keyBtnText: {
-    fontSize: 10,
-    fontWeight: tokens.typography.weight.bold,
-    color: tokens.colors.accent,
   },
   homeBtn: {
     backgroundColor: tokens.colors.surface,
@@ -1282,36 +1186,5 @@ const styles = StyleSheet.create({
     color: tokens.colors.accent,
     fontWeight: tokens.typography.weight.bold,
     fontSize: tokens.typography.size.base,
-  },
-  keyModalSubtitle: {
-    fontSize: tokens.typography.size.xs,
-    color: tokens.colors.muted,
-    lineHeight: 18,
-    marginBottom: tokens.spacing.md,
-  },
-  keyInput: {
-    backgroundColor: tokens.colors.surface,
-    borderWidth: 1,
-    borderColor: tokens.colors.border,
-    borderRadius: tokens.radius.md,
-    paddingHorizontal: tokens.spacing.md,
-    paddingVertical: 10,
-    fontSize: tokens.typography.size.sm,
-    color: tokens.colors.text,
-    marginBottom: tokens.spacing.md,
-  },
-  keyActionsRow: {
-    alignItems: 'flex-end',
-  },
-  saveKeyBtn: {
-    backgroundColor: tokens.colors.accent,
-    paddingVertical: 10,
-    paddingHorizontal: tokens.spacing.lg,
-    borderRadius: tokens.radius.md,
-  },
-  saveKeyBtnText: {
-    color: '#ffffff',
-    fontSize: tokens.typography.size.xs,
-    fontWeight: tokens.typography.weight.bold,
   },
 });
