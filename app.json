@@ -10,6 +10,7 @@
       "supportsTablet": true
     },
     "android": {
+      "package": "com.aryan.shodhini",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -21,7 +22,12 @@
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
-      "expo-sqlite"
-    ]
+      "expo-secure-store"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "b92c10c3-4b3f-4127-b0ee-593bc3d52b6d"
+      }
+    }
   }
 }

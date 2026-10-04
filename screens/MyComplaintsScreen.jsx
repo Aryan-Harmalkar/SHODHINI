@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { getUserComplaints, getUserEcoPoints } from '../db/database';
+import { supabase } from '../lib/supabase';
 
 export default function MyComplaintsScreen({
   user,
@@ -21,19 +22,44 @@ export default function MyComplaintsScreen({
   const [filter, setFilter] = useState('ALL'); // 'ALL' | 'PENDING' | 'COMPLETED'
 
   useEffect(() => {
+    if (!user?.id) return;
+
     loadData();
-  }, [user]);
+
+    // Realtime subscription for citizen's complaints
+    const channelName = `citizen_complaints_${user.id}_${Date.now()}`;
+    const channel = supabase
+      .channel(channelName)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'complaints',
+          filter: `citizen_id=eq.${user.id}`,
+        },
+        (payload) => {
+          console.log('Realtime change received for citizen:', payload.eventType);
+          // Reload latest data and updated eco points from server
+          loadData();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [user?.id]);
 
   const loadData = async () => {
     if (!user?.id) return;
-    setLoading(true);
     try {
       const items = await getUserComplaints(user.id);
       const points = await getUserEcoPoints(user.id);
-      setComplaints(items);
-      setEcoPoints(points);
+      setComplaints(items || []);
+      setEcoPoints(points || 0);
     } catch (e) {
-      console.error('Error loading complaints:', e);
+      console.error('Error loading citizen complaints:', e);
     } finally {
       setLoading(false);
     }
@@ -209,7 +235,7 @@ export default function MyComplaintsScreen({
                 <Text style={styles.complaintDesc}>{item.description}</Text>
 
                 <View style={styles.metaRow}>
-                  <Text style={styles.metaLabel}>📍 Location:</Text>
+                  <Text style={styles.metaLabel}>📍 Area:</Text>
                   <Text style={styles.metaValue}>{item.location}</Text>
                 </View>
 
@@ -233,7 +259,7 @@ export default function MyComplaintsScreen({
                   >
                     {isDone
                       ? `+${item.eco_points || 15} pts Earned 🎉`
-                      : 'Credited when resolved'}
+                      : '15 pts credited when resolved'}
                   </Text>
                 </View>
               </View>
@@ -497,7 +523,7 @@ const styles = StyleSheet.create({
   metaLabel: {
     fontSize: 12,
     color: '#777',
-    width: 80,
+    width: 60,
     fontWeight: '500',
   },
   metaValue: {

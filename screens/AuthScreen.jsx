@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   StyleSheet,
   Text,
@@ -9,8 +9,9 @@ import {
   KeyboardAvoidingView,
   Platform,
   ActivityIndicator,
+  Modal,
 } from 'react-native';
-import { signUpUser, loginUser } from '../db/database';
+import { signUpUser, loginUser, getAreas } from '../db/database';
 
 export default function AuthScreen({ onAuthSuccess }) {
   // Roles: 'citizen' or 'worker'
@@ -22,19 +23,43 @@ export default function AuthScreen({ onAuthSuccess }) {
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
   const [identifier, setIdentifier] = useState('');
-  const [area, setArea] = useState('');
+  const [selectedAreaId, setSelectedAreaId] = useState(null);
+  const [selectedAreaName, setSelectedAreaName] = useState('');
   const [password, setPassword] = useState('');
+
+  // Areas list
+  const [areas, setAreas] = useState([]);
+  const [areaModalVisible, setAreaModalVisible] = useState(false);
 
   const [errorMessage, setErrorMessage] = useState('');
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    async function fetchAreasList() {
+      try {
+        const list = await getAreas();
+        setAreas(list);
+        if (list.length > 0) {
+          setSelectedAreaId(list[0].id);
+          setSelectedAreaName(list[0].name);
+        }
+      } catch (e) {
+        console.warn('Could not load areas:', e);
+      }
+    }
+    fetchAreasList();
+  }, []);
 
   const resetForm = () => {
     setName('');
     setPhone('');
     setIdentifier('');
-    setArea('');
     setPassword('');
     setErrorMessage('');
+    if (areas.length > 0) {
+      setSelectedAreaId(areas[0].id);
+      setSelectedAreaName(areas[0].name);
+    }
   };
 
   const handleRoleChange = (newRole) => {
@@ -79,8 +104,12 @@ export default function AuthScreen({ onAuthSuccess }) {
         setErrorMessage('Please enter your email or username.');
         return;
       }
-      if (role === 'worker' && !area.trim()) {
-        setErrorMessage('Please specify the area where you operate/work.');
+      if (!selectedAreaId) {
+        if (role === 'worker') {
+          setErrorMessage('Please specify the area where you operate/work.');
+        } else {
+          setErrorMessage('Please select your residential area/ward.');
+        }
         return;
       }
       if (!password.trim() || password.length < 4) {
@@ -95,7 +124,7 @@ export default function AuthScreen({ onAuthSuccess }) {
           name: name.trim(),
           phone: phone.trim(),
           identifier: identifier.trim(),
-          area: role === 'worker' ? area.trim() : '',
+          areaId: selectedAreaId,
           password: password.trim(),
         });
         onAuthSuccess(user);
@@ -199,17 +228,21 @@ export default function AuthScreen({ onAuthSuccess }) {
                 />
               </View>
 
-              {role === 'worker' && (
-                <View style={styles.inputGroup}>
-                  <Text style={styles.label}>Operating / Work Area</Text>
-                  <TextInput
-                    style={styles.input}
-                    placeholder="e.g. Ward 12, South Zone"
-                    value={area}
-                    onChangeText={setArea}
-                  />
-                </View>
-              )}
+              {/* Area Picker (Required for both Workers & Citizens) */}
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>
+                  {role === 'worker' ? 'Operating / Work Area' : 'Your Area / Ward'}
+                </Text>
+                <TouchableOpacity
+                  style={styles.areaPickerBtn}
+                  onPress={() => setAreaModalVisible(true)}
+                >
+                  <Text style={styles.areaPickerText}>
+                    📍 {selectedAreaName || 'Select Ward / Area'}
+                  </Text>
+                  <Text style={styles.areaPickerArrow}>▼</Text>
+                </TouchableOpacity>
+              </View>
             </>
           )}
 
@@ -276,6 +309,57 @@ export default function AuthScreen({ onAuthSuccess }) {
           </TouchableOpacity>
         </View>
       </ScrollView>
+
+      {/* Area Selection Modal */}
+      <Modal
+        visible={areaModalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setAreaModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>
+                {role === 'worker' ? 'Select Operating Area' : 'Select Residential Ward'}
+              </Text>
+              <TouchableOpacity
+                onPress={() => setAreaModalVisible(false)}
+                style={styles.modalCloseBtn}
+              >
+                <Text style={styles.modalCloseText}>✕</Text>
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.modalList}>
+              {areas.map((a) => {
+                const isSelected = a.id === selectedAreaId;
+                return (
+                  <TouchableOpacity
+                    key={a.id}
+                    style={[styles.areaOption, isSelected && styles.areaOptionSelected]}
+                    onPress={() => {
+                      setSelectedAreaId(a.id);
+                      setSelectedAreaName(a.name);
+                      setAreaModalVisible(false);
+                    }}
+                  >
+                    <Text
+                      style={[
+                        styles.areaOptionText,
+                        isSelected && styles.areaOptionTextSelected,
+                      ]}
+                    >
+                      📍 {a.name}
+                    </Text>
+                    {isSelected && <Text style={styles.areaCheck}>✓</Text>}
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          </View>
+        </View>
+      </Modal>
     </KeyboardAvoidingView>
   );
 }
@@ -417,6 +501,26 @@ const styles = StyleSheet.create({
     fontSize: 15,
     color: '#222',
   },
+  areaPickerBtn: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#f1f8e9',
+    borderWidth: 1,
+    borderColor: '#c8e6c9',
+    borderRadius: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+  },
+  areaPickerText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: '#2e7d32',
+  },
+  areaPickerArrow: {
+    fontSize: 12,
+    color: '#2e7d32',
+  },
   submitButton: {
     backgroundColor: '#2e7d32',
     borderRadius: 8,
@@ -445,5 +549,71 @@ const styles = StyleSheet.create({
     color: '#2e7d32',
     fontSize: 14,
     fontWeight: '600',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalCard: {
+    backgroundColor: '#ffffff',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    maxHeight: '60%',
+    padding: 20,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+    paddingBottom: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  modalTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#2e7d32',
+  },
+  modalCloseBtn: {
+    padding: 6,
+  },
+  modalCloseText: {
+    fontSize: 18,
+    color: '#666',
+    fontWeight: 'bold',
+  },
+  modalList: {
+    marginBottom: 10,
+  },
+  areaOption: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    marginBottom: 6,
+    backgroundColor: '#fafafa',
+  },
+  areaOptionSelected: {
+    backgroundColor: '#e8f5e9',
+    borderWidth: 1,
+    borderColor: '#c8e6c9',
+  },
+  areaOptionText: {
+    fontSize: 15,
+    color: '#333',
+    fontWeight: '500',
+  },
+  areaOptionTextSelected: {
+    color: '#2e7d32',
+    fontWeight: '700',
+  },
+  areaCheck: {
+    color: '#2e7d32',
+    fontWeight: 'bold',
+    fontSize: 16,
   },
 });

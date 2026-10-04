@@ -5,13 +5,20 @@ import {
   View,
   TouchableOpacity,
   ScrollView,
+  ActivityIndicator,
+  Alert,
 } from 'react-native';
 import Sidebar from '../components/Sidebar';
 import FileComplaintScreen from './FileComplaintScreen';
 import MyComplaintsScreen from './MyComplaintsScreen';
 import WastePickupScreen from './WastePickupScreen';
 import RecycleScreen from './RecycleScreen';
-import { getUserEcoPoints } from '../db/database';
+import {
+  getUserEcoPoints,
+  getAreaComplaints,
+  updateComplaintStatus,
+} from '../db/database';
+import { supabase } from '../lib/supabase';
 
 export default function HomeScreen({ user, onLogout }) {
   // 'home' | 'complaint' | 'my_complaints' | 'waste_pickup' | 'recycle'
@@ -19,13 +26,75 @@ export default function HomeScreen({ user, onLogout }) {
   const [sidebarVisible, setSidebarVisible] = useState(false);
   const [ecoPoints, setEcoPoints] = useState(0);
 
+  // Collector Live Feed State
+  const [collectorComplaints, setCollectorComplaints] = useState([]);
+  const [collectorLoading, setCollectorLoading] = useState(true);
+  const [updatingId, setUpdatingId] = useState(null);
+  const [collectorFilter, setCollectorFilter] = useState('ALL'); // 'ALL' | 'ACTIVE' | 'COMPLETED'
+
   const isCollector = user?.role === 'worker';
 
   useEffect(() => {
     if (user?.id && !isCollector) {
       loadEcoPoints();
     }
-  }, [user, currentScreen]);
+  }, [user, currentScreen, isCollector]);
+
+  // Collector: Load complaints & Subscribe to Realtime INSERT & UPDATE
+  useEffect(() => {
+    if (!isCollector || !user?.area_id) return;
+
+    loadCollectorData();
+
+    // Realtime channel for collector's area
+    const channelName = `collector_feed_area_${user.area_id}_${Date.now()}`;
+    const channel = supabase
+      .channel(channelName)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'complaints',
+          filter: `area_id=eq.${user.area_id}`,
+        },
+        async (payload) => {
+          console.log('Realtime INSERT for collector area:', payload.new.id);
+          // Reload to get populated citizen profile & location details
+          loadCollectorData();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'complaints',
+          filter: `area_id=eq.${user.area_id}`,
+        },
+        (payload) => {
+          console.log('Realtime UPDATE for complaint:', payload.new.id);
+          setCollectorComplaints((prev) =>
+            prev.map((c) =>
+              c.id === payload.new.id
+                ? {
+                    ...c,
+                    ...payload.new,
+                    location: c.location,
+                    citizenName: c.citizenName,
+                    citizenPhone: c.citizenPhone,
+                  }
+                : c
+            )
+          );
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [isCollector, user?.area_id]);
 
   const loadEcoPoints = async () => {
     try {
@@ -36,12 +105,49 @@ export default function HomeScreen({ user, onLogout }) {
     }
   };
 
+  const loadCollectorData = async () => {
+    if (!user?.area_id) return;
+    try {
+      const list = await getAreaComplaints(user.area_id);
+      setCollectorComplaints(list || []);
+    } catch (e) {
+      console.error('Error fetching collector complaints:', e);
+    } finally {
+      setCollectorLoading(false);
+    }
+  };
+
+  const handleStatusUpdate = async (complaintId, newStatus) => {
+    setUpdatingId(complaintId);
+    try {
+      await updateComplaintStatus({
+        complaintId,
+        status: newStatus,
+        workerId: user.id,
+      });
+
+      // Update state locally immediately
+      setCollectorComplaints((prev) =>
+        prev.map((c) =>
+          c.id === complaintId
+            ? { ...c, status: newStatus, assigned_worker_id: user.id }
+            : c
+        )
+      );
+    } catch (err) {
+      Alert.alert('Status Update Failed', err.message || 'Could not update complaint status.');
+    } finally {
+      setUpdatingId(null);
+    }
+  };
+
   // Screen Switcher for Citizen/User
   if (!isCollector) {
     if (currentScreen === 'complaint') {
       return (
         <>
           <FileComplaintScreen
+            user={user}
             onBackToHome={() => setCurrentScreen('home')}
             onOpenSidebar={() => setSidebarVisible(true)}
           />
@@ -123,9 +229,19 @@ export default function HomeScreen({ user, onLogout }) {
     }
   }
 
+  // Filtered collector complaints
+  const filteredCollectorComplaints = collectorComplaints.filter((c) => {
+    if (collectorFilter === 'ACTIVE') return c.status !== 'Completed';
+    if (collectorFilter === 'COMPLETED') return c.status === 'Completed';
+    return true;
+  });
+
+  const activeCount = collectorComplaints.filter((c) => c.status !== 'Completed').length;
+  const completedCount = collectorComplaints.filter((c) => c.status === 'Completed').length;
+
   return (
     <View style={styles.container}>
-      {/* Top Navigation Bar: Logout only in sidebar bottom for user */}
+      {/* Top Navigation Bar */}
       <View style={styles.topBar}>
         <View style={styles.topLeft}>
           {!isCollector && (
@@ -139,7 +255,7 @@ export default function HomeScreen({ user, onLogout }) {
           <Text style={styles.appName}>SHODHINI</Text>
         </View>
 
-        {/* Collector logout retained only for worker role */}
+        {/* Collector logout retained for worker role */}
         {isCollector && (
           <TouchableOpacity style={styles.logoutBtn} onPress={onLogout}>
             <Text style={styles.logoutBtnText}>Log Out</Text>
@@ -166,6 +282,13 @@ export default function HomeScreen({ user, onLogout }) {
                 {isCollector ? 'Garbage Collector' : 'Citizen / User'}
               </Text>
             </View>
+
+            {isCollector && (
+              <View style={styles.liveIndicator}>
+                <View style={styles.liveDot} />
+                <Text style={styles.liveText}>Live Feed</Text>
+              </View>
+            )}
           </View>
 
           <Text style={styles.welcomeText}>Welcome, {user?.name || 'User'}!</Text>
@@ -177,18 +300,20 @@ export default function HomeScreen({ user, onLogout }) {
 
           <View style={styles.infoRow}>
             <Text style={styles.infoLabel}>Username/Email:</Text>
-            <Text style={styles.infoValue}>{user?.identifier || 'N/A'}</Text>
+            <Text style={styles.infoValue}>{user?.identifier || user?.email || 'N/A'}</Text>
           </View>
 
-          {isCollector && user?.area ? (
+          {user?.area ? (
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>Operating Area:</Text>
-              <Text style={styles.infoValue}>{user.area}</Text>
+              <Text style={styles.infoLabel}>
+                {isCollector ? 'Assigned Area:' : 'Home Area:'}
+              </Text>
+              <Text style={styles.infoValue}>📍 {user.area}</Text>
             </View>
           ) : null}
         </View>
 
-        {/* Citizen-Only Sections */}
+        {/* ================= CITIZEN-ONLY SECTIONS ================= */}
         {!isCollector && (
           <>
             {/* Eco Points Section */}
@@ -205,7 +330,7 @@ export default function HomeScreen({ user, onLogout }) {
                 </View>
               </View>
               <Text style={styles.ecoSubtitle}>
-                Earn points by reporting waste, recycling scrap & e-waste, and keeping your community clean.
+                Earn 15 points each time a reported complaint is completed by local sanitation teams!
               </Text>
             </View>
 
@@ -254,7 +379,6 @@ export default function HomeScreen({ user, onLogout }) {
 
             {/* Citizen Services Highlights */}
             <View style={styles.servicesGrid}>
-              {/* Paid Doorstep Waste Pickup */}
               <TouchableOpacity
                 style={styles.serviceTile}
                 onPress={() => setCurrentScreen('waste_pickup')}
@@ -271,7 +395,6 @@ export default function HomeScreen({ user, onLogout }) {
                 </Text>
               </TouchableOpacity>
 
-              {/* Recycle & Scrap */}
               <TouchableOpacity
                 style={styles.serviceTile}
                 onPress={() => setCurrentScreen('recycle')}
@@ -289,56 +412,236 @@ export default function HomeScreen({ user, onLogout }) {
               </TouchableOpacity>
             </View>
 
-            {/* More Info About SHODHINI */}
+            {/* About SHODHINI */}
             <View style={styles.aboutCard}>
               <Text style={styles.aboutHeader}>About SHODHINI</Text>
               <Text style={styles.aboutIntro}>
-                SHODHINI is a community-driven smart waste management platform designed to connect active citizens with local sanitation workers and municipal teams for cleaner, greener cities.
+                SHODHINI connects citizens with municipal workers for clean, responsive waste management.
               </Text>
-
-              <View style={styles.featureItem}>
-                <Text style={styles.featureIcon}>📸</Text>
-                <View style={styles.featureTextWrapper}>
-                  <Text style={styles.featureTitle}>Prompt Waste Reporting</Text>
-                  <Text style={styles.featureDesc}>
-                    Citizens can quickly pinpoint and report waste hotspots with descriptions and location data.
-                  </Text>
-                </View>
-              </View>
-
-              <View style={styles.featureItem}>
-                <Text style={styles.featureIcon}>🚚</Text>
-                <View style={styles.featureTextWrapper}>
-                  <Text style={styles.featureTitle}>Doorstep Waste Services</Text>
-                  <Text style={styles.featureDesc}>
-                    Paid doorstep collection for households without nearby public bins or needing bulk waste removal.
-                  </Text>
-                </View>
-              </View>
-
-              <View style={styles.featureItem}>
-                <Text style={styles.featureIcon}>♻️</Text>
-                <View style={styles.featureTextWrapper}>
-                  <Text style={styles.featureTitle}>Circular Recycling & Scrap</Text>
-                  <Text style={styles.featureDesc}>
-                    Specialized recycling for hazardous electronic waste, metals, plastics, and paper.
-                  </Text>
-                </View>
-              </View>
             </View>
           </>
         )}
 
-        {/* Garbage Collector Dashboard */}
+        {/* ================= GARBAGE COLLECTOR LIVE FEED ================= */}
         {isCollector && (
-          <View style={styles.actionCard}>
-            <Text style={styles.sectionHeader}>Worker Dashboard</Text>
-            <Text style={styles.sectionDesc}>
-              Assigned collection tasks and route updates for your operating zone ({user?.area || 'Assigned Zone'}) will appear here.
-            </Text>
-            <View style={styles.comingSoonBox}>
-              <Text style={styles.comingSoonText}>Task management module arriving in Step 6</Text>
+          <View style={styles.collectorFeedContainer}>
+            <View style={styles.feedHeaderRow}>
+              <View>
+                <Text style={styles.sectionHeader}>Complaints in Your Area</Text>
+                <Text style={styles.feedSubtext}>
+                  Live updates for {user?.area || `Ward ${user?.area_id || ''}`}
+                </Text>
+              </View>
+
+              <TouchableOpacity
+                style={styles.refreshBtn}
+                onPress={loadCollectorData}
+              >
+                <Text style={styles.refreshBtnText}>🔄 Refresh</Text>
+              </TouchableOpacity>
             </View>
+
+            {/* Filter Pills for Collector */}
+            <View style={styles.collectorFilterRow}>
+              <TouchableOpacity
+                style={[
+                  styles.collectorPill,
+                  collectorFilter === 'ALL' && styles.collectorPillActive,
+                ]}
+                onPress={() => setCollectorFilter('ALL')}
+              >
+                <Text
+                  style={[
+                    styles.collectorPillText,
+                    collectorFilter === 'ALL' && styles.collectorPillTextActive,
+                  ]}
+                >
+                  All ({collectorComplaints.length})
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.collectorPill,
+                  collectorFilter === 'ACTIVE' && styles.collectorPillActive,
+                ]}
+                onPress={() => setCollectorFilter('ACTIVE')}
+              >
+                <Text
+                  style={[
+                    styles.collectorPillText,
+                    collectorFilter === 'ACTIVE' && styles.collectorPillTextActive,
+                  ]}
+                >
+                  Active ({activeCount})
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[
+                  styles.collectorPill,
+                  collectorFilter === 'COMPLETED' && styles.collectorPillActive,
+                ]}
+                onPress={() => setCollectorFilter('COMPLETED')}
+              >
+                <Text
+                  style={[
+                    styles.collectorPillText,
+                    collectorFilter === 'COMPLETED' && styles.collectorPillTextActive,
+                  ]}
+                >
+                  Completed ({completedCount})
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Complaints List */}
+            {collectorLoading ? (
+              <View style={styles.loadingBox}>
+                <ActivityIndicator size="large" color="#2e7d32" />
+                <Text style={styles.loadingBoxText}>Loading area complaints feed...</Text>
+              </View>
+            ) : filteredCollectorComplaints.length === 0 ? (
+              <View style={styles.emptyCollectorBox}>
+                <Text style={styles.emptyIcon}>🎉</Text>
+                <Text style={styles.emptyCollectorTitle}>No Complaints Pending!</Text>
+                <Text style={styles.emptyCollectorDesc}>
+                  Your assigned area ({user?.area || 'Ward'}) has no complaints matching this filter.
+                  New reports from citizens will appear here live.
+                </Text>
+              </View>
+            ) : (
+              filteredCollectorComplaints.map((item) => {
+                const isCompleted = item.status === 'Completed';
+                const isInProgress = item.status === 'In Progress';
+                const isAssigned = item.status === 'Assigned';
+                const isUpdating = updatingId === item.id;
+
+                return (
+                  <View key={item.id} style={styles.collectorCard}>
+                    <View style={styles.collectorCardHeader}>
+                      <View style={{ flex: 1 }}>
+                        <Text style={styles.cardCategory}>{item.category || 'General Waste'}</Text>
+                        <Text style={styles.cardDate}>
+                          {item.created_at
+                            ? new Date(item.created_at).toLocaleString()
+                            : 'Just now'}
+                        </Text>
+                      </View>
+
+                      <View
+                        style={[
+                          styles.statusBadge,
+                          isCompleted
+                            ? styles.statusBadgeCompleted
+                            : isInProgress
+                            ? styles.statusBadgeProgress
+                            : styles.statusBadgeSubmitted,
+                        ]}
+                      >
+                        <Text
+                          style={[
+                            styles.statusBadgeText,
+                            isCompleted
+                              ? styles.statusTextCompleted
+                              : isInProgress
+                              ? styles.statusTextProgress
+                              : styles.statusTextSubmitted,
+                          ]}
+                        >
+                          {item.status || 'Submitted'}
+                        </Text>
+                      </View>
+                    </View>
+
+                    <Text style={styles.cardDescription}>{item.description}</Text>
+
+                    <View style={styles.cardMetaRow}>
+                      <Text style={styles.metaKey}>📍 Location:</Text>
+                      <Text style={styles.metaVal}>{item.location}</Text>
+                    </View>
+
+                    <View style={styles.cardMetaRow}>
+                      <Text style={styles.metaKey}>👤 Citizen:</Text>
+                      <Text style={styles.metaVal}>
+                        {item.citizenName} {item.citizenPhone ? `(${item.citizenPhone})` : ''}
+                      </Text>
+                    </View>
+
+                    {/* Status Action Buttons */}
+                    <View style={styles.actionButtonsDivider} />
+                    <Text style={styles.actionSectionLabel}>Update Status:</Text>
+
+                    <View style={styles.actionButtonGroup}>
+                      {/* 1. Assign to me */}
+                      <TouchableOpacity
+                        style={[
+                          styles.actionPill,
+                          isAssigned && styles.actionPillActive,
+                        ]}
+                        disabled={isUpdating || isAssigned || isCompleted}
+                        onPress={() => handleStatusUpdate(item.id, 'Assigned')}
+                      >
+                        <Text
+                          style={[
+                            styles.actionPillLabel,
+                            isAssigned && styles.actionPillLabelActive,
+                          ]}
+                        >
+                          📌 Assigned
+                        </Text>
+                      </TouchableOpacity>
+
+                      {/* 2. In Progress */}
+                      <TouchableOpacity
+                        style={[
+                          styles.actionPill,
+                          isInProgress && styles.actionPillActive,
+                        ]}
+                        disabled={isUpdating || isInProgress || isCompleted}
+                        onPress={() => handleStatusUpdate(item.id, 'In Progress')}
+                      >
+                        <Text
+                          style={[
+                            styles.actionPillLabel,
+                            isInProgress && styles.actionPillLabelActive,
+                          ]}
+                        >
+                          ⏳ In Progress
+                        </Text>
+                      </TouchableOpacity>
+
+                      {/* 3. Completed */}
+                      <TouchableOpacity
+                        style={[
+                          styles.actionPill,
+                          styles.actionPillCompleted,
+                          isCompleted && styles.actionPillCompletedActive,
+                        ]}
+                        disabled={isUpdating || isCompleted}
+                        onPress={() => handleStatusUpdate(item.id, 'Completed')}
+                      >
+                        <Text
+                          style={[
+                            styles.actionPillLabel,
+                            isCompleted && styles.actionPillLabelActive,
+                          ]}
+                        >
+                          {isCompleted ? '✓ Completed' : '✅ Mark Done'}
+                        </Text>
+                      </TouchableOpacity>
+                    </View>
+
+                    {isUpdating && (
+                      <View style={styles.updatingOverlay}>
+                        <ActivityIndicator size="small" color="#2e7d32" />
+                        <Text style={styles.updatingText}>Updating...</Text>
+                      </View>
+                    )}
+                  </View>
+                );
+              })
+            )}
           </View>
         )}
       </ScrollView>
@@ -422,6 +725,8 @@ const styles = StyleSheet.create({
   },
   badgeRow: {
     flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: 8,
   },
   roleBadge: {
@@ -437,6 +742,26 @@ const styles = StyleSheet.create({
   },
   roleBadgeText: {
     fontSize: 12,
+    fontWeight: '700',
+    color: '#2e7d32',
+  },
+  liveIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#e8f5e9',
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 12,
+  },
+  liveDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#2e7d32',
+    marginRight: 6,
+  },
+  liveText: {
+    fontSize: 11,
     fontWeight: '700',
     color: '#2e7d32',
   },
@@ -687,41 +1012,220 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#555',
     lineHeight: 20,
-    marginBottom: 16,
   },
-  featureItem: {
+  // Collector Live Feed Styles
+  collectorFeedContainer: {
+    marginTop: 4,
+  },
+  feedHeaderRow: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  feedSubtext: {
+    fontSize: 13,
+    color: '#666',
+  },
+  refreshBtn: {
+    backgroundColor: '#e8f5e9',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+  },
+  refreshBtnText: {
+    fontSize: 12,
+    color: '#2e7d32',
+    fontWeight: '700',
+  },
+  collectorFilterRow: {
+    flexDirection: 'row',
+    gap: 8,
     marginBottom: 14,
   },
-  featureIcon: {
-    fontSize: 22,
-    marginRight: 12,
-    marginTop: 2,
+  collectorPill: {
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 16,
+    backgroundColor: '#e0e0e0',
   },
-  featureTextWrapper: {
-    flex: 1,
+  collectorPillActive: {
+    backgroundColor: '#2e7d32',
   },
-  featureTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#222',
-    marginBottom: 2,
-  },
-  featureDesc: {
+  collectorPillText: {
     fontSize: 12,
-    color: '#666',
-    lineHeight: 17,
+    fontWeight: '600',
+    color: '#555',
   },
-  comingSoonBox: {
-    backgroundColor: '#fff3e0',
-    padding: 12,
-    borderRadius: 8,
+  collectorPillTextActive: {
+    color: '#ffffff',
+  },
+  loadingBox: {
+    padding: 30,
     alignItems: 'center',
   },
-  comingSoonText: {
-    color: '#e65100',
+  loadingBoxText: {
+    marginTop: 10,
     fontSize: 13,
+    color: '#666',
+  },
+  emptyCollectorBox: {
+    backgroundColor: '#ffffff',
+    borderRadius: 14,
+    padding: 28,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  emptyIcon: {
+    fontSize: 36,
+    marginBottom: 8,
+  },
+  emptyCollectorTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#2e7d32',
+    marginBottom: 6,
+  },
+  emptyCollectorDesc: {
+    fontSize: 13,
+    color: '#666',
+    textAlign: 'center',
+    lineHeight: 18,
+  },
+  collectorCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 14,
+    padding: 16,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 5,
+    elevation: 3,
+  },
+  collectorCardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 8,
+  },
+  cardCategory: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#222',
+  },
+  cardDate: {
+    fontSize: 11,
+    color: '#888',
+    marginTop: 2,
+  },
+  statusBadge: {
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 8,
+  },
+  statusBadgeSubmitted: {
+    backgroundColor: '#e3f2fd',
+  },
+  statusBadgeProgress: {
+    backgroundColor: '#fff3e0',
+  },
+  statusBadgeCompleted: {
+    backgroundColor: '#e8f5e9',
+  },
+  statusBadgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  statusTextSubmitted: {
+    color: '#1565c0',
+  },
+  statusTextProgress: {
+    color: '#e65100',
+  },
+  statusTextCompleted: {
+    color: '#2e7d32',
+  },
+  cardDescription: {
+    fontSize: 14,
+    color: '#444',
+    marginBottom: 10,
+    lineHeight: 19,
+  },
+  cardMetaRow: {
+    flexDirection: 'row',
+    marginBottom: 4,
+  },
+  metaKey: {
+    fontSize: 12,
+    color: '#777',
+    width: 65,
+    fontWeight: '500',
+  },
+  metaVal: {
+    fontSize: 12,
+    color: '#222',
+    fontWeight: '600',
+    flex: 1,
+  },
+  actionButtonsDivider: {
+    height: 1,
+    backgroundColor: '#f0f0f0',
+    marginVertical: 10,
+  },
+  actionSectionLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#666',
+    marginBottom: 8,
+  },
+  actionButtonGroup: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  actionPill: {
+    flex: 1,
+    paddingVertical: 8,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    backgroundColor: '#fafafa',
+    alignItems: 'center',
+  },
+  actionPillActive: {
+    backgroundColor: '#e3f2fd',
+    borderColor: '#2196f3',
+  },
+  actionPillCompleted: {
+    backgroundColor: '#f1f8e9',
+    borderColor: '#c8e6c9',
+  },
+  actionPillCompletedActive: {
+    backgroundColor: '#2e7d32',
+    borderColor: '#2e7d32',
+  },
+  actionPillLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#555',
+  },
+  actionPillLabelActive: {
+    color: '#ffffff',
+  },
+  updatingOverlay: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 8,
+    gap: 6,
+  },
+  updatingText: {
+    fontSize: 12,
+    color: '#2e7d32',
     fontWeight: '600',
   },
 });
