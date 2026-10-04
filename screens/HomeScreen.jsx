@@ -13,6 +13,8 @@ import FileComplaintScreen from './FileComplaintScreen';
 import MyComplaintsScreen from './MyComplaintsScreen';
 import WastePickupScreen from './WastePickupScreen';
 import RecycleScreen from './RecycleScreen';
+import ScoreboardScreen from './ScoreboardScreen';
+import RewardsScreen from './RewardsScreen';
 import ComplaintCard from '../components/ComplaintCard';
 import {
   getUserEcoPoints,
@@ -26,6 +28,25 @@ export default function HomeScreen({ user, onLogout }) {
   const [currentScreen, setCurrentScreen] = useState('home');
   const [sidebarVisible, setSidebarVisible] = useState(false);
   const [ecoPoints, setEcoPoints] = useState(0);
+  const [rewardsTab, setRewardsTab] = useState('redeem');
+
+  const handleNavigate = (screen) => {
+    if (screen === 'rewards_redeem') {
+      setRewardsTab('redeem');
+      setCurrentScreen('rewards');
+    } else if (screen === 'rewards_coupons') {
+      setRewardsTab('coupons');
+      setCurrentScreen('rewards');
+    } else if (screen === 'rewards_history') {
+      setRewardsTab('history');
+      setCurrentScreen('rewards');
+    } else if (screen === 'rewards') {
+      setRewardsTab('redeem');
+      setCurrentScreen('rewards');
+    } else {
+      setCurrentScreen(screen);
+    }
+  };
 
   const [collectorComplaints, setCollectorComplaints] = useState([]);
   const [collectorLoading, setCollectorLoading] = useState(true);
@@ -150,7 +171,7 @@ export default function HomeScreen({ user, onLogout }) {
             visible={sidebarVisible}
             onClose={() => setSidebarVisible(false)}
             currentScreen={currentScreen}
-            onNavigate={(screen) => setCurrentScreen(screen)}
+            onNavigate={handleNavigate}
             user={user}
             ecoPoints={ecoPoints}
             onLogout={onLogout}
@@ -172,7 +193,7 @@ export default function HomeScreen({ user, onLogout }) {
             visible={sidebarVisible}
             onClose={() => setSidebarVisible(false)}
             currentScreen={currentScreen}
-            onNavigate={(screen) => setCurrentScreen(screen)}
+            onNavigate={handleNavigate}
             user={user}
             ecoPoints={ecoPoints}
             onLogout={onLogout}
@@ -193,7 +214,7 @@ export default function HomeScreen({ user, onLogout }) {
             visible={sidebarVisible}
             onClose={() => setSidebarVisible(false)}
             currentScreen={currentScreen}
-            onNavigate={(screen) => setCurrentScreen(screen)}
+            onNavigate={handleNavigate}
             user={user}
             ecoPoints={ecoPoints}
             onLogout={onLogout}
@@ -214,7 +235,53 @@ export default function HomeScreen({ user, onLogout }) {
             visible={sidebarVisible}
             onClose={() => setSidebarVisible(false)}
             currentScreen={currentScreen}
-            onNavigate={(screen) => setCurrentScreen(screen)}
+            onNavigate={handleNavigate}
+            user={user}
+            ecoPoints={ecoPoints}
+            onLogout={onLogout}
+          />
+        </>
+      );
+    }
+
+    if (currentScreen === 'scoreboard') {
+      return (
+        <>
+          <ScoreboardScreen
+            user={user}
+            ecoPoints={ecoPoints}
+            onBackToHome={() => setCurrentScreen('home')}
+            onOpenSidebar={() => setSidebarVisible(true)}
+          />
+          <Sidebar
+            visible={sidebarVisible}
+            onClose={() => setSidebarVisible(false)}
+            currentScreen={currentScreen}
+            onNavigate={handleNavigate}
+            user={user}
+            ecoPoints={ecoPoints}
+            onLogout={onLogout}
+          />
+        </>
+      );
+    }
+
+    if (currentScreen === 'rewards') {
+      return (
+        <>
+          <RewardsScreen
+            user={user}
+            ecoPoints={ecoPoints}
+            initialTab={rewardsTab}
+            onBackToHome={() => setCurrentScreen('home')}
+            onOpenSidebar={() => setSidebarVisible(true)}
+            onNavigatePickup={() => setCurrentScreen('waste_pickup')}
+          />
+          <Sidebar
+            visible={sidebarVisible}
+            onClose={() => setSidebarVisible(false)}
+            currentScreen={currentScreen}
+            onNavigate={handleNavigate}
             user={user}
             ecoPoints={ecoPoints}
             onLogout={onLogout}
@@ -293,7 +360,11 @@ export default function HomeScreen({ user, onLogout }) {
 
         {!isCollector && (
           <>
-            <View style={styles.ecoPointsCard}>
+            <TouchableOpacity
+              style={styles.ecoPointsCard}
+              onPress={() => handleNavigate('rewards')}
+              activeOpacity={0.8}
+            >
               <View style={styles.ecoHeaderRow}>
                 <View>
                   <Text style={styles.ecoTitle}>🌱 Your Eco Points</Text>
@@ -306,9 +377,9 @@ export default function HomeScreen({ user, onLogout }) {
                 </View>
               </View>
               <Text style={styles.ecoSubtitle}>
-                Earn 15 points each time a reported complaint is completed by local sanitation teams!
+                Earn 15 points each time a reported complaint is completed! Tap to view Rewards & Redeem Points →
               </Text>
-            </View>
+            </TouchableOpacity>
 
             <View style={styles.sidebarPromptCard}>
               <View style={styles.promptHeader}>
@@ -352,16 +423,17 @@ export default function HomeScreen({ user, onLogout }) {
               </TouchableOpacity>
             </View>
 
+            {/* Row 1: Waste Pickup & Recycle */}
             <View style={styles.servicesGrid}>
               <TouchableOpacity
                 style={styles.serviceTile}
-                onPress={() => setCurrentScreen('waste_pickup')}
+                onPress={() => handleNavigate('waste_pickup')}
                 activeOpacity={0.7}
               >
                 <View style={styles.serviceTileHeader}>
                   <Text style={styles.serviceTileIcon}>🚚</Text>
                   <View style={styles.paidMiniBadge}>
-                    <Text style={styles.paidMiniBadgeText}>PAID</Text>
+                    <Text style={styles.paidMiniBadgeText}>DOORSTEP</Text>
                   </View>
                 </View>
                 <Text style={styles.serviceTileTitle}>Waste Pickup</Text>
@@ -370,7 +442,7 @@ export default function HomeScreen({ user, onLogout }) {
 
               <TouchableOpacity
                 style={styles.serviceTile}
-                onPress={() => setCurrentScreen('recycle')}
+                onPress={() => handleNavigate('recycle')}
                 activeOpacity={0.7}
               >
                 <View style={styles.serviceTileHeader}>
@@ -381,6 +453,39 @@ export default function HomeScreen({ user, onLogout }) {
                 </View>
                 <Text style={styles.serviceTileTitle}>Recycle Scrap</Text>
                 <Text style={styles.serviceTileDesc}>Dispose of e-waste, metal, paper and earn bonus Eco Points.</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* Row 2: Scoreboard & Rewards Hub */}
+            <View style={[styles.servicesGrid, { marginTop: tokens.spacing.md }]}>
+              <TouchableOpacity
+                style={styles.serviceTile}
+                onPress={() => handleNavigate('scoreboard')}
+                activeOpacity={0.7}
+              >
+                <View style={styles.serviceTileHeader}>
+                  <Text style={styles.serviceTileIcon}>🏆</Text>
+                  <View style={[styles.paidMiniBadge, { backgroundColor: '#fef3c7', borderColor: '#fde68a' }]}>
+                    <Text style={[styles.paidMiniBadgeText, { color: '#d97706' }]}>RANKS</Text>
+                  </View>
+                </View>
+                <Text style={styles.serviceTileTitle}>Scoreboard</Text>
+                <Text style={styles.serviceTileDesc}>Ward standings & Community Champions leaderboard.</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.serviceTile}
+                onPress={() => handleNavigate('rewards')}
+                activeOpacity={0.7}
+              >
+                <View style={styles.serviceTileHeader}>
+                  <Text style={styles.serviceTileIcon}>🎁</Text>
+                  <View style={styles.ecoMiniBadge}>
+                    <Text style={styles.ecoMiniBadgeText}>REDEEM</Text>
+                  </View>
+                </View>
+                <Text style={styles.serviceTileTitle}>Rewards Hub</Text>
+                <Text style={styles.serviceTileDesc}>Redeem points, active coupons & points earned history.</Text>
               </TouchableOpacity>
             </View>
           </>
@@ -460,7 +565,7 @@ export default function HomeScreen({ user, onLogout }) {
           visible={sidebarVisible}
           onClose={() => setSidebarVisible(false)}
           currentScreen={currentScreen}
-          onNavigate={(screen) => setCurrentScreen(screen)}
+          onNavigate={handleNavigate}
           user={user}
           ecoPoints={ecoPoints}
           onLogout={onLogout}

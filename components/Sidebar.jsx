@@ -15,7 +15,7 @@ export default function Sidebar({
   currentScreen,
   onNavigate,
   user,
-  ecoPoints,
+  ecoPoints = 0,
   onLogout,
 }) {
   return (
@@ -24,6 +24,7 @@ export default function Sidebar({
         <TouchableOpacity style={styles.backdrop} activeOpacity={1} onPress={onClose} />
         
         <View style={styles.drawer}>
+          {/* Drawer Header */}
           <View style={styles.drawerHeader}>
             <View>
               <Text style={styles.appTitle}>SHODHINI</Text>
@@ -34,12 +35,24 @@ export default function Sidebar({
             </TouchableOpacity>
           </View>
 
-          <View style={styles.ecoPointsBox}>
-            <Text style={styles.ecoPointsLabel}>🌱 Eco Points</Text>
-            <Text style={styles.ecoPointsVal}>{ecoPoints} pts</Text>
-          </View>
+          {/* Eco Points Highlight in Sidebar */}
+          <TouchableOpacity
+            style={styles.ecoPointsBox}
+            activeOpacity={0.8}
+            onPress={() => {
+              onNavigate('rewards');
+              onClose();
+            }}
+          >
+            <View>
+              <Text style={styles.ecoPointsLabel}>🌱 Eco Points</Text>
+              <Text style={styles.ecoPointsSub}>Tap to redeem rewards</Text>
+            </View>
+            <Text style={styles.ecoPointsVal}>{ecoPoints} pts →</Text>
+          </TouchableOpacity>
 
           <ScrollView style={styles.menuList} showsVerticalScrollIndicator={false}>
+            {/* 1. Home */}
             <TouchableOpacity
               style={[styles.menuItem, currentScreen === 'home' && styles.activeMenuItem]}
               onPress={() => { onNavigate('home'); onClose(); }}
@@ -49,24 +62,37 @@ export default function Sidebar({
               <Text style={[styles.menuText, currentScreen === 'home' && styles.activeMenuText]}>Home</Text>
             </TouchableOpacity>
 
+            {/* 2. File a Complaint */}
             <TouchableOpacity
               style={[styles.menuItem, currentScreen === 'complaint' && styles.activeMenuItem]}
               onPress={() => { onNavigate('complaint'); onClose(); }}
               activeOpacity={0.7}
             >
               <Text style={styles.menuIcon}>📝</Text>
-              <Text style={[styles.menuText, currentScreen === 'complaint' && styles.activeMenuText]}>File a Complaint</Text>
+              <View style={styles.menuItemCol}>
+                <Text style={[styles.menuText, currentScreen === 'complaint' && styles.activeMenuText]}>
+                  File a Complaint
+                </Text>
+                <Text style={styles.menuItemSub}>Report waste hotspots in your ward</Text>
+              </View>
             </TouchableOpacity>
 
+            {/* 3. Complaints & Details (Track Status) */}
             <TouchableOpacity
               style={[styles.menuItem, currentScreen === 'my_complaints' && styles.activeMenuItem]}
               onPress={() => { onNavigate('my_complaints'); onClose(); }}
               activeOpacity={0.7}
             >
               <Text style={styles.menuIcon}>📋</Text>
-              <Text style={[styles.menuText, currentScreen === 'my_complaints' && styles.activeMenuText]}>Complaints & Details</Text>
+              <View style={styles.menuItemCol}>
+                <Text style={[styles.menuText, currentScreen === 'my_complaints' && styles.activeMenuText]}>
+                  My Complaints & Status
+                </Text>
+                <Text style={styles.menuItemSub}>Live tracking & points earned</Text>
+              </View>
             </TouchableOpacity>
 
+            {/* 4. Request Garbage Collector (Doorstep Pickup) */}
             <TouchableOpacity
               style={[styles.menuItem, currentScreen === 'waste_pickup' && styles.activeMenuItem]}
               onPress={() => { onNavigate('waste_pickup'); onClose(); }}
@@ -75,15 +101,91 @@ export default function Sidebar({
               <Text style={styles.menuIcon}>🚚</Text>
               <View style={styles.menuItemCol}>
                 <View style={styles.menuItemRow}>
-                  <Text style={[styles.menuText, currentScreen === 'waste_pickup' && styles.activeMenuText]}>Request Waste Pickup</Text>
+                  <Text style={[styles.menuText, currentScreen === 'waste_pickup' && styles.activeMenuText]}>
+                    Request Garbage Collector
+                  </Text>
                   <View style={styles.paidPill}>
-                    <Text style={styles.paidPillText}>PAID</Text>
+                    <Text style={styles.paidPillText}>DOORSTEP</Text>
                   </View>
                 </View>
-                <Text style={styles.menuItemSub}>For areas without dustbins</Text>
+                <Text style={styles.menuItemSub}>Direct collection for areas without bins</Text>
               </View>
             </TouchableOpacity>
 
+            {/* 5. Scoreboard & Leaderboard */}
+            <TouchableOpacity
+              style={[styles.menuItem, currentScreen === 'scoreboard' && styles.activeMenuItem]}
+              onPress={() => { onNavigate('scoreboard'); onClose(); }}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.menuIcon}>🏆</Text>
+              <View style={styles.menuItemCol}>
+                <View style={styles.menuItemRow}>
+                  <Text style={[styles.menuText, currentScreen === 'scoreboard' && styles.activeMenuText]}>
+                    Scoreboard & Rankings
+                  </Text>
+                  <View style={styles.rankPill}>
+                    <Text style={styles.rankPillText}>RANKS</Text>
+                  </View>
+                </View>
+                <Text style={styles.menuItemSub}>Citywide Champions & Ward rankings</Text>
+              </View>
+            </TouchableOpacity>
+
+            {/* 6. Rewards Hub: Redeem Points & Coupons */}
+            <TouchableOpacity
+              style={[styles.menuItem, currentScreen === 'rewards' && styles.activeMenuItem]}
+              onPress={() => { onNavigate('rewards'); onClose(); }}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.menuIcon}>🎁</Text>
+              <View style={styles.menuItemCol}>
+                <View style={styles.menuItemRow}>
+                  <Text style={[styles.menuText, currentScreen === 'rewards' && styles.activeMenuText]}>
+                    Rewards & Coupons
+                  </Text>
+                  <View style={styles.ecoPill}>
+                    <Text style={styles.ecoPillText}>REDEEM</Text>
+                  </View>
+                </View>
+                <Text style={styles.menuItemSub}>Redeem points, coupons & points earned</Text>
+              </View>
+            </TouchableOpacity>
+
+            {/* Sub-menu items for Rewards: Redeem points, Use coupons, Points earned */}
+            <View style={styles.subMenuList}>
+              <TouchableOpacity
+                style={styles.subMenuItem}
+                onPress={() => { onNavigate('rewards_redeem'); onClose(); }}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.subMenuBullet}>↳</Text>
+                <Text style={styles.subMenuText}>Redeem Points</Text>
+                <Text style={styles.subMenuTag}>Catalog</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.subMenuItem}
+                onPress={() => { onNavigate('rewards_coupons'); onClose(); }}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.subMenuBullet}>↳</Text>
+                <Text style={styles.subMenuText}>Use Coupons / Earned</Text>
+                <Text style={styles.subMenuTag}>Codes</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.subMenuItem}
+                onPress={() => { onNavigate('rewards_history'); onClose(); }}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.subMenuBullet}>↳</Text>
+                <Text style={styles.subMenuText}>Points Earned</Text>
+                <Text style={styles.subMenuTag}>History</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* 7. Recycle & Scrap */}
             <TouchableOpacity
               style={[styles.menuItem, currentScreen === 'recycle' && styles.activeMenuItem]}
               onPress={() => { onNavigate('recycle'); onClose(); }}
@@ -92,7 +194,9 @@ export default function Sidebar({
               <Text style={styles.menuIcon}>♻️</Text>
               <View style={styles.menuItemCol}>
                 <View style={styles.menuItemRow}>
-                  <Text style={[styles.menuText, currentScreen === 'recycle' && styles.activeMenuText]}>Recycle & Scrap</Text>
+                  <Text style={[styles.menuText, currentScreen === 'recycle' && styles.activeMenuText]}>
+                    Recycle & Scrap
+                  </Text>
                   <View style={styles.ecoPill}>
                     <Text style={styles.ecoPillText}>+PTS</Text>
                   </View>
@@ -102,6 +206,7 @@ export default function Sidebar({
             </TouchableOpacity>
           </ScrollView>
 
+          {/* Logout Button */}
           <View style={styles.drawerFooter}>
             <TouchableOpacity style={styles.logoutBtn} onPress={() => { onClose(); onLogout(); }} activeOpacity={0.7}>
               <Text style={styles.logoutText}>🚪 Log Out</Text>
@@ -117,8 +222,8 @@ const styles = StyleSheet.create({
   overlay: { flex: 1, flexDirection: 'row' },
   backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(15, 23, 42, 0.45)' },
   drawer: {
-    width: '80%',
-    maxWidth: 320,
+    width: '85%',
+    maxWidth: 330,
     backgroundColor: tokens.colors.background,
     height: '100%',
     ...tokens.shadow.md,
@@ -168,11 +273,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 1,
     borderColor: tokens.colors.borderFocus,
+    ...tokens.shadow.sm,
   },
   ecoPointsLabel: {
     fontSize: tokens.typography.size.sm,
     fontWeight: tokens.typography.weight.semibold,
     color: tokens.colors.accent,
+  },
+  ecoPointsSub: {
+    fontSize: 10,
+    color: tokens.colors.muted,
+    marginTop: 2,
   },
   ecoPointsVal: {
     fontSize: tokens.typography.size.base,
@@ -182,19 +293,19 @@ const styles = StyleSheet.create({
   menuList: {
     flex: 1,
     paddingHorizontal: tokens.spacing.md,
-    paddingTop: tokens.spacing.sm,
+    paddingTop: tokens.spacing.xs,
   },
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: tokens.spacing.md,
-    paddingHorizontal: tokens.spacing.md,
+    paddingVertical: tokens.spacing.sm,
+    paddingHorizontal: tokens.spacing.sm,
     borderRadius: tokens.radius.md,
     marginBottom: tokens.spacing.xs,
-    minHeight: 48,
+    minHeight: 52,
   },
   activeMenuItem: {
-    backgroundColor: tokens.colors.accent + '10',
+    backgroundColor: tokens.colors.accent + '15',
   },
   menuIcon: {
     fontSize: tokens.typography.size.lg,
@@ -216,31 +327,82 @@ const styles = StyleSheet.create({
     fontWeight: tokens.typography.weight.bold,
   },
   menuItemSub: {
-    fontSize: tokens.typography.size.xs,
+    fontSize: 11,
     color: tokens.colors.muted,
     marginTop: 2,
   },
   paidPill: {
     backgroundColor: tokens.colors.surface,
-    paddingVertical: 2,
+    borderWidth: 1,
+    borderColor: tokens.colors.border,
+    paddingVertical: 1,
     paddingHorizontal: 6,
     borderRadius: tokens.radius.sm,
   },
   paidPillText: {
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: tokens.typography.weight.extrabold,
     color: tokens.colors.muted,
   },
+  rankPill: {
+    backgroundColor: '#fef3c7',
+    paddingVertical: 1,
+    paddingHorizontal: 6,
+    borderRadius: tokens.radius.sm,
+  },
+  rankPillText: {
+    fontSize: 9,
+    fontWeight: tokens.typography.weight.extrabold,
+    color: '#d97706',
+  },
   ecoPill: {
     backgroundColor: tokens.colors.accent + '20',
-    paddingVertical: 2,
+    paddingVertical: 1,
     paddingHorizontal: 6,
     borderRadius: tokens.radius.sm,
   },
   ecoPillText: {
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: tokens.typography.weight.extrabold,
     color: tokens.colors.accent,
+  },
+  subMenuList: {
+    marginLeft: 38,
+    marginRight: tokens.spacing.sm,
+    marginBottom: tokens.spacing.sm,
+    paddingLeft: tokens.spacing.sm,
+    borderLeftWidth: 2,
+    borderLeftColor: tokens.colors.border,
+  },
+  subMenuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 6,
+    paddingHorizontal: tokens.spacing.xs,
+    borderRadius: tokens.radius.sm,
+  },
+  subMenuBullet: {
+    fontSize: tokens.typography.size.xs,
+    color: tokens.colors.accent,
+    marginRight: 6,
+    fontWeight: tokens.typography.weight.bold,
+  },
+  subMenuText: {
+    fontSize: tokens.typography.size.xs,
+    fontWeight: tokens.typography.weight.semibold,
+    color: tokens.colors.text,
+    flex: 1,
+  },
+  subMenuTag: {
+    fontSize: 9,
+    fontWeight: tokens.typography.weight.bold,
+    color: tokens.colors.muted,
+    backgroundColor: tokens.colors.surface,
+    paddingHorizontal: 4,
+    paddingVertical: 1,
+    borderRadius: tokens.radius.sm,
+    borderWidth: 1,
+    borderColor: tokens.colors.border,
   },
   drawerFooter: {
     borderTopWidth: 1,
