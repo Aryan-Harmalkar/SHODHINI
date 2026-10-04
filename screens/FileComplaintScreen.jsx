@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import * as Location from 'expo-location';
 import { fileComplaint, getAreas, getCurrentUser } from '../db/database';
+import { tokens } from '../lib/theme';
 
 const CATEGORIES = [
   'Roadside waste',
@@ -40,21 +41,19 @@ export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar 
   const [loading, setLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [success, setSuccess] = useState(false);
+  const [focusedInput, setFocusedInput] = useState(null);
 
   useEffect(() => {
     async function init() {
-      // Resolve user if not passed
       let activeUser = currentUser;
       if (!activeUser) {
         activeUser = await getCurrentUser();
         setCurrentUser(activeUser);
       }
 
-      // Fetch areas
       const list = await getAreas();
       setAreas(list);
 
-      // Default area to citizen profile area, fallback to first area
       if (activeUser?.area_id) {
         const found = list.find((a) => a.id === activeUser.area_id);
         setSelectedAreaId(activeUser.area_id);
@@ -74,7 +73,7 @@ export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar 
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
-        setLocationStatus('Location permission denied. You can still submit with the selected Ward.');
+        setLocationStatus('Location permission denied.');
         setFetchingLocation(false);
         return;
       }
@@ -88,11 +87,11 @@ export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar 
           latitude: position.coords.latitude,
           longitude: position.coords.longitude,
         });
-        setLocationStatus('GPS Coordinates captured successfully!');
+        setLocationStatus('GPS Coordinates captured!');
       }
     } catch (e) {
       console.warn('GPS location capture warning:', e);
-      setLocationStatus('Could not retrieve GPS coordinates. Defaulting to selected Ward.');
+      setLocationStatus('Could not retrieve GPS coordinates.');
     } finally {
       setFetchingLocation(false);
     }
@@ -140,16 +139,14 @@ export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar 
 
   return (
     <View style={styles.container}>
-      {/* Top Header */}
       <View style={styles.topBar}>
         <View style={styles.topLeft}>
-          <TouchableOpacity style={styles.menuButton} onPress={onOpenSidebar}>
+          <TouchableOpacity style={styles.menuButton} onPress={onOpenSidebar} activeOpacity={0.7}>
             <Text style={styles.menuIcon}>☰</Text>
           </TouchableOpacity>
           <Text style={styles.title}>File a Complaint</Text>
         </View>
-
-        <TouchableOpacity style={styles.homeBtn} onPress={onBackToHome}>
+        <TouchableOpacity style={styles.homeBtn} onPress={onBackToHome} activeOpacity={0.7}>
           <Text style={styles.homeBtnText}>Home</Text>
         </TouchableOpacity>
       </View>
@@ -176,7 +173,6 @@ export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar 
               </View>
             ) : null}
 
-            {/* Category Selection */}
             <Text style={styles.fieldLabel}>Select Waste Category</Text>
             <View style={styles.categoryGrid}>
               {CATEGORIES.map((cat) => {
@@ -186,13 +182,9 @@ export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar 
                     key={cat}
                     style={[styles.categoryPill, isSelected && styles.categoryPillActive]}
                     onPress={() => setCategory(cat)}
+                    activeOpacity={0.7}
                   >
-                    <Text
-                      style={[
-                        styles.categoryPillText,
-                        isSelected && styles.categoryPillTextActive,
-                      ]}
-                    >
+                    <Text style={[styles.categoryPillText, isSelected && styles.categoryPillTextActive]}>
                       {cat}
                     </Text>
                   </TouchableOpacity>
@@ -200,38 +192,36 @@ export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar 
               })}
             </View>
 
-            {/* Area / Ward Selector */}
             <View style={styles.inputGroup}>
               <Text style={styles.fieldLabel}>Area / Ward Location</Text>
               <TouchableOpacity
                 style={styles.areaSelectBtn}
                 onPress={() => setAreaModalVisible(true)}
+                activeOpacity={0.7}
               >
                 <Text style={styles.areaSelectBtnText}>
                   📍 {selectedAreaName || 'Select Ward'}
                 </Text>
                 <Text style={styles.areaSelectBtnArrow}>Change ▼</Text>
               </TouchableOpacity>
-              <Text style={styles.fieldHint}>
-                Defaults to your home area, but you can select any ward.
-              </Text>
+              <Text style={styles.fieldHint}>Defaults to your home area, but you can select any ward.</Text>
             </View>
 
-            {/* Description Textarea */}
             <View style={styles.inputGroup}>
               <Text style={styles.fieldLabel}>Description</Text>
               <TextInput
-                style={styles.textArea}
+                style={[styles.textArea, focusedInput === 'desc' && styles.inputFocused]}
                 placeholder="Describe the issue, landmarks, volume of waste, or urgent details..."
                 value={description}
                 onChangeText={setDescription}
+                onFocus={() => setFocusedInput('desc')}
+                onBlur={() => setFocusedInput(null)}
                 multiline
                 numberOfLines={4}
                 textAlignVertical="top"
               />
             </View>
 
-            {/* GPS Location (Optional) */}
             <View style={styles.locationSection}>
               <Text style={styles.fieldLabel}>GPS Coordinates (Optional)</Text>
               <View style={styles.locationRow}>
@@ -239,9 +229,10 @@ export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar 
                   style={styles.gpsBtn}
                   onPress={handleGetLocation}
                   disabled={fetchingLocation}
+                  activeOpacity={0.7}
                 >
                   {fetchingLocation ? (
-                    <ActivityIndicator size="small" color="#2e7d32" />
+                    <ActivityIndicator size="small" color={tokens.colors.accent} />
                   ) : (
                     <Text style={styles.gpsBtnText}>
                       {locationCoords ? '📍 Update GPS Location' : '📍 Add GPS Location'}
@@ -256,6 +247,7 @@ export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar 
                       setLocationCoords(null);
                       setLocationStatus('');
                     }}
+                    activeOpacity={0.7}
                   >
                     <Text style={styles.clearGpsText}>Clear</Text>
                   </TouchableOpacity>
@@ -264,31 +256,25 @@ export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar 
 
               {locationCoords && (
                 <Text style={styles.coordDisplay}>
-                  Latitude: {locationCoords.latitude.toFixed(5)}, Longitude:{' '}
-                  {locationCoords.longitude.toFixed(5)}
+                  Latitude: {locationCoords.latitude.toFixed(5)}, Longitude: {locationCoords.longitude.toFixed(5)}
                 </Text>
               )}
 
               {locationStatus ? (
-                <Text
-                  style={[
-                    styles.locationStatusText,
-                    locationCoords ? styles.statusSuccess : styles.statusNotice,
-                  ]}
-                >
+                <Text style={[styles.locationStatusText, locationCoords ? styles.statusSuccess : styles.statusNotice]}>
                   {locationStatus}
                 </Text>
               ) : null}
             </View>
 
-            {/* Submit Button */}
             <TouchableOpacity
               style={[styles.submitBtn, loading && styles.submitBtnDisabled]}
               onPress={handleSubmit}
               disabled={loading}
+              activeOpacity={0.7}
             >
               {loading ? (
-                <ActivityIndicator color="#ffffff" />
+                <ActivityIndicator color={tokens.colors.background} />
               ) : (
                 <Text style={styles.submitBtnText}>Submit Complaint 🚀</Text>
               )}
@@ -297,7 +283,6 @@ export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar 
         )}
       </ScrollView>
 
-      {/* Ward Selection Modal */}
       <Modal
         visible={areaModalVisible}
         transparent
@@ -311,6 +296,7 @@ export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar 
               <TouchableOpacity
                 onPress={() => setAreaModalVisible(false)}
                 style={styles.modalCloseBtn}
+                activeOpacity={0.7}
               >
                 <Text style={styles.modalCloseText}>✕</Text>
               </TouchableOpacity>
@@ -328,13 +314,9 @@ export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar 
                       setSelectedAreaName(a.name);
                       setAreaModalVisible(false);
                     }}
+                    activeOpacity={0.7}
                   >
-                    <Text
-                      style={[
-                        styles.areaOptionText,
-                        isSelected && styles.areaOptionTextSelected,
-                      ]}
-                    >
+                    <Text style={[styles.areaOptionText, isSelected && styles.areaOptionTextSelected]}>
                       📍 {a.name}
                     </Text>
                     {isSelected && <Text style={styles.areaCheck}>✓</Text>}
@@ -352,318 +334,333 @@ export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f4f6f8',
+    backgroundColor: tokens.colors.surface,
   },
   topBar: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: '#ffffff',
+    paddingHorizontal: tokens.spacing.md,
+    paddingVertical: tokens.spacing.md,
+    backgroundColor: tokens.colors.background,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    borderBottomColor: tokens.colors.border,
   },
   topLeft: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   menuButton: {
-    padding: 6,
-    marginRight: 8,
+    padding: tokens.spacing.xs,
+    marginRight: tokens.spacing.sm,
+    minHeight: 44,
+    minWidth: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   menuIcon: {
-    fontSize: 22,
-    color: '#2e7d32',
-    fontWeight: 'bold',
+    fontSize: tokens.typography.size.lg,
+    color: tokens.colors.text,
+    fontWeight: tokens.typography.weight.bold,
   },
   title: {
-    fontSize: 17,
-    fontWeight: '700',
-    color: '#2e7d32',
+    fontSize: tokens.typography.size.base,
+    fontWeight: tokens.typography.weight.bold,
+    color: tokens.colors.text,
   },
   homeBtn: {
-    backgroundColor: '#e8f5e9',
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 6,
+    backgroundColor: tokens.colors.surface,
+    paddingVertical: tokens.spacing.sm,
+    paddingHorizontal: tokens.spacing.md,
+    borderRadius: tokens.radius.sm,
+    minHeight: 44,
+    justifyContent: 'center',
   },
   homeBtnText: {
-    color: '#2e7d32',
-    fontSize: 13,
-    fontWeight: '600',
+    color: tokens.colors.accent,
+    fontSize: tokens.typography.size.sm,
+    fontWeight: tokens.typography.weight.bold,
   },
   scrollContent: {
-    padding: 16,
-    paddingBottom: 40,
+    padding: tokens.spacing.md,
+    paddingBottom: tokens.spacing.xxl,
+    alignItems: 'center',
   },
   formCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 14,
-    padding: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 5,
-    elevation: 3,
+    width: '100%',
+    maxWidth: 600,
+    backgroundColor: tokens.colors.background,
+    borderRadius: tokens.radius.xl,
+    padding: tokens.spacing.lg,
+    ...tokens.shadow.sm,
   },
   formHeader: {
-    fontSize: 19,
-    fontWeight: '700',
-    color: '#1b5e20',
-    marginBottom: 4,
+    fontSize: tokens.typography.size.lg,
+    fontWeight: tokens.typography.weight.bold,
+    color: tokens.colors.text,
+    marginBottom: tokens.spacing.xs,
   },
   formSubtitle: {
-    fontSize: 13,
-    color: '#666',
-    lineHeight: 18,
-    marginBottom: 16,
+    fontSize: tokens.typography.size.sm,
+    color: tokens.colors.muted,
+    lineHeight: 20,
+    marginBottom: tokens.spacing.lg,
   },
   errorBox: {
-    backgroundColor: '#ffebee',
+    backgroundColor: '#fef2f2',
     borderWidth: 1,
-    borderColor: '#ffcdd2',
-    borderRadius: 8,
-    padding: 10,
-    marginBottom: 14,
+    borderColor: tokens.colors.danger,
+    borderRadius: tokens.radius.md,
+    padding: tokens.spacing.sm,
+    marginBottom: tokens.spacing.md,
   },
   errorText: {
-    color: '#c62828',
-    fontSize: 13,
+    color: tokens.colors.danger,
+    fontSize: tokens.typography.size.sm,
   },
   fieldLabel: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#444',
-    marginBottom: 8,
+    fontSize: tokens.typography.size.sm,
+    fontWeight: tokens.typography.weight.semibold,
+    color: tokens.colors.text,
+    marginBottom: tokens.spacing.sm,
   },
   categoryGrid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
-    marginBottom: 16,
+    gap: tokens.spacing.sm,
+    marginBottom: tokens.spacing.lg,
   },
   categoryPill: {
-    backgroundColor: '#f1f8e9',
+    backgroundColor: tokens.colors.surface,
     borderWidth: 1,
-    borderColor: '#c8e6c9',
-    paddingVertical: 7,
-    paddingHorizontal: 12,
-    borderRadius: 18,
+    borderColor: tokens.colors.border,
+    paddingVertical: tokens.spacing.sm,
+    paddingHorizontal: tokens.spacing.md,
+    borderRadius: tokens.radius.full,
+    minHeight: 44,
+    justifyContent: 'center',
   },
   categoryPillActive: {
-    backgroundColor: '#2e7d32',
-    borderColor: '#2e7d32',
+    backgroundColor: tokens.colors.accent,
+    borderColor: tokens.colors.accent,
   },
   categoryPillText: {
-    fontSize: 13,
-    color: '#2e7d32',
-    fontWeight: '600',
+    fontSize: tokens.typography.size.sm,
+    color: tokens.colors.muted,
+    fontWeight: tokens.typography.weight.semibold,
   },
   categoryPillTextActive: {
-    color: '#ffffff',
+    color: tokens.colors.background,
   },
   inputGroup: {
-    marginBottom: 16,
+    marginBottom: tokens.spacing.lg,
   },
   areaSelectBtn: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#f9f9f9',
+    backgroundColor: tokens.colors.background,
     borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
+    borderColor: tokens.colors.border,
+    borderRadius: tokens.radius.md,
+    paddingHorizontal: tokens.spacing.md,
+    paddingVertical: tokens.spacing.sm,
+    minHeight: 48,
   },
   areaSelectBtnText: {
-    fontSize: 15,
-    color: '#222',
-    fontWeight: '600',
+    fontSize: tokens.typography.size.base,
+    color: tokens.colors.text,
+    fontWeight: tokens.typography.weight.medium,
   },
   areaSelectBtnArrow: {
-    fontSize: 12,
-    color: '#2e7d32',
-    fontWeight: '700',
+    fontSize: tokens.typography.size.xs,
+    color: tokens.colors.muted,
+    fontWeight: tokens.typography.weight.bold,
   },
   fieldHint: {
-    fontSize: 11,
-    color: '#888',
-    marginTop: 4,
+    fontSize: tokens.typography.size.xs,
+    color: tokens.colors.muted,
+    marginTop: tokens.spacing.xs,
   },
   textArea: {
-    backgroundColor: '#fafafa',
+    backgroundColor: tokens.colors.background,
     borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    fontSize: 14,
-    color: '#222',
-    minHeight: 90,
+    borderColor: tokens.colors.border,
+    borderRadius: tokens.radius.md,
+    paddingHorizontal: tokens.spacing.md,
+    paddingVertical: tokens.spacing.sm,
+    fontSize: tokens.typography.size.base,
+    color: tokens.colors.text,
+    minHeight: 120,
+  },
+  inputFocused: {
+    borderColor: tokens.colors.borderFocus,
+    borderWidth: 2,
   },
   locationSection: {
-    marginBottom: 20,
-    backgroundColor: '#f9f9f9',
-    borderRadius: 10,
-    padding: 12,
+    marginBottom: tokens.spacing.lg,
+    backgroundColor: tokens.colors.surface,
+    borderRadius: tokens.radius.md,
+    padding: tokens.spacing.md,
     borderWidth: 1,
-    borderColor: '#eee',
+    borderColor: tokens.colors.border,
   },
   locationRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: tokens.spacing.md,
   },
   gpsBtn: {
-    backgroundColor: '#ffffff',
+    backgroundColor: tokens.colors.background,
     borderWidth: 1,
-    borderColor: '#2e7d32',
-    borderRadius: 6,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
+    borderColor: tokens.colors.accent,
+    borderRadius: tokens.radius.sm,
+    paddingVertical: tokens.spacing.sm,
+    paddingHorizontal: tokens.spacing.md,
+    minHeight: 44,
+    justifyContent: 'center',
   },
   gpsBtnText: {
-    color: '#2e7d32',
-    fontWeight: '600',
-    fontSize: 13,
+    color: tokens.colors.accent,
+    fontWeight: tokens.typography.weight.semibold,
+    fontSize: tokens.typography.size.sm,
   },
   clearGpsBtn: {
-    paddingVertical: 8,
-    paddingHorizontal: 10,
+    paddingVertical: tokens.spacing.sm,
+    paddingHorizontal: tokens.spacing.md,
+    minHeight: 44,
+    justifyContent: 'center',
   },
   clearGpsText: {
-    color: '#c62828',
-    fontSize: 13,
-    fontWeight: '600',
+    color: tokens.colors.danger,
+    fontSize: tokens.typography.size.sm,
+    fontWeight: tokens.typography.weight.semibold,
   },
   coordDisplay: {
-    fontSize: 12,
-    color: '#2e7d32',
-    fontWeight: '600',
-    marginTop: 6,
+    fontSize: tokens.typography.size.xs,
+    color: tokens.colors.accent,
+    fontWeight: tokens.typography.weight.semibold,
+    marginTop: tokens.spacing.sm,
   },
   locationStatusText: {
-    fontSize: 12,
-    marginTop: 4,
+    fontSize: tokens.typography.size.xs,
+    marginTop: tokens.spacing.xs,
   },
   statusSuccess: {
-    color: '#2e7d32',
+    color: tokens.colors.accent,
   },
   statusNotice: {
-    color: '#666',
+    color: tokens.colors.muted,
   },
   submitBtn: {
-    backgroundColor: '#2e7d32',
-    borderRadius: 8,
-    paddingVertical: 14,
+    backgroundColor: tokens.colors.accent,
+    borderRadius: tokens.radius.md,
+    paddingVertical: tokens.spacing.md,
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
-    shadowRadius: 3,
-    elevation: 2,
+    ...tokens.shadow.sm,
+    minHeight: 48,
+    justifyContent: 'center',
   },
   submitBtnDisabled: {
-    opacity: 0.7,
+    opacity: 0.5,
   },
   submitBtnText: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '700',
+    color: tokens.colors.background,
+    fontSize: tokens.typography.size.base,
+    fontWeight: tokens.typography.weight.bold,
   },
   successCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 14,
-    padding: 30,
+    width: '100%',
+    maxWidth: 600,
+    backgroundColor: tokens.colors.background,
+    borderRadius: tokens.radius.xl,
+    padding: tokens.spacing.xxl,
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 5,
-    elevation: 3,
+    ...tokens.shadow.md,
   },
   successIcon: {
     fontSize: 48,
-    marginBottom: 12,
+    marginBottom: tokens.spacing.md,
   },
   successTitle: {
-    fontSize: 20,
-    fontWeight: '700',
-    color: '#2e7d32',
-    marginBottom: 8,
+    fontSize: tokens.typography.size.lg,
+    fontWeight: tokens.typography.weight.bold,
+    color: tokens.colors.accent,
+    marginBottom: tokens.spacing.sm,
   },
   successDesc: {
-    fontSize: 14,
-    color: '#555',
+    fontSize: tokens.typography.size.sm,
+    color: tokens.colors.muted,
     textAlign: 'center',
     lineHeight: 20,
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    backgroundColor: 'rgba(15, 23, 42, 0.4)',
     justifyContent: 'flex-end',
   },
   modalCard: {
-    backgroundColor: '#ffffff',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    backgroundColor: tokens.colors.background,
+    borderTopLeftRadius: tokens.radius.xl,
+    borderTopRightRadius: tokens.radius.xl,
     maxHeight: '60%',
-    padding: 20,
+    padding: tokens.spacing.lg,
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 16,
-    paddingBottom: 10,
+    marginBottom: tokens.spacing.md,
+    paddingBottom: tokens.spacing.sm,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    borderBottomColor: tokens.colors.border,
   },
   modalTitle: {
-    fontSize: 17,
-    fontWeight: '700',
-    color: '#2e7d32',
+    fontSize: tokens.typography.size.base,
+    fontWeight: tokens.typography.weight.bold,
+    color: tokens.colors.text,
   },
   modalCloseBtn: {
-    padding: 6,
+    padding: tokens.spacing.sm,
+    minHeight: 44,
+    minWidth: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   modalCloseText: {
-    fontSize: 18,
-    color: '#666',
-    fontWeight: 'bold',
+    fontSize: tokens.typography.size.lg,
+    color: tokens.colors.muted,
   },
   modalList: {
-    marginBottom: 10,
+    marginBottom: tokens.spacing.sm,
   },
   areaOption: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    marginBottom: 6,
-    backgroundColor: '#fafafa',
+    paddingVertical: tokens.spacing.md,
+    paddingHorizontal: tokens.spacing.md,
+    borderRadius: tokens.radius.md,
+    marginBottom: tokens.spacing.xs,
+    backgroundColor: tokens.colors.surface,
+    minHeight: 48,
   },
   areaOptionSelected: {
-    backgroundColor: '#e8f5e9',
+    backgroundColor: tokens.colors.background,
+    borderColor: tokens.colors.accent,
     borderWidth: 1,
-    borderColor: '#c8e6c9',
   },
   areaOptionText: {
-    fontSize: 15,
-    color: '#333',
-    fontWeight: '500',
+    fontSize: tokens.typography.size.base,
+    color: tokens.colors.text,
   },
   areaOptionTextSelected: {
-    color: '#2e7d32',
-    fontWeight: '700',
+    color: tokens.colors.accent,
+    fontWeight: tokens.typography.weight.bold,
   },
   areaCheck: {
-    color: '#2e7d32',
-    fontWeight: 'bold',
-    fontSize: 16,
+    color: tokens.colors.accent,
+    fontWeight: tokens.typography.weight.bold,
+    fontSize: tokens.typography.size.base,
   },
 });

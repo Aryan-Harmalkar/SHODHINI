@@ -13,24 +13,24 @@ import FileComplaintScreen from './FileComplaintScreen';
 import MyComplaintsScreen from './MyComplaintsScreen';
 import WastePickupScreen from './WastePickupScreen';
 import RecycleScreen from './RecycleScreen';
+import ComplaintCard from '../components/ComplaintCard';
 import {
   getUserEcoPoints,
   getAreaComplaints,
   updateComplaintStatus,
 } from '../db/database';
 import { supabase } from '../lib/supabase';
+import { tokens } from '../lib/theme';
 
 export default function HomeScreen({ user, onLogout }) {
-  // 'home' | 'complaint' | 'my_complaints' | 'waste_pickup' | 'recycle'
   const [currentScreen, setCurrentScreen] = useState('home');
   const [sidebarVisible, setSidebarVisible] = useState(false);
   const [ecoPoints, setEcoPoints] = useState(0);
 
-  // Collector Live Feed State
   const [collectorComplaints, setCollectorComplaints] = useState([]);
   const [collectorLoading, setCollectorLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState(null);
-  const [collectorFilter, setCollectorFilter] = useState('ALL'); // 'ALL' | 'ACTIVE' | 'COMPLETED'
+  const [collectorFilter, setCollectorFilter] = useState('ALL');
 
   const isCollector = user?.role === 'worker';
 
@@ -40,13 +40,11 @@ export default function HomeScreen({ user, onLogout }) {
     }
   }, [user, currentScreen, isCollector]);
 
-  // Collector: Load complaints & Subscribe to Realtime INSERT & UPDATE
   useEffect(() => {
     if (!isCollector || !user?.area_id) return;
 
     loadCollectorData();
 
-    // Realtime channel for collector's area
     const channelName = `collector_feed_area_${user.area_id}_${Date.now()}`;
     const channel = supabase
       .channel(channelName)
@@ -60,7 +58,6 @@ export default function HomeScreen({ user, onLogout }) {
         },
         async (payload) => {
           console.log('Realtime INSERT for collector area:', payload.new.id);
-          // Reload to get populated citizen profile & location details
           loadCollectorData();
         }
       )
@@ -126,7 +123,6 @@ export default function HomeScreen({ user, onLogout }) {
         workerId: user.id,
       });
 
-      // Update state locally immediately
       setCollectorComplaints((prev) =>
         prev.map((c) =>
           c.id === complaintId
@@ -141,7 +137,6 @@ export default function HomeScreen({ user, onLogout }) {
     }
   };
 
-  // Screen Switcher for Citizen/User
   if (!isCollector) {
     if (currentScreen === 'complaint') {
       return (
@@ -229,7 +224,6 @@ export default function HomeScreen({ user, onLogout }) {
     }
   }
 
-  // Filtered collector complaints
   const filteredCollectorComplaints = collectorComplaints.filter((c) => {
     if (collectorFilter === 'ACTIVE') return c.status !== 'Completed';
     if (collectorFilter === 'COMPLETED') return c.status === 'Completed';
@@ -241,13 +235,13 @@ export default function HomeScreen({ user, onLogout }) {
 
   return (
     <View style={styles.container}>
-      {/* Top Navigation Bar */}
       <View style={styles.topBar}>
         <View style={styles.topLeft}>
           {!isCollector && (
             <TouchableOpacity
               style={styles.hamburgerBtn}
               onPress={() => setSidebarVisible(true)}
+              activeOpacity={0.7}
             >
               <Text style={styles.hamburgerIcon}>☰</Text>
             </TouchableOpacity>
@@ -255,30 +249,18 @@ export default function HomeScreen({ user, onLogout }) {
           <Text style={styles.appName}>SHODHINI</Text>
         </View>
 
-        {/* Collector logout retained for worker role */}
         {isCollector && (
-          <TouchableOpacity style={styles.logoutBtn} onPress={onLogout}>
+          <TouchableOpacity style={styles.logoutBtn} onPress={onLogout} activeOpacity={0.7}>
             <Text style={styles.logoutBtnText}>Log Out</Text>
           </TouchableOpacity>
         )}
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* User Profile Card */}
         <View style={styles.userCard}>
           <View style={styles.badgeRow}>
-            <View
-              style={[
-                styles.roleBadge,
-                isCollector ? styles.collectorBadge : styles.citizenBadge,
-              ]}
-            >
-              <Text
-                style={[
-                  styles.roleBadgeText,
-                  isCollector && { color: '#e65100' },
-                ]}
-              >
+            <View style={[styles.roleBadge, isCollector ? styles.collectorBadge : styles.citizenBadge]}>
+              <Text style={[styles.roleBadgeText, isCollector && { color: tokens.colors.background }]}>
                 {isCollector ? 'Garbage Collector' : 'Citizen / User'}
               </Text>
             </View>
@@ -297,26 +279,20 @@ export default function HomeScreen({ user, onLogout }) {
             <Text style={styles.infoLabel}>Phone:</Text>
             <Text style={styles.infoValue}>{user?.phone || 'N/A'}</Text>
           </View>
-
           <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Username/Email:</Text>
+            <Text style={styles.infoLabel}>Identifier:</Text>
             <Text style={styles.infoValue}>{user?.identifier || user?.email || 'N/A'}</Text>
           </View>
-
-          {user?.area ? (
+          {user?.area && (
             <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>
-                {isCollector ? 'Assigned Area:' : 'Home Area:'}
-              </Text>
+              <Text style={styles.infoLabel}>{isCollector ? 'Assigned Area:' : 'Home Area:'}</Text>
               <Text style={styles.infoValue}>📍 {user.area}</Text>
             </View>
-          ) : null}
+          )}
         </View>
 
-        {/* ================= CITIZEN-ONLY SECTIONS ================= */}
         {!isCollector && (
           <>
-            {/* Eco Points Section */}
             <View style={styles.ecoPointsCard}>
               <View style={styles.ecoHeaderRow}>
                 <View>
@@ -334,7 +310,6 @@ export default function HomeScreen({ user, onLogout }) {
               </Text>
             </View>
 
-            {/* Sidebar Navigation Prompt Banner */}
             <View style={styles.sidebarPromptCard}>
               <View style={styles.promptHeader}>
                 <Text style={styles.promptIcon}>🧭</Text>
@@ -345,25 +320,24 @@ export default function HomeScreen({ user, onLogout }) {
                   </Text>
                 </View>
               </View>
-
               <View style={styles.promptButtonRow}>
                 <TouchableOpacity
                   style={styles.openSidebarBtn}
                   onPress={() => setSidebarVisible(true)}
+                  activeOpacity={0.7}
                 >
                   <Text style={styles.openSidebarBtnText}>Open Sidebar ☰</Text>
                 </TouchableOpacity>
-
                 <TouchableOpacity
                   style={styles.trackComplaintsQuickBtn}
                   onPress={() => setCurrentScreen('my_complaints')}
+                  activeOpacity={0.7}
                 >
                   <Text style={styles.trackComplaintsQuickText}>Track Status 📋</Text>
                 </TouchableOpacity>
               </View>
             </View>
 
-            {/* Quick Action: File / Report */}
             <View style={styles.actionCard}>
               <Text style={styles.sectionHeader}>Quick Actions</Text>
               <Text style={styles.sectionDesc}>
@@ -372,16 +346,17 @@ export default function HomeScreen({ user, onLogout }) {
               <TouchableOpacity
                 style={styles.actionButton}
                 onPress={() => setCurrentScreen('complaint')}
+                activeOpacity={0.7}
               >
                 <Text style={styles.actionButtonText}>📝 Report Waste / File Complaint</Text>
               </TouchableOpacity>
             </View>
 
-            {/* Citizen Services Highlights */}
             <View style={styles.servicesGrid}>
               <TouchableOpacity
                 style={styles.serviceTile}
                 onPress={() => setCurrentScreen('waste_pickup')}
+                activeOpacity={0.7}
               >
                 <View style={styles.serviceTileHeader}>
                   <Text style={styles.serviceTileIcon}>🚚</Text>
@@ -390,14 +365,13 @@ export default function HomeScreen({ user, onLogout }) {
                   </View>
                 </View>
                 <Text style={styles.serviceTileTitle}>Waste Pickup</Text>
-                <Text style={styles.serviceTileDesc}>
-                  No bins nearby? Book convenient doorstep collection.
-                </Text>
+                <Text style={styles.serviceTileDesc}>No bins nearby? Book convenient doorstep collection.</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
                 style={styles.serviceTile}
                 onPress={() => setCurrentScreen('recycle')}
+                activeOpacity={0.7}
               >
                 <View style={styles.serviceTileHeader}>
                   <Text style={styles.serviceTileIcon}>♻️</Text>
@@ -406,99 +380,57 @@ export default function HomeScreen({ user, onLogout }) {
                   </View>
                 </View>
                 <Text style={styles.serviceTileTitle}>Recycle Scrap</Text>
-                <Text style={styles.serviceTileDesc}>
-                  Dispose of e-waste, metal, paper and earn bonus Eco Points.
-                </Text>
+                <Text style={styles.serviceTileDesc}>Dispose of e-waste, metal, paper and earn bonus Eco Points.</Text>
               </TouchableOpacity>
-            </View>
-
-            {/* About SHODHINI */}
-            <View style={styles.aboutCard}>
-              <Text style={styles.aboutHeader}>About SHODHINI</Text>
-              <Text style={styles.aboutIntro}>
-                SHODHINI connects citizens with municipal workers for clean, responsive waste management.
-              </Text>
             </View>
           </>
         )}
 
-        {/* ================= GARBAGE COLLECTOR LIVE FEED ================= */}
         {isCollector && (
           <View style={styles.collectorFeedContainer}>
             <View style={styles.feedHeaderRow}>
               <View>
                 <Text style={styles.sectionHeader}>Complaints in Your Area</Text>
-                <Text style={styles.feedSubtext}>
-                  Live updates for {user?.area || `Ward ${user?.area_id || ''}`}
-                </Text>
+                <Text style={styles.feedSubtext}>Live updates for {user?.area || `Ward ${user?.area_id || ''}`}</Text>
               </View>
-
-              <TouchableOpacity
-                style={styles.refreshBtn}
-                onPress={loadCollectorData}
-              >
+              <TouchableOpacity style={styles.refreshBtn} onPress={loadCollectorData} activeOpacity={0.7}>
                 <Text style={styles.refreshBtnText}>🔄 Refresh</Text>
               </TouchableOpacity>
             </View>
 
-            {/* Filter Pills for Collector */}
             <View style={styles.collectorFilterRow}>
               <TouchableOpacity
-                style={[
-                  styles.collectorPill,
-                  collectorFilter === 'ALL' && styles.collectorPillActive,
-                ]}
+                style={[styles.collectorPill, collectorFilter === 'ALL' && styles.collectorPillActive]}
                 onPress={() => setCollectorFilter('ALL')}
+                activeOpacity={0.7}
               >
-                <Text
-                  style={[
-                    styles.collectorPillText,
-                    collectorFilter === 'ALL' && styles.collectorPillTextActive,
-                  ]}
-                >
+                <Text style={[styles.collectorPillText, collectorFilter === 'ALL' && styles.collectorPillTextActive]}>
                   All ({collectorComplaints.length})
                 </Text>
               </TouchableOpacity>
-
               <TouchableOpacity
-                style={[
-                  styles.collectorPill,
-                  collectorFilter === 'ACTIVE' && styles.collectorPillActive,
-                ]}
+                style={[styles.collectorPill, collectorFilter === 'ACTIVE' && styles.collectorPillActive]}
                 onPress={() => setCollectorFilter('ACTIVE')}
+                activeOpacity={0.7}
               >
-                <Text
-                  style={[
-                    styles.collectorPillText,
-                    collectorFilter === 'ACTIVE' && styles.collectorPillTextActive,
-                  ]}
-                >
+                <Text style={[styles.collectorPillText, collectorFilter === 'ACTIVE' && styles.collectorPillTextActive]}>
                   Active ({activeCount})
                 </Text>
               </TouchableOpacity>
-
               <TouchableOpacity
-                style={[
-                  styles.collectorPill,
-                  collectorFilter === 'COMPLETED' && styles.collectorPillActive,
-                ]}
+                style={[styles.collectorPill, collectorFilter === 'COMPLETED' && styles.collectorPillActive]}
                 onPress={() => setCollectorFilter('COMPLETED')}
+                activeOpacity={0.7}
               >
-                <Text
-                  style={[
-                    styles.collectorPillText,
-                    collectorFilter === 'COMPLETED' && styles.collectorPillTextActive,
-                  ]}
-                >
+                <Text style={[styles.collectorPillText, collectorFilter === 'COMPLETED' && styles.collectorPillTextActive]}>
                   Completed ({completedCount})
                 </Text>
               </TouchableOpacity>
             </View>
 
-            {/* Complaints List */}
             {collectorLoading ? (
               <View style={styles.loadingBox}>
-                <ActivityIndicator size="large" color="#2e7d32" />
+                <ActivityIndicator size="large" color={tokens.colors.accent} />
                 <Text style={styles.loadingBoxText}>Loading area complaints feed...</Text>
               </View>
             ) : filteredCollectorComplaints.length === 0 ? (
@@ -507,146 +439,22 @@ export default function HomeScreen({ user, onLogout }) {
                 <Text style={styles.emptyCollectorTitle}>No Complaints Pending!</Text>
                 <Text style={styles.emptyCollectorDesc}>
                   Your assigned area ({user?.area || 'Ward'}) has no complaints matching this filter.
-                  New reports from citizens will appear here live.
                 </Text>
               </View>
             ) : (
-              filteredCollectorComplaints.map((item) => {
-                const isCompleted = item.status === 'Completed';
-                const isInProgress = item.status === 'In Progress';
-                const isAssigned = item.status === 'Assigned';
-                const isUpdating = updatingId === item.id;
-
-                return (
-                  <View key={item.id} style={styles.collectorCard}>
-                    <View style={styles.collectorCardHeader}>
-                      <View style={{ flex: 1 }}>
-                        <Text style={styles.cardCategory}>{item.category || 'General Waste'}</Text>
-                        <Text style={styles.cardDate}>
-                          {item.created_at
-                            ? new Date(item.created_at).toLocaleString()
-                            : 'Just now'}
-                        </Text>
-                      </View>
-
-                      <View
-                        style={[
-                          styles.statusBadge,
-                          isCompleted
-                            ? styles.statusBadgeCompleted
-                            : isInProgress
-                            ? styles.statusBadgeProgress
-                            : styles.statusBadgeSubmitted,
-                        ]}
-                      >
-                        <Text
-                          style={[
-                            styles.statusBadgeText,
-                            isCompleted
-                              ? styles.statusTextCompleted
-                              : isInProgress
-                              ? styles.statusTextProgress
-                              : styles.statusTextSubmitted,
-                          ]}
-                        >
-                          {item.status || 'Submitted'}
-                        </Text>
-                      </View>
-                    </View>
-
-                    <Text style={styles.cardDescription}>{item.description}</Text>
-
-                    <View style={styles.cardMetaRow}>
-                      <Text style={styles.metaKey}>📍 Location:</Text>
-                      <Text style={styles.metaVal}>{item.location}</Text>
-                    </View>
-
-                    <View style={styles.cardMetaRow}>
-                      <Text style={styles.metaKey}>👤 Citizen:</Text>
-                      <Text style={styles.metaVal}>
-                        {item.citizenName} {item.citizenPhone ? `(${item.citizenPhone})` : ''}
-                      </Text>
-                    </View>
-
-                    {/* Status Action Buttons */}
-                    <View style={styles.actionButtonsDivider} />
-                    <Text style={styles.actionSectionLabel}>Update Status:</Text>
-
-                    <View style={styles.actionButtonGroup}>
-                      {/* 1. Assign to me */}
-                      <TouchableOpacity
-                        style={[
-                          styles.actionPill,
-                          isAssigned && styles.actionPillActive,
-                        ]}
-                        disabled={isUpdating || isAssigned || isCompleted}
-                        onPress={() => handleStatusUpdate(item.id, 'Assigned')}
-                      >
-                        <Text
-                          style={[
-                            styles.actionPillLabel,
-                            isAssigned && styles.actionPillLabelActive,
-                          ]}
-                        >
-                          📌 Assigned
-                        </Text>
-                      </TouchableOpacity>
-
-                      {/* 2. In Progress */}
-                      <TouchableOpacity
-                        style={[
-                          styles.actionPill,
-                          isInProgress && styles.actionPillActive,
-                        ]}
-                        disabled={isUpdating || isInProgress || isCompleted}
-                        onPress={() => handleStatusUpdate(item.id, 'In Progress')}
-                      >
-                        <Text
-                          style={[
-                            styles.actionPillLabel,
-                            isInProgress && styles.actionPillLabelActive,
-                          ]}
-                        >
-                          ⏳ In Progress
-                        </Text>
-                      </TouchableOpacity>
-
-                      {/* 3. Completed */}
-                      <TouchableOpacity
-                        style={[
-                          styles.actionPill,
-                          styles.actionPillCompleted,
-                          isCompleted && styles.actionPillCompletedActive,
-                        ]}
-                        disabled={isUpdating || isCompleted}
-                        onPress={() => handleStatusUpdate(item.id, 'Completed')}
-                      >
-                        <Text
-                          style={[
-                            styles.actionPillLabel,
-                            isCompleted && styles.actionPillLabelActive,
-                          ]}
-                        >
-                          {isCompleted ? '✓ Completed' : '✅ Mark Done'}
-                        </Text>
-                      </TouchableOpacity>
-                    </View>
-
-                    {isUpdating && (
-                      <View style={styles.updatingOverlay}>
-                        <ActivityIndicator size="small" color="#2e7d32" />
-                        <Text style={styles.updatingText}>Updating...</Text>
-                      </View>
-                    )}
-                  </View>
-                );
-              })
+              filteredCollectorComplaints.map((item) => (
+                <ComplaintCard
+                  key={item.id}
+                  item={item}
+                  updatingId={updatingId}
+                  onUpdateStatus={handleStatusUpdate}
+                />
+              ))
             )}
           </View>
         )}
       </ScrollView>
 
-      {/* Slide-out Sidebar Drawer */}
       {!isCollector && (
         <Sidebar
           visible={sidebarVisible}
@@ -665,567 +473,404 @@ export default function HomeScreen({ user, onLogout }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f4f6f8',
+    backgroundColor: tokens.colors.surface,
   },
   topBar: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: '#ffffff',
+    paddingHorizontal: tokens.spacing.md,
+    paddingVertical: tokens.spacing.md,
+    backgroundColor: tokens.colors.background,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    borderBottomColor: tokens.colors.border,
   },
   topLeft: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   hamburgerBtn: {
-    padding: 6,
-    marginRight: 10,
+    padding: tokens.spacing.xs,
+    marginRight: tokens.spacing.sm,
+    minHeight: 44,
+    minWidth: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   hamburgerIcon: {
-    fontSize: 22,
-    color: '#2e7d32',
-    fontWeight: 'bold',
+    fontSize: tokens.typography.size.lg,
+    color: tokens.colors.text,
+    fontWeight: tokens.typography.weight.bold,
   },
   appName: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: '#2e7d32',
+    fontSize: tokens.typography.size.lg,
+    fontWeight: tokens.typography.weight.extrabold,
+    color: tokens.colors.accent,
     letterSpacing: 0.5,
   },
   logoutBtn: {
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 6,
+    paddingVertical: tokens.spacing.sm,
+    paddingHorizontal: tokens.spacing.md,
+    borderRadius: tokens.radius.sm,
     borderWidth: 1,
-    borderColor: '#c62828',
+    borderColor: tokens.colors.danger,
+    minHeight: 44,
+    justifyContent: 'center',
   },
   logoutBtnText: {
-    color: '#c62828',
-    fontSize: 13,
-    fontWeight: '600',
+    color: tokens.colors.danger,
+    fontSize: tokens.typography.size.sm,
+    fontWeight: tokens.typography.weight.semibold,
   },
   scrollContent: {
-    padding: 16,
-    paddingBottom: 40,
+    padding: tokens.spacing.md,
+    paddingBottom: tokens.spacing.xxl,
   },
   userCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 14,
-    padding: 18,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
-    elevation: 2,
+    backgroundColor: tokens.colors.background,
+    borderRadius: tokens.radius.xl,
+    padding: tokens.spacing.lg,
+    marginBottom: tokens.spacing.md,
+    ...tokens.shadow.sm,
   },
   badgeRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: tokens.spacing.sm,
   },
   roleBadge: {
-    paddingVertical: 4,
-    paddingHorizontal: 10,
-    borderRadius: 12,
+    paddingVertical: tokens.spacing.xs,
+    paddingHorizontal: tokens.spacing.md,
+    borderRadius: tokens.radius.full,
   },
   citizenBadge: {
-    backgroundColor: '#e8f5e9',
+    backgroundColor: tokens.colors.accent + '20',
   },
   collectorBadge: {
-    backgroundColor: '#fff3e0',
+    backgroundColor: tokens.colors.accent,
   },
   roleBadgeText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#2e7d32',
+    fontSize: tokens.typography.size.xs,
+    fontWeight: tokens.typography.weight.bold,
+    color: tokens.colors.accent,
   },
   liveIndicator: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#e8f5e9',
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-    borderRadius: 12,
+    backgroundColor: tokens.colors.danger + '20',
+    paddingVertical: tokens.spacing.xs,
+    paddingHorizontal: tokens.spacing.sm,
+    borderRadius: tokens.radius.full,
   },
   liveDot: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#2e7d32',
-    marginRight: 6,
+    backgroundColor: tokens.colors.danger,
+    marginRight: tokens.spacing.xs,
   },
   liveText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#2e7d32',
+    fontSize: tokens.typography.size.xs,
+    fontWeight: tokens.typography.weight.bold,
+    color: tokens.colors.danger,
   },
   welcomeText: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: '#1b5e20',
-    marginBottom: 12,
+    fontSize: tokens.typography.size.xl,
+    fontWeight: tokens.typography.weight.bold,
+    color: tokens.colors.text,
+    marginBottom: tokens.spacing.md,
   },
   infoRow: {
     flexDirection: 'row',
-    marginBottom: 6,
+    marginBottom: tokens.spacing.xs,
   },
   infoLabel: {
-    fontSize: 13,
-    color: '#666',
+    fontSize: tokens.typography.size.sm,
+    color: tokens.colors.muted,
     width: 125,
-    fontWeight: '500',
+    fontWeight: tokens.typography.weight.medium,
   },
   infoValue: {
-    fontSize: 13,
-    color: '#222',
-    fontWeight: '600',
+    fontSize: tokens.typography.size.sm,
+    color: tokens.colors.text,
+    fontWeight: tokens.typography.weight.semibold,
     flex: 1,
   },
   ecoPointsCard: {
-    backgroundColor: '#e8f5e9',
-    borderRadius: 14,
-    padding: 18,
-    marginBottom: 16,
+    backgroundColor: tokens.colors.background,
+    borderRadius: tokens.radius.xl,
+    padding: tokens.spacing.lg,
+    marginBottom: tokens.spacing.md,
     borderWidth: 1,
-    borderColor: '#c8e6c9',
+    borderColor: tokens.colors.accent,
+    ...tokens.shadow.sm,
   },
   ecoHeaderRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 8,
   },
   ecoTitle: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#2e7d32',
+    fontSize: tokens.typography.size.base,
+    fontWeight: tokens.typography.weight.bold,
+    color: tokens.colors.text,
   },
   ecoPointsNumber: {
-    fontSize: 28,
-    fontWeight: '800',
-    color: '#1b5e20',
-    marginTop: 2,
+    fontSize: tokens.typography.size.xxl,
+    fontWeight: tokens.typography.weight.extrabold,
+    color: tokens.colors.accent,
+    marginVertical: tokens.spacing.xs,
   },
   ecoBadge: {
-    backgroundColor: '#2e7d32',
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-    borderRadius: 10,
+    backgroundColor: tokens.colors.accent + '20',
+    paddingHorizontal: tokens.spacing.sm,
+    paddingVertical: tokens.spacing.xs,
+    borderRadius: tokens.radius.full,
   },
   ecoBadgeText: {
-    color: '#ffffff',
-    fontSize: 11,
-    fontWeight: '700',
+    fontSize: tokens.typography.size.xs,
+    fontWeight: tokens.typography.weight.bold,
+    color: tokens.colors.accent,
   },
   ecoSubtitle: {
-    fontSize: 13,
-    color: '#444',
-    lineHeight: 18,
+    fontSize: tokens.typography.size.sm,
+    color: tokens.colors.muted,
+    lineHeight: 20,
   },
   sidebarPromptCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 14,
-    padding: 16,
-    marginBottom: 16,
-    borderLeftWidth: 4,
-    borderLeftColor: '#2e7d32',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
-    elevation: 2,
+    backgroundColor: tokens.colors.background,
+    borderRadius: tokens.radius.xl,
+    padding: tokens.spacing.lg,
+    marginBottom: tokens.spacing.md,
+    ...tokens.shadow.sm,
   },
   promptHeader: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: 12,
+    marginBottom: tokens.spacing.md,
   },
   promptIcon: {
-    fontSize: 22,
-    marginRight: 10,
-    marginTop: 2,
+    fontSize: 24,
+    marginRight: tokens.spacing.sm,
   },
   promptTitle: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#222',
-    marginBottom: 4,
+    fontSize: tokens.typography.size.base,
+    fontWeight: tokens.typography.weight.bold,
+    color: tokens.colors.text,
   },
   promptText: {
-    fontSize: 13,
-    color: '#666',
-    lineHeight: 18,
+    fontSize: tokens.typography.size.sm,
+    color: tokens.colors.muted,
+    marginTop: tokens.spacing.xs,
+    lineHeight: 20,
   },
   promptButtonRow: {
     flexDirection: 'row',
-    gap: 10,
+    gap: tokens.spacing.md,
   },
   openSidebarBtn: {
     flex: 1,
-    backgroundColor: '#f1f8e9',
+    backgroundColor: tokens.colors.surface,
     borderWidth: 1,
-    borderColor: '#c8e6c9',
-    paddingVertical: 10,
-    borderRadius: 8,
+    borderColor: tokens.colors.border,
+    borderRadius: tokens.radius.md,
+    minHeight: 44,
+    justifyContent: 'center',
     alignItems: 'center',
   },
   openSidebarBtnText: {
-    color: '#2e7d32',
-    fontWeight: '700',
-    fontSize: 13,
+    fontSize: tokens.typography.size.sm,
+    fontWeight: tokens.typography.weight.bold,
+    color: tokens.colors.text,
   },
   trackComplaintsQuickBtn: {
     flex: 1,
-    backgroundColor: '#e8f5e9',
-    paddingVertical: 10,
-    borderRadius: 8,
+    backgroundColor: tokens.colors.surface,
+    borderWidth: 1,
+    borderColor: tokens.colors.border,
+    borderRadius: tokens.radius.md,
+    minHeight: 44,
+    justifyContent: 'center',
     alignItems: 'center',
   },
   trackComplaintsQuickText: {
-    color: '#1b5e20',
-    fontWeight: '700',
-    fontSize: 13,
+    fontSize: tokens.typography.size.sm,
+    fontWeight: tokens.typography.weight.bold,
+    color: tokens.colors.text,
   },
   actionCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 14,
-    padding: 18,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
-    elevation: 2,
+    backgroundColor: tokens.colors.background,
+    borderRadius: tokens.radius.xl,
+    padding: tokens.spacing.lg,
+    marginBottom: tokens.spacing.md,
+    ...tokens.shadow.sm,
   },
   sectionHeader: {
-    fontSize: 17,
-    fontWeight: '700',
-    color: '#222',
-    marginBottom: 4,
+    fontSize: tokens.typography.size.lg,
+    fontWeight: tokens.typography.weight.bold,
+    color: tokens.colors.text,
   },
   sectionDesc: {
-    fontSize: 13,
-    color: '#666',
-    marginBottom: 16,
-    lineHeight: 18,
+    fontSize: tokens.typography.size.sm,
+    color: tokens.colors.muted,
+    marginVertical: tokens.spacing.sm,
+    lineHeight: 20,
   },
   actionButton: {
-    backgroundColor: '#2e7d32',
-    paddingVertical: 14,
-    borderRadius: 8,
+    backgroundColor: tokens.colors.accent,
+    borderRadius: tokens.radius.md,
+    minHeight: 48,
+    justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 2,
   },
   actionButtonText: {
-    color: '#ffffff',
-    fontSize: 15,
-    fontWeight: '700',
+    color: tokens.colors.background,
+    fontSize: tokens.typography.size.base,
+    fontWeight: tokens.typography.weight.bold,
   },
   servicesGrid: {
     flexDirection: 'row',
-    gap: 12,
-    marginBottom: 16,
+    gap: tokens.spacing.md,
   },
   serviceTile: {
     flex: 1,
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    padding: 14,
-    borderWidth: 1,
-    borderColor: '#e8e8e8',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 3,
-    elevation: 1,
+    backgroundColor: tokens.colors.background,
+    borderRadius: tokens.radius.xl,
+    padding: tokens.spacing.md,
+    ...tokens.shadow.sm,
+    minHeight: 120,
   },
   serviceTileHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 6,
+    alignItems: 'flex-start',
+    marginBottom: tokens.spacing.sm,
   },
   serviceTileIcon: {
     fontSize: 24,
   },
   paidMiniBadge: {
-    backgroundColor: '#ffecb3',
+    backgroundColor: tokens.colors.surface,
+    paddingHorizontal: tokens.spacing.xs,
     paddingVertical: 2,
-    paddingHorizontal: 6,
-    borderRadius: 6,
+    borderRadius: tokens.radius.sm,
   },
   paidMiniBadgeText: {
-    fontSize: 9,
-    fontWeight: '800',
-    color: '#f57f17',
+    fontSize: 10,
+    fontWeight: tokens.typography.weight.bold,
+    color: tokens.colors.muted,
   },
   ecoMiniBadge: {
-    backgroundColor: '#c8e6c9',
+    backgroundColor: tokens.colors.accent + '20',
+    paddingHorizontal: tokens.spacing.xs,
     paddingVertical: 2,
-    paddingHorizontal: 6,
-    borderRadius: 6,
+    borderRadius: tokens.radius.sm,
   },
   ecoMiniBadgeText: {
-    fontSize: 9,
-    fontWeight: '800',
-    color: '#1b5e20',
+    fontSize: 10,
+    fontWeight: tokens.typography.weight.bold,
+    color: tokens.colors.accent,
   },
   serviceTileTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#222',
-    marginBottom: 4,
+    fontSize: tokens.typography.size.base,
+    fontWeight: tokens.typography.weight.bold,
+    color: tokens.colors.text,
+    marginBottom: tokens.spacing.xs,
   },
   serviceTileDesc: {
-    fontSize: 11,
-    color: '#666',
-    lineHeight: 15,
+    fontSize: tokens.typography.size.sm,
+    color: tokens.colors.muted,
+    lineHeight: 18,
   },
-  aboutCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 14,
-    padding: 18,
-    marginBottom: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  aboutHeader: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#2e7d32',
-    marginBottom: 8,
-  },
-  aboutIntro: {
-    fontSize: 13,
-    color: '#555',
-    lineHeight: 20,
-  },
-  // Collector Live Feed Styles
   collectorFeedContainer: {
-    marginTop: 4,
+    marginTop: tokens.spacing.md,
   },
   feedHeaderRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 12,
+    marginBottom: tokens.spacing.md,
   },
   feedSubtext: {
-    fontSize: 13,
-    color: '#666',
+    fontSize: tokens.typography.size.sm,
+    color: tokens.colors.muted,
   },
   refreshBtn: {
-    backgroundColor: '#e8f5e9',
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 8,
+    backgroundColor: tokens.colors.background,
+    borderWidth: 1,
+    borderColor: tokens.colors.border,
+    borderRadius: tokens.radius.md,
+    paddingHorizontal: tokens.spacing.md,
+    minHeight: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   refreshBtnText: {
-    fontSize: 12,
-    color: '#2e7d32',
-    fontWeight: '700',
+    fontSize: tokens.typography.size.sm,
+    fontWeight: tokens.typography.weight.bold,
+    color: tokens.colors.text,
   },
   collectorFilterRow: {
     flexDirection: 'row',
-    gap: 8,
-    marginBottom: 14,
+    gap: tokens.spacing.sm,
+    marginBottom: tokens.spacing.md,
   },
   collectorPill: {
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 16,
-    backgroundColor: '#e0e0e0',
+    flex: 1,
+    backgroundColor: tokens.colors.background,
+    borderWidth: 1,
+    borderColor: tokens.colors.border,
+    borderRadius: tokens.radius.full,
+    minHeight: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   collectorPillActive: {
-    backgroundColor: '#2e7d32',
+    backgroundColor: tokens.colors.accent,
+    borderColor: tokens.colors.accent,
   },
   collectorPillText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#555',
+    fontSize: tokens.typography.size.sm,
+    fontWeight: tokens.typography.weight.medium,
+    color: tokens.colors.muted,
   },
   collectorPillTextActive: {
-    color: '#ffffff',
+    color: tokens.colors.background,
+    fontWeight: tokens.typography.weight.bold,
   },
   loadingBox: {
-    padding: 30,
     alignItems: 'center',
+    padding: tokens.spacing.xl,
+    backgroundColor: tokens.colors.background,
+    borderRadius: tokens.radius.xl,
   },
   loadingBoxText: {
-    marginTop: 10,
-    fontSize: 13,
-    color: '#666',
+    marginTop: tokens.spacing.md,
+    fontSize: tokens.typography.size.sm,
+    color: tokens.colors.muted,
   },
   emptyCollectorBox: {
-    backgroundColor: '#ffffff',
-    borderRadius: 14,
-    padding: 28,
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    padding: tokens.spacing.xl,
+    backgroundColor: tokens.colors.background,
+    borderRadius: tokens.radius.xl,
+    borderWidth: 1,
+    borderColor: tokens.colors.border,
   },
   emptyIcon: {
-    fontSize: 36,
-    marginBottom: 8,
+    fontSize: tokens.typography.size.xxl,
+    marginBottom: tokens.spacing.sm,
   },
   emptyCollectorTitle: {
-    fontSize: 17,
-    fontWeight: '700',
-    color: '#2e7d32',
-    marginBottom: 6,
+    fontSize: tokens.typography.size.lg,
+    fontWeight: tokens.typography.weight.bold,
+    color: tokens.colors.text,
+    marginBottom: tokens.spacing.xs,
   },
   emptyCollectorDesc: {
-    fontSize: 13,
-    color: '#666',
+    fontSize: tokens.typography.size.sm,
+    color: tokens.colors.muted,
     textAlign: 'center',
-    lineHeight: 18,
-  },
-  collectorCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 14,
-    padding: 16,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 5,
-    elevation: 3,
-  },
-  collectorCardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: 8,
-  },
-  cardCategory: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#222',
-  },
-  cardDate: {
-    fontSize: 11,
-    color: '#888',
-    marginTop: 2,
-  },
-  statusBadge: {
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-    borderRadius: 8,
-  },
-  statusBadgeSubmitted: {
-    backgroundColor: '#e3f2fd',
-  },
-  statusBadgeProgress: {
-    backgroundColor: '#fff3e0',
-  },
-  statusBadgeCompleted: {
-    backgroundColor: '#e8f5e9',
-  },
-  statusBadgeText: {
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  statusTextSubmitted: {
-    color: '#1565c0',
-  },
-  statusTextProgress: {
-    color: '#e65100',
-  },
-  statusTextCompleted: {
-    color: '#2e7d32',
-  },
-  cardDescription: {
-    fontSize: 14,
-    color: '#444',
-    marginBottom: 10,
-    lineHeight: 19,
-  },
-  cardMetaRow: {
-    flexDirection: 'row',
-    marginBottom: 4,
-  },
-  metaKey: {
-    fontSize: 12,
-    color: '#777',
-    width: 65,
-    fontWeight: '500',
-  },
-  metaVal: {
-    fontSize: 12,
-    color: '#222',
-    fontWeight: '600',
-    flex: 1,
-  },
-  actionButtonsDivider: {
-    height: 1,
-    backgroundColor: '#f0f0f0',
-    marginVertical: 10,
-  },
-  actionSectionLabel: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#666',
-    marginBottom: 8,
-  },
-  actionButtonGroup: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  actionPill: {
-    flex: 1,
-    paddingVertical: 8,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#ddd',
-    backgroundColor: '#fafafa',
-    alignItems: 'center',
-  },
-  actionPillActive: {
-    backgroundColor: '#e3f2fd',
-    borderColor: '#2196f3',
-  },
-  actionPillCompleted: {
-    backgroundColor: '#f1f8e9',
-    borderColor: '#c8e6c9',
-  },
-  actionPillCompletedActive: {
-    backgroundColor: '#2e7d32',
-    borderColor: '#2e7d32',
-  },
-  actionPillLabel: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#555',
-  },
-  actionPillLabelActive: {
-    color: '#ffffff',
-  },
-  updatingOverlay: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 8,
-    gap: 6,
-  },
-  updatingText: {
-    fontSize: 12,
-    color: '#2e7d32',
-    fontWeight: '600',
+    lineHeight: 20,
   },
 });

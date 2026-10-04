@@ -5,9 +5,9 @@ import {
   View,
   TouchableOpacity,
   Modal,
-  TouchableWithoutFeedback,
   ScrollView,
 } from 'react-native';
+import { tokens } from '../lib/theme';
 
 export default function Sidebar({
   visible,
@@ -15,135 +15,67 @@ export default function Sidebar({
   currentScreen,
   onNavigate,
   user,
-  ecoPoints = 0,
+  ecoPoints,
   onLogout,
 }) {
-  if (!visible) return null;
-
   return (
-    <Modal
-      transparent
-      animationType="fade"
-      visible={visible}
-      onRequestClose={onClose}
-    >
+    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
       <View style={styles.overlay}>
-        {/* Backdrop to tap to close */}
-        <TouchableWithoutFeedback onPress={onClose}>
-          <View style={styles.backdrop} />
-        </TouchableWithoutFeedback>
-
-        {/* Sidebar Drawer */}
+        <TouchableOpacity style={styles.backdrop} activeOpacity={1} onPress={onClose} />
+        
         <View style={styles.drawer}>
-          {/* Header */}
           <View style={styles.drawerHeader}>
             <View>
               <Text style={styles.appTitle}>SHODHINI</Text>
-              <Text style={styles.userGreeting}>
-                Hello, {user?.name || 'Citizen'}
-              </Text>
+              <Text style={styles.userGreeting}>Hello, {user?.name || 'Citizen'}</Text>
             </View>
-            <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
+            <TouchableOpacity style={styles.closeBtn} onPress={onClose} activeOpacity={0.7}>
               <Text style={styles.closeBtnText}>✕</Text>
             </TouchableOpacity>
           </View>
 
-          {/* Eco Points preview in sidebar */}
           <View style={styles.ecoPointsBox}>
             <Text style={styles.ecoPointsLabel}>🌱 Eco Points</Text>
             <Text style={styles.ecoPointsVal}>{ecoPoints} pts</Text>
           </View>
 
-          {/* Menu Items */}
           <ScrollView style={styles.menuList} showsVerticalScrollIndicator={false}>
-            {/* 1. Home */}
             <TouchableOpacity
-              style={[
-                styles.menuItem,
-                currentScreen === 'home' && styles.activeMenuItem,
-              ]}
-              onPress={() => {
-                onNavigate('home');
-                onClose();
-              }}
+              style={[styles.menuItem, currentScreen === 'home' && styles.activeMenuItem]}
+              onPress={() => { onNavigate('home'); onClose(); }}
+              activeOpacity={0.7}
             >
               <Text style={styles.menuIcon}>🏠</Text>
-              <Text
-                style={[
-                  styles.menuText,
-                  currentScreen === 'home' && styles.activeMenuText,
-                ]}
-              >
-                Home
-              </Text>
+              <Text style={[styles.menuText, currentScreen === 'home' && styles.activeMenuText]}>Home</Text>
             </TouchableOpacity>
 
-            {/* 2. File a Complaint */}
             <TouchableOpacity
-              style={[
-                styles.menuItem,
-                currentScreen === 'complaint' && styles.activeMenuItem,
-              ]}
-              onPress={() => {
-                onNavigate('complaint');
-                onClose();
-              }}
+              style={[styles.menuItem, currentScreen === 'complaint' && styles.activeMenuItem]}
+              onPress={() => { onNavigate('complaint'); onClose(); }}
+              activeOpacity={0.7}
             >
               <Text style={styles.menuIcon}>📝</Text>
-              <Text
-                style={[
-                  styles.menuText,
-                  currentScreen === 'complaint' && styles.activeMenuText,
-                ]}
-              >
-                File a Complaint
-              </Text>
+              <Text style={[styles.menuText, currentScreen === 'complaint' && styles.activeMenuText]}>File a Complaint</Text>
             </TouchableOpacity>
 
-            {/* 3. Complaints & Details (Track Status) */}
             <TouchableOpacity
-              style={[
-                styles.menuItem,
-                currentScreen === 'my_complaints' && styles.activeMenuItem,
-              ]}
-              onPress={() => {
-                onNavigate('my_complaints');
-                onClose();
-              }}
+              style={[styles.menuItem, currentScreen === 'my_complaints' && styles.activeMenuItem]}
+              onPress={() => { onNavigate('my_complaints'); onClose(); }}
+              activeOpacity={0.7}
             >
               <Text style={styles.menuIcon}>📋</Text>
-              <Text
-                style={[
-                  styles.menuText,
-                  currentScreen === 'my_complaints' && styles.activeMenuText,
-                ]}
-              >
-                Complaints & Details
-              </Text>
+              <Text style={[styles.menuText, currentScreen === 'my_complaints' && styles.activeMenuText]}>Complaints & Details</Text>
             </TouchableOpacity>
 
-            {/* 4. Request Waste Pickup (Paid Doorstep Delivery/Collection) */}
             <TouchableOpacity
-              style={[
-                styles.menuItem,
-                currentScreen === 'waste_pickup' && styles.activeMenuItem,
-              ]}
-              onPress={() => {
-                onNavigate('waste_pickup');
-                onClose();
-              }}
+              style={[styles.menuItem, currentScreen === 'waste_pickup' && styles.activeMenuItem]}
+              onPress={() => { onNavigate('waste_pickup'); onClose(); }}
+              activeOpacity={0.7}
             >
               <Text style={styles.menuIcon}>🚚</Text>
               <View style={styles.menuItemCol}>
                 <View style={styles.menuItemRow}>
-                  <Text
-                    style={[
-                      styles.menuText,
-                      currentScreen === 'waste_pickup' && styles.activeMenuText,
-                    ]}
-                  >
-                    Request Waste Pickup
-                  </Text>
+                  <Text style={[styles.menuText, currentScreen === 'waste_pickup' && styles.activeMenuText]}>Request Waste Pickup</Text>
                   <View style={styles.paidPill}>
                     <Text style={styles.paidPillText}>PAID</Text>
                   </View>
@@ -152,28 +84,15 @@ export default function Sidebar({
               </View>
             </TouchableOpacity>
 
-            {/* 5. Recycle (E-Waste, Metal & more) */}
             <TouchableOpacity
-              style={[
-                styles.menuItem,
-                currentScreen === 'recycle' && styles.activeMenuItem,
-              ]}
-              onPress={() => {
-                onNavigate('recycle');
-                onClose();
-              }}
+              style={[styles.menuItem, currentScreen === 'recycle' && styles.activeMenuItem]}
+              onPress={() => { onNavigate('recycle'); onClose(); }}
+              activeOpacity={0.7}
             >
               <Text style={styles.menuIcon}>♻️</Text>
               <View style={styles.menuItemCol}>
                 <View style={styles.menuItemRow}>
-                  <Text
-                    style={[
-                      styles.menuText,
-                      currentScreen === 'recycle' && styles.activeMenuText,
-                    ]}
-                  >
-                    Recycle & Scrap
-                  </Text>
+                  <Text style={[styles.menuText, currentScreen === 'recycle' && styles.activeMenuText]}>Recycle & Scrap</Text>
                   <View style={styles.ecoPill}>
                     <Text style={styles.ecoPillText}>+PTS</Text>
                   </View>
@@ -183,15 +102,8 @@ export default function Sidebar({
             </TouchableOpacity>
           </ScrollView>
 
-          {/* Bottom Only Logout Option */}
           <View style={styles.drawerFooter}>
-            <TouchableOpacity
-              style={styles.logoutBtn}
-              onPress={() => {
-                onClose();
-                onLogout();
-              }}
-            >
+            <TouchableOpacity style={styles.logoutBtn} onPress={() => { onClose(); onLogout(); }} activeOpacity={0.7}>
               <Text style={styles.logoutText}>🚪 Log Out</Text>
             </TouchableOpacity>
           </View>
@@ -202,157 +114,152 @@ export default function Sidebar({
 }
 
 const styles = StyleSheet.create({
-  overlay: {
-    flex: 1,
-    flexDirection: 'row',
-  },
-  backdrop: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0, 0, 0, 0.45)',
-  },
+  overlay: { flex: 1, flexDirection: 'row' },
+  backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(15, 23, 42, 0.45)' },
   drawer: {
     width: '80%',
     maxWidth: 320,
-    backgroundColor: '#ffffff',
+    backgroundColor: tokens.colors.background,
     height: '100%',
-    shadowColor: '#000',
-    shadowOffset: { width: 4, height: 0 },
-    shadowOpacity: 0.25,
-    shadowRadius: 10,
-    elevation: 10,
-    display: 'flex',
+    ...tokens.shadow.md,
     flexDirection: 'column',
   },
   drawerHeader: {
-    paddingTop: 45,
-    paddingHorizontal: 20,
-    paddingBottom: 18,
-    backgroundColor: '#2e7d32',
+    paddingTop: tokens.spacing.xxl,
+    paddingHorizontal: tokens.spacing.lg,
+    paddingBottom: tokens.spacing.md,
+    backgroundColor: tokens.colors.accent,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
   },
   appTitle: {
-    fontSize: 22,
-    fontWeight: '800',
-    color: '#ffffff',
+    fontSize: tokens.typography.size.xl,
+    fontWeight: tokens.typography.weight.extrabold,
+    color: tokens.colors.background,
     letterSpacing: 0.5,
   },
   userGreeting: {
-    fontSize: 14,
-    color: '#c8e6c9',
-    marginTop: 4,
-    fontWeight: '500',
+    fontSize: tokens.typography.size.sm,
+    color: tokens.colors.background,
+    opacity: 0.9,
+    marginTop: tokens.spacing.xs,
+    fontWeight: tokens.typography.weight.medium,
   },
   closeBtn: {
-    padding: 6,
+    padding: tokens.spacing.xs,
+    minWidth: 44,
+    minHeight: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   closeBtnText: {
-    color: '#ffffff',
-    fontSize: 18,
-    fontWeight: 'bold',
+    color: tokens.colors.background,
+    fontSize: tokens.typography.size.lg,
+    fontWeight: tokens.typography.weight.bold,
   },
   ecoPointsBox: {
-    backgroundColor: '#e8f5e9',
-    margin: 16,
-    padding: 12,
-    borderRadius: 8,
+    backgroundColor: tokens.colors.background,
+    margin: tokens.spacing.md,
+    padding: tokens.spacing.md,
+    borderRadius: tokens.radius.md,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#c8e6c9',
+    borderColor: tokens.colors.borderFocus,
   },
   ecoPointsLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#2e7d32',
+    fontSize: tokens.typography.size.sm,
+    fontWeight: tokens.typography.weight.semibold,
+    color: tokens.colors.accent,
   },
   ecoPointsVal: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: '#1b5e20',
+    fontSize: tokens.typography.size.base,
+    fontWeight: tokens.typography.weight.extrabold,
+    color: tokens.colors.accent,
   },
   menuList: {
     flex: 1,
-    paddingHorizontal: 12,
-    paddingTop: 8,
+    paddingHorizontal: tokens.spacing.md,
+    paddingTop: tokens.spacing.sm,
   },
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 12,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    marginBottom: 6,
+    paddingVertical: tokens.spacing.md,
+    paddingHorizontal: tokens.spacing.md,
+    borderRadius: tokens.radius.md,
+    marginBottom: tokens.spacing.xs,
+    minHeight: 48,
   },
   activeMenuItem: {
-    backgroundColor: '#e8f5e9',
+    backgroundColor: tokens.colors.accent + '10',
   },
   menuIcon: {
-    fontSize: 20,
-    marginRight: 12,
+    fontSize: tokens.typography.size.lg,
+    marginRight: tokens.spacing.md,
   },
-  menuItemCol: {
-    flex: 1,
-  },
+  menuItemCol: { flex: 1 },
   menuItemRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
   },
   menuText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#444',
+    fontSize: tokens.typography.size.sm,
+    fontWeight: tokens.typography.weight.semibold,
+    color: tokens.colors.text,
   },
   activeMenuText: {
-    color: '#2e7d32',
-    fontWeight: '700',
+    color: tokens.colors.accent,
+    fontWeight: tokens.typography.weight.bold,
   },
   menuItemSub: {
-    fontSize: 11,
-    color: '#888',
+    fontSize: tokens.typography.size.xs,
+    color: tokens.colors.muted,
     marginTop: 2,
   },
   paidPill: {
-    backgroundColor: '#ffecb3',
+    backgroundColor: tokens.colors.surface,
     paddingVertical: 2,
     paddingHorizontal: 6,
-    borderRadius: 6,
+    borderRadius: tokens.radius.sm,
   },
   paidPillText: {
-    fontSize: 9,
-    fontWeight: '800',
-    color: '#f57f17',
+    fontSize: 10,
+    fontWeight: tokens.typography.weight.extrabold,
+    color: tokens.colors.muted,
   },
   ecoPill: {
-    backgroundColor: '#c8e6c9',
+    backgroundColor: tokens.colors.accent + '20',
     paddingVertical: 2,
     paddingHorizontal: 6,
-    borderRadius: 6,
+    borderRadius: tokens.radius.sm,
   },
   ecoPillText: {
-    fontSize: 9,
-    fontWeight: '800',
-    color: '#1b5e20',
+    fontSize: 10,
+    fontWeight: tokens.typography.weight.extrabold,
+    color: tokens.colors.accent,
   },
   drawerFooter: {
     borderTopWidth: 1,
-    borderTopColor: '#f0f0f0',
-    padding: 16,
-    backgroundColor: '#ffffff',
+    borderTopColor: tokens.colors.border,
+    padding: tokens.spacing.md,
+    backgroundColor: tokens.colors.background,
   },
   logoutBtn: {
-    backgroundColor: '#ffebee',
-    borderRadius: 8,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
+    backgroundColor: tokens.colors.danger + '10',
+    borderRadius: tokens.radius.md,
+    paddingVertical: tokens.spacing.md,
+    paddingHorizontal: tokens.spacing.md,
     alignItems: 'center',
+    minHeight: 48,
+    justifyContent: 'center',
   },
   logoutText: {
-    color: '#c62828',
-    fontSize: 15,
-    fontWeight: '700',
+    color: tokens.colors.danger,
+    fontSize: tokens.typography.size.base,
+    fontWeight: tokens.typography.weight.bold,
   },
 });

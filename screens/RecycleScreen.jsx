@@ -8,207 +8,137 @@ import {
   TextInput,
   Alert,
 } from 'react-native';
-
-const RECYCLE_CATEGORIES = [
-  {
-    id: 'ewaste',
-    icon: '💻',
-    name: 'E-Waste',
-    desc: 'Laptops, phones, wires, batteries, chargers',
-    points: 30,
-  },
-  {
-    id: 'metal',
-    icon: '🔩',
-    name: 'Metals & Scrap',
-    desc: 'Iron, steel, copper, aluminium cans, brass',
-    points: 25,
-  },
-  {
-    id: 'paper',
-    icon: '📦',
-    name: 'Paper & Cardboard',
-    desc: 'Newspapers, delivery cartons, old books',
-    points: 15,
-  },
-  {
-    id: 'plastic',
-    icon: '🧴',
-    name: 'Plastics',
-    desc: 'PET bottles, milk pouches, hard containers',
-    points: 15,
-  },
-  {
-    id: 'glass',
-    icon: '🍾',
-    name: 'Glassware',
-    desc: 'Glass bottles, jars, glass containers',
-    points: 10,
-  },
-  {
-    id: 'textile',
-    icon: '👕',
-    name: 'Textiles & Clothes',
-    desc: 'Old wearable clothes, torn fabrics, rags',
-    points: 10,
-  },
-];
+import { tokens } from '../lib/theme';
 
 export default function RecycleScreen({ user, onBackToHome, onOpenSidebar }) {
-  const [selectedItems, setSelectedItems] = useState(['ewaste']);
-  const [weightTier, setWeightTier] = useState('medium');
   const [address, setAddress] = useState('');
-  const [phone, setPhone] = useState(user?.phone || '');
-  const [notes, setNotes] = useState('');
+  const [selectedItems, setSelectedItems] = useState([]);
+  const [note, setNote] = useState('');
 
-  const toggleCategory = (id) => {
-    if (selectedItems.includes(id)) {
-      if (selectedItems.length > 1) {
-        setSelectedItems(selectedItems.filter((i) => i !== id));
-      }
-    } else {
-      setSelectedItems([...selectedItems, id]);
-    }
+  const RECYCLE_ITEMS = [
+    { id: 'ewaste', label: 'E-Waste (Phones, Laptops, Cables)', pts: 50 },
+    { id: 'metal', label: 'Metal Scrap', pts: 30 },
+    { id: 'paper', label: 'Paper & Cardboard', pts: 20 },
+    { id: 'plastic', label: 'Hard Plastics', pts: 20 },
+    { id: 'glass', label: 'Glass Bottles', pts: 15 },
+  ];
+
+  const toggleItem = (id) => {
+    setSelectedItems((prev) =>
+      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
+    );
   };
 
-  const calculatedPoints = selectedItems.reduce((sum, id) => {
-    const cat = RECYCLE_CATEGORIES.find((c) => c.id === id);
-    return sum + (cat ? cat.points : 0);
-  }, 0);
+  const calculateEstimatedPoints = () => {
+    return selectedItems.reduce((total, itemId) => {
+      const item = RECYCLE_ITEMS.find((i) => i.id === itemId);
+      return total + (item ? item.pts : 0);
+    }, 0);
+  };
 
-  const handleRequestRecycle = () => {
+  const handleBookRecycle = () => {
+    if (selectedItems.length === 0) {
+      Alert.alert('Select Items', 'Please select at least one type of material to recycle.');
+      return;
+    }
     if (!address.trim()) {
-      Alert.alert('Missing Location', 'Please provide a pickup address for the recycling collector.');
+      Alert.alert('Address Required', 'Please enter your pickup address.');
       return;
     }
 
+    const pts = calculateEstimatedPoints();
     Alert.alert(
-      'Recycling Request Booked!',
-      `Thank you for recycling! Our authorized green partner will contact you at ${phone || 'your number'} for doorstep pickup.\n\nYou will earn approx. +${calculatedPoints} Eco Points!`,
-      [{ text: 'Great!', onPress: onBackToHome }]
+      'Recycle Pickup Scheduled! ♻️',
+      `Our recycling partner will contact you soon. You can earn up to ${pts} Eco Points for this contribution!`,
+      [{ text: 'Great!', onPress: () => onBackToHome() }]
     );
   };
 
   return (
     <View style={styles.container}>
-      {/* Header */}
       <View style={styles.topBar}>
         <View style={styles.topLeft}>
-          <TouchableOpacity style={styles.menuBtn} onPress={onOpenSidebar}>
+          <TouchableOpacity style={styles.menuBtn} onPress={onOpenSidebar} activeOpacity={0.7}>
             <Text style={styles.menuIcon}>☰</Text>
           </TouchableOpacity>
-          <Text style={styles.screenTitle}>Recycle & Earn</Text>
+          <Text style={styles.screenTitle}>Recycle Scrap</Text>
         </View>
 
-        <TouchableOpacity style={styles.backHomeBtn} onPress={onBackToHome}>
+        <TouchableOpacity style={styles.backHomeBtn} onPress={onBackToHome} activeOpacity={0.7}>
           <Text style={styles.backHomeText}>Home</Text>
         </TouchableOpacity>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* Banner */}
-        <View style={styles.bannerCard}>
-          <View style={styles.badge}>
-            <Text style={styles.badgeText}>🌱 ZERO-WASTE INITIATIVE</Text>
+      <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
+        <View style={styles.heroBanner}>
+          <View style={styles.ecoBadge}>
+            <Text style={styles.ecoBadgeText}>EARN ECO POINTS</Text>
           </View>
-          <Text style={styles.bannerTitle}>Turn Scrap Into Eco Points</Text>
-          <Text style={styles.bannerDesc}>
-            Request doorstep recycling pickup for hazardous e-waste, scrap metals, plastics, and paper. Help prevent landfill pollution!
+          <Text style={styles.heroTitle}>Turn Scrap into Rewards</Text>
+          <Text style={styles.heroDesc}>
+            Don't throw away valuable recyclables. Schedule a free pickup and earn Eco Points for contributing to a circular economy.
           </Text>
-
-          <View style={styles.pointsPill}>
-            <Text style={styles.pointsPillText}>
-              Estimated Reward: +{calculatedPoints} Eco Points 🎉
-            </Text>
-          </View>
         </View>
 
-        {/* Category Selection */}
-        <Text style={styles.sectionHeader}>Select Recyclable Items</Text>
-        <View style={styles.grid}>
-          {RECYCLE_CATEGORIES.map((cat) => {
-            const isSelected = selectedItems.includes(cat.id);
-            return (
-              <TouchableOpacity
-                key={cat.id}
-                style={[styles.categoryCard, isSelected && styles.selectedCategoryCard]}
-                onPress={() => toggleCategory(cat.id)}
-              >
-                <View style={styles.catHeader}>
-                  <Text style={styles.catIcon}>{cat.icon}</Text>
-                  {isSelected && <Text style={styles.checkMark}>✓</Text>}
-                </View>
-                <Text style={styles.catTitle}>{cat.name}</Text>
-                <Text style={styles.catDesc}>{cat.desc}</Text>
-                <Text style={styles.catPoints}>+{cat.points} pts</Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-
-        {/* Quantity / Weight */}
-        <Text style={styles.sectionHeader}>Approximate Quantity</Text>
-        <View style={styles.weightRow}>
-          {[
-            { id: 'small', label: 'Small (< 5 kg)' },
-            { id: 'medium', label: 'Medium (5 - 15 kg)' },
-            { id: 'bulk', label: 'Bulk (15+ kg)' },
-          ].map((w) => (
-            <TouchableOpacity
-              key={w.id}
-              style={[styles.weightPill, weightTier === w.id && styles.activeWeightPill]}
-              onPress={() => setWeightTier(w.id)}
-            >
-              <Text
-                style={[
-                  styles.weightPillText,
-                  weightTier === w.id && styles.activeWeightPillText,
-                ]}
-              >
-                {w.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        {/* Pickup Details Form */}
         <View style={styles.formCard}>
-          <Text style={styles.formTitle}>Pickup Information</Text>
+          <Text style={styles.formTitle}>What are you recycling?</Text>
+          <Text style={styles.formSubtitle}>Select all that apply.</Text>
+
+          <View style={styles.itemsList}>
+            {RECYCLE_ITEMS.map((item) => {
+              const isSelected = selectedItems.includes(item.id);
+              return (
+                <TouchableOpacity
+                  key={item.id}
+                  style={[styles.itemRow, isSelected && styles.activeItemRow]}
+                  onPress={() => toggleItem(item.id)}
+                  activeOpacity={0.7}
+                >
+                  <View style={styles.itemLeft}>
+                    <View style={[styles.checkbox, isSelected && styles.checkboxActive]}>
+                      {isSelected && <Text style={styles.checkMark}>✓</Text>}
+                    </View>
+                    <Text style={[styles.itemLabel, isSelected && styles.itemLabelActive]}>
+                      {item.label}
+                    </Text>
+                  </View>
+                  <View style={styles.ptsBadge}>
+                    <Text style={styles.ptsBadgeText}>+{item.pts} pts</Text>
+                  </View>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+
+          <View style={styles.estPointsBox}>
+            <Text style={styles.estPointsLabel}>Estimated Reward:</Text>
+            <Text style={styles.estPointsValue}>+{calculateEstimatedPoints()} Eco Points</Text>
+          </View>
 
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Pickup Address</Text>
+            <Text style={styles.inputLabel}>Pickup Address</Text>
             <TextInput
               style={styles.input}
-              placeholder="House/Building no., Street, Area"
+              placeholder="e.g. Flat 302, Green Valley Apts"
               value={address}
               onChangeText={setAddress}
             />
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Contact Phone Number</Text>
+            <Text style={styles.inputLabel}>Approximate Quantity/Notes (Optional)</Text>
             <TextInput
-              style={styles.input}
-              placeholder="e.g. 9876543210"
-              value={phone}
-              onChangeText={setPhone}
-              keyboardType="phone-pad"
-            />
-          </View>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Item Details or Special Notes (Optional)</Text>
-            <TextInput
-              style={[styles.input, { height: 65 }]}
-              placeholder="e.g. 2 broken laptops, 1 mixer grinder, cardboard cartons..."
+              style={[styles.input, { minHeight: 70 }]}
+              placeholder="e.g. 2 old laptops and a bag of plastic bottles..."
               multiline
-              value={notes}
-              onChangeText={setNotes}
+              value={note}
+              onChangeText={setNote}
+              textAlignVertical="top"
             />
           </View>
 
-          <TouchableOpacity style={styles.submitBtn} onPress={handleRequestRecycle}>
-            <Text style={styles.submitBtnText}>Request Recycling Pickup ♻️</Text>
+          <TouchableOpacity style={styles.submitBtn} onPress={handleBookRecycle} activeOpacity={0.7}>
+            <Text style={styles.submitBtnText}>Schedule Free Pickup ♻️</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -219,223 +149,222 @@ export default function RecycleScreen({ user, onBackToHome, onOpenSidebar }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f4f6f8',
+    backgroundColor: tokens.colors.surface,
   },
   topBar: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: '#ffffff',
+    paddingHorizontal: tokens.spacing.md,
+    paddingVertical: tokens.spacing.md,
+    backgroundColor: tokens.colors.background,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    borderBottomColor: tokens.colors.border,
   },
   topLeft: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   menuBtn: {
-    padding: 6,
-    marginRight: 10,
+    padding: tokens.spacing.xs,
+    marginRight: tokens.spacing.sm,
+    minHeight: 44,
+    minWidth: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   menuIcon: {
-    fontSize: 22,
-    color: '#2e7d32',
-    fontWeight: 'bold',
+    fontSize: tokens.typography.size.lg,
+    color: tokens.colors.text,
+    fontWeight: tokens.typography.weight.bold,
   },
   screenTitle: {
-    fontSize: 17,
-    fontWeight: '700',
-    color: '#2e7d32',
+    fontSize: tokens.typography.size.base,
+    fontWeight: tokens.typography.weight.bold,
+    color: tokens.colors.text,
   },
   backHomeBtn: {
-    backgroundColor: '#e8f5e9',
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 6,
+    backgroundColor: tokens.colors.surface,
+    paddingVertical: tokens.spacing.sm,
+    paddingHorizontal: tokens.spacing.md,
+    borderRadius: tokens.radius.sm,
+    minHeight: 44,
+    justifyContent: 'center',
   },
   backHomeText: {
-    color: '#2e7d32',
-    fontSize: 13,
-    fontWeight: '600',
+    color: tokens.colors.accent,
+    fontSize: tokens.typography.size.sm,
+    fontWeight: tokens.typography.weight.bold,
   },
   scrollContent: {
-    padding: 16,
-    paddingBottom: 40,
+    padding: tokens.spacing.md,
+    paddingBottom: tokens.spacing.xxl,
   },
-  bannerCard: {
-    backgroundColor: '#1b5e20',
-    borderRadius: 14,
-    padding: 18,
-    marginBottom: 16,
-  },
-  badge: {
-    alignSelf: 'flex-start',
-    backgroundColor: '#81c784',
-    paddingVertical: 3,
-    paddingHorizontal: 8,
-    borderRadius: 10,
-    marginBottom: 8,
-  },
-  badgeText: {
-    fontSize: 11,
-    fontWeight: '800',
-    color: '#003300',
-  },
-  bannerTitle: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: '#ffffff',
-    marginBottom: 6,
-  },
-  bannerDesc: {
-    fontSize: 13,
-    color: '#e8f5e9',
-    lineHeight: 18,
-    marginBottom: 12,
-  },
-  pointsPill: {
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 20,
-    alignSelf: 'flex-start',
-  },
-  pointsPillText: {
-    color: '#ffffff',
-    fontWeight: '700',
-    fontSize: 13,
-  },
-  sectionHeader: {
-    fontSize: 15,
-    fontWeight: '700',
-    color: '#333',
-    marginBottom: 10,
-    marginTop: 6,
-  },
-  grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-    marginBottom: 16,
-  },
-  categoryCard: {
-    width: '48%',
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    padding: 12,
+  heroBanner: {
+    backgroundColor: tokens.colors.background,
+    borderRadius: tokens.radius.xl,
+    padding: tokens.spacing.lg,
+    marginBottom: tokens.spacing.md,
     borderWidth: 2,
-    borderColor: '#e0e0e0',
+    borderColor: tokens.colors.accent + '30',
+    ...tokens.shadow.sm,
   },
-  selectedCategoryCard: {
-    borderColor: '#2e7d32',
-    backgroundColor: '#f1f8e9',
+  ecoBadge: {
+    alignSelf: 'flex-start',
+    backgroundColor: tokens.colors.accent + '20',
+    paddingVertical: tokens.spacing.xs,
+    paddingHorizontal: tokens.spacing.md,
+    borderRadius: tokens.radius.full,
+    marginBottom: tokens.spacing.sm,
   },
-  catHeader: {
+  ecoBadgeText: {
+    fontSize: tokens.typography.size.xs,
+    fontWeight: tokens.typography.weight.extrabold,
+    color: tokens.colors.accent,
+  },
+  heroTitle: {
+    fontSize: tokens.typography.size.lg,
+    fontWeight: tokens.typography.weight.extrabold,
+    color: tokens.colors.text,
+    marginBottom: tokens.spacing.xs,
+  },
+  heroDesc: {
+    fontSize: tokens.typography.size.sm,
+    color: tokens.colors.muted,
+    lineHeight: 20,
+  },
+  formCard: {
+    backgroundColor: tokens.colors.background,
+    borderRadius: tokens.radius.xl,
+    padding: tokens.spacing.lg,
+    ...tokens.shadow.sm,
+  },
+  formTitle: {
+    fontSize: tokens.typography.size.base,
+    fontWeight: tokens.typography.weight.bold,
+    color: tokens.colors.text,
+  },
+  formSubtitle: {
+    fontSize: tokens.typography.size.xs,
+    color: tokens.colors.muted,
+    marginBottom: tokens.spacing.md,
+  },
+  itemsList: {
+    marginBottom: tokens.spacing.md,
+  },
+  itemRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 4,
+    paddingVertical: tokens.spacing.md,
+    paddingHorizontal: tokens.spacing.md,
+    backgroundColor: tokens.colors.surface,
+    borderRadius: tokens.radius.md,
+    marginBottom: tokens.spacing.xs,
+    borderWidth: 1,
+    borderColor: tokens.colors.border,
+    minHeight: 48,
   },
-  catIcon: {
-    fontSize: 24,
+  activeItemRow: {
+    backgroundColor: tokens.colors.accent + '10',
+    borderColor: tokens.colors.accent,
+  },
+  itemLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  checkbox: {
+    width: 22,
+    height: 22,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: tokens.colors.borderFocus,
+    marginRight: tokens.spacing.sm,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  checkboxActive: {
+    backgroundColor: tokens.colors.accent,
+    borderColor: tokens.colors.accent,
   },
   checkMark: {
-    color: '#2e7d32',
-    fontWeight: 'bold',
-    fontSize: 16,
-  },
-  catTitle: {
+    color: tokens.colors.background,
     fontSize: 14,
-    fontWeight: '700',
-    color: '#222',
-    marginTop: 2,
+    fontWeight: tokens.typography.weight.extrabold,
   },
-  catDesc: {
-    fontSize: 11,
-    color: '#666',
-    marginTop: 2,
-    lineHeight: 15,
-    minHeight: 30,
+  itemLabel: {
+    fontSize: tokens.typography.size.sm,
+    color: tokens.colors.text,
+    fontWeight: tokens.typography.weight.semibold,
   },
-  catPoints: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#2e7d32',
-    marginTop: 6,
+  itemLabelActive: {
+    color: tokens.colors.accent,
+    fontWeight: tokens.typography.weight.bold,
   },
-  weightRow: {
+  ptsBadge: {
+    backgroundColor: tokens.colors.accent + '20',
+    paddingVertical: 2,
+    paddingHorizontal: tokens.spacing.xs,
+    borderRadius: tokens.radius.sm,
+  },
+  ptsBadgeText: {
+    fontSize: tokens.typography.size.xs,
+    fontWeight: tokens.typography.weight.extrabold,
+    color: tokens.colors.accent,
+  },
+  estPointsBox: {
     flexDirection: 'row',
-    gap: 8,
-    marginBottom: 16,
-  },
-  weightPill: {
-    flex: 1,
-    backgroundColor: '#ffffff',
-    borderWidth: 1,
-    borderColor: '#ddd',
-    paddingVertical: 9,
-    borderRadius: 8,
+    justifyContent: 'space-between',
     alignItems: 'center',
+    backgroundColor: tokens.colors.background,
+    borderWidth: 2,
+    borderColor: tokens.colors.borderFocus,
+    borderRadius: tokens.radius.md,
+    padding: tokens.spacing.md,
+    marginBottom: tokens.spacing.lg,
   },
-  activeWeightPill: {
-    backgroundColor: '#2e7d32',
-    borderColor: '#2e7d32',
+  estPointsLabel: {
+    fontSize: tokens.typography.size.sm,
+    fontWeight: tokens.typography.weight.bold,
+    color: tokens.colors.text,
   },
-  weightPillText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#555',
-  },
-  activeWeightPillText: {
-    color: '#ffffff',
-  },
-  formCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 14,
-    padding: 18,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  formTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#222',
-    marginBottom: 12,
+  estPointsValue: {
+    fontSize: tokens.typography.size.base,
+    fontWeight: tokens.typography.weight.extrabold,
+    color: tokens.colors.accent,
   },
   inputGroup: {
-    marginBottom: 12,
+    marginBottom: tokens.spacing.md,
   },
-  label: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#444',
-    marginBottom: 6,
+  inputLabel: {
+    fontSize: tokens.typography.size.sm,
+    fontWeight: tokens.typography.weight.semibold,
+    color: tokens.colors.text,
+    marginBottom: tokens.spacing.sm,
   },
   input: {
-    backgroundColor: '#fafafa',
+    backgroundColor: tokens.colors.background,
     borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 14,
-    color: '#222',
+    borderColor: tokens.colors.border,
+    borderRadius: tokens.radius.md,
+    paddingHorizontal: tokens.spacing.md,
+    paddingVertical: tokens.spacing.sm,
+    fontSize: tokens.typography.size.sm,
+    color: tokens.colors.text,
+    minHeight: 48,
   },
   submitBtn: {
-    backgroundColor: '#2e7d32',
-    paddingVertical: 14,
-    borderRadius: 8,
+    backgroundColor: tokens.colors.accent,
+    paddingVertical: tokens.spacing.md,
+    borderRadius: tokens.radius.md,
     alignItems: 'center',
-    marginTop: 6,
+    marginTop: tokens.spacing.xs,
+    minHeight: 48,
+    justifyContent: 'center',
   },
   submitBtnText: {
-    color: '#ffffff',
-    fontSize: 15,
-    fontWeight: '700',
+    color: tokens.colors.background,
+    fontSize: tokens.typography.size.sm,
+    fontWeight: tokens.typography.weight.bold,
   },
 });

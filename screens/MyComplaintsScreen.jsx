@@ -8,7 +8,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { getUserComplaints, getUserEcoPoints } from '../db/database';
-import { supabase } from '../lib/supabase';
+import { tokens } from '../lib/theme';
 
 export default function MyComplaintsScreen({
   user,
@@ -17,92 +17,64 @@ export default function MyComplaintsScreen({
   onGoToReport,
 }) {
   const [complaints, setComplaints] = useState([]);
-  const [ecoPoints, setEcoPoints] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState('ALL'); // 'ALL' | 'PENDING' | 'COMPLETED'
+  const [ecoPoints, setEcoPoints] = useState(0);
+  const [filter, setFilter] = useState('ALL');
 
   useEffect(() => {
-    if (!user?.id) return;
-
+    async function loadData() {
+      if (!user?.id) return;
+      try {
+        const [pts, list] = await Promise.all([
+          getUserEcoPoints(user.id),
+          getUserComplaints(user.id),
+        ]);
+        setEcoPoints(pts || 0);
+        setComplaints(list || []);
+      } catch (err) {
+        console.warn('Error loading my complaints:', err);
+      } finally {
+        setLoading(false);
+      }
+    }
     loadData();
-
-    // Realtime subscription for citizen's complaints
-    const channelName = `citizen_complaints_${user.id}_${Date.now()}`;
-    const channel = supabase
-      .channel(channelName)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'complaints',
-          filter: `citizen_id=eq.${user.id}`,
-        },
-        (payload) => {
-          console.log('Realtime change received for citizen:', payload.eventType);
-          // Reload latest data and updated eco points from server
-          loadData();
-        }
-      )
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
   }, [user?.id]);
 
-  const loadData = async () => {
-    if (!user?.id) return;
-    try {
-      const items = await getUserComplaints(user.id);
-      const points = await getUserEcoPoints(user.id);
-      setComplaints(items || []);
-      setEcoPoints(points || 0);
-    } catch (e) {
-      console.error('Error loading citizen complaints:', e);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const filteredComplaints = complaints.filter((c) => {
-    if (filter === 'COMPLETED') return c.status === 'Completed' || c.status === 'Resolved';
-    if (filter === 'PENDING') return c.status !== 'Completed' && c.status !== 'Resolved';
+  const filtered = complaints.filter((c) => {
+    if (filter === 'PENDING') return c.status !== 'Completed';
+    if (filter === 'RESOLVED') return c.status === 'Completed';
     return true;
   });
 
-  const completedCount = complaints.filter(
-    (c) => c.status === 'Completed' || c.status === 'Resolved'
-  ).length;
-  const inProgressCount = complaints.length - completedCount;
+  const totalPoints = ecoPoints;
+  const completedCount = complaints.filter((c) => c.status === 'Completed').length;
+  const pendingCount = complaints.length - completedCount;
 
   return (
     <View style={styles.container}>
-      {/* Top Header */}
       <View style={styles.topBar}>
         <View style={styles.topLeft}>
-          <TouchableOpacity style={styles.menuBtn} onPress={onOpenSidebar}>
+          <TouchableOpacity style={styles.menuBtn} onPress={onOpenSidebar} activeOpacity={0.7}>
             <Text style={styles.menuIcon}>☰</Text>
           </TouchableOpacity>
-          <Text style={styles.screenTitle}>My Complaints & Status</Text>
+          <Text style={styles.screenTitle}>My Reports</Text>
         </View>
 
-        <TouchableOpacity style={styles.backHomeBtn} onPress={onBackToHome}>
+        <TouchableOpacity style={styles.backHomeBtn} onPress={onBackToHome} activeOpacity={0.7}>
           <Text style={styles.backHomeText}>Home</Text>
         </TouchableOpacity>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* Eco Points & Summary Banner */}
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <View style={styles.summaryCard}>
           <View style={styles.ecoRow}>
             <View>
-              <Text style={styles.ecoLabel}>🌱 Total Eco Points Earned</Text>
-              <Text style={styles.ecoPointsText}>{ecoPoints} pts</Text>
+              <Text style={styles.ecoLabel}>Total Eco Points</Text>
+              <Text style={styles.ecoPointsText}>{totalPoints}</Text>
             </View>
             <View style={styles.ecoBadge}>
               <Text style={styles.ecoBadgeText}>
-                {completedCount > 0 ? 'Active Contributor' : 'Getting Started'}
+                {totalPoints > 0 ? 'Eco Champion' : 'Level 1'}
               </Text>
             </View>
           </View>
@@ -112,97 +84,73 @@ export default function MyComplaintsScreen({
           <View style={styles.statsRow}>
             <View style={styles.statBox}>
               <Text style={styles.statNum}>{complaints.length}</Text>
-              <Text style={styles.statLabel}>Total Filed</Text>
+              <Text style={styles.statLabel}>Filed</Text>
             </View>
             <View style={styles.statBox}>
-              <Text style={[styles.statNum, { color: '#e65100' }]}>{inProgressCount}</Text>
-              <Text style={styles.statLabel}>In Progress</Text>
+              <Text style={styles.statNum}>{pendingCount}</Text>
+              <Text style={styles.statLabel}>Pending</Text>
             </View>
             <View style={styles.statBox}>
-              <Text style={[styles.statNum, { color: '#2e7d32' }]}>{completedCount}</Text>
-              <Text style={styles.statLabel}>Completed</Text>
+              <Text style={styles.statNum}>{completedCount}</Text>
+              <Text style={styles.statLabel}>Resolved</Text>
             </View>
           </View>
         </View>
 
-        {/* Filter Pills */}
         <View style={styles.filterRow}>
           <TouchableOpacity
             style={[styles.filterPill, filter === 'ALL' && styles.activeFilterPill]}
             onPress={() => setFilter('ALL')}
+            activeOpacity={0.7}
           >
-            <Text
-              style={[
-                styles.filterPillText,
-                filter === 'ALL' && styles.activeFilterPillText,
-              ]}
-            >
-              All ({complaints.length})
+            <Text style={[styles.filterPillText, filter === 'ALL' && styles.activeFilterPillText]}>
+              All
             </Text>
           </TouchableOpacity>
-
           <TouchableOpacity
             style={[styles.filterPill, filter === 'PENDING' && styles.activeFilterPill]}
             onPress={() => setFilter('PENDING')}
+            activeOpacity={0.7}
           >
-            <Text
-              style={[
-                styles.filterPillText,
-                filter === 'PENDING' && styles.activeFilterPillText,
-              ]}
-            >
-              Pending ({inProgressCount})
+            <Text style={[styles.filterPillText, filter === 'PENDING' && styles.activeFilterPillText]}>
+              Pending
             </Text>
           </TouchableOpacity>
-
           <TouchableOpacity
-            style={[styles.filterPill, filter === 'COMPLETED' && styles.activeFilterPill]}
-            onPress={() => setFilter('COMPLETED')}
+            style={[styles.filterPill, filter === 'RESOLVED' && styles.activeFilterPill]}
+            onPress={() => setFilter('RESOLVED')}
+            activeOpacity={0.7}
           >
-            <Text
-              style={[
-                styles.filterPillText,
-                filter === 'COMPLETED' && styles.activeFilterPillText,
-              ]}
-            >
-              Completed ({completedCount})
+            <Text style={[styles.filterPillText, filter === 'RESOLVED' && styles.activeFilterPillText]}>
+              Resolved
             </Text>
           </TouchableOpacity>
         </View>
 
-        {/* Complaints List */}
         {loading ? (
           <View style={styles.centerContainer}>
-            <ActivityIndicator size="large" color="#2e7d32" />
-            <Text style={styles.loadingText}>Loading complaints...</Text>
+            <ActivityIndicator size="large" color={tokens.colors.accent} />
+            <Text style={styles.loadingText}>Loading reports...</Text>
           </View>
-        ) : filteredComplaints.length === 0 ? (
+        ) : filtered.length === 0 ? (
           <View style={styles.emptyCard}>
-            <Text style={styles.emptyIcon}>📋</Text>
-            <Text style={styles.emptyTitle}>
-              {filter === 'ALL'
-                ? 'No Complaints Filed Yet'
-                : filter === 'COMPLETED'
-                ? 'No Completed Complaints'
-                : 'No Pending Complaints'}
-            </Text>
+            <Text style={styles.emptyIcon}>📝</Text>
+            <Text style={styles.emptyTitle}>No Complaints Found</Text>
             <Text style={styles.emptyDesc}>
               {filter === 'ALL'
-                ? 'Report roadside waste or overflowing bins in your neighborhood to track progress and earn Eco Points!'
-                : 'All caught up with this category.'}
+                ? "You haven't reported any waste issues yet."
+                : `You don't have any ${filter.toLowerCase()} reports right now.`}
             </Text>
-
             {filter === 'ALL' && (
-              <TouchableOpacity style={styles.fileBtn} onPress={onGoToReport}>
-                <Text style={styles.fileBtnText}>📝 File a Complaint</Text>
+              <TouchableOpacity style={styles.fileBtn} onPress={onGoToReport} activeOpacity={0.7}>
+                <Text style={styles.fileBtnText}>File a Complaint</Text>
               </TouchableOpacity>
             )}
           </View>
         ) : (
-          filteredComplaints.map((item) => {
-            const isDone = item.status === 'Completed' || item.status === 'Resolved';
-            const isInProgress = item.status === 'In Progress' || item.status === 'Assigned';
-
+          filtered.map((item) => {
+            const isDone = item.status === 'Completed';
+            const isInProgress = item.status === 'In Progress';
             return (
               <View key={item.id} style={styles.complaintCard}>
                 <View style={styles.complaintHeader}>
@@ -248,18 +196,10 @@ export default function MyComplaintsScreen({
                   </View>
                 )}
 
-                {/* Eco Points Awarded Badge */}
                 <View style={styles.rewardRow}>
                   <Text style={styles.rewardLabel}>🌱 Eco Points:</Text>
-                  <Text
-                    style={[
-                      styles.rewardValue,
-                      isDone ? styles.pointsEarned : styles.pointsPending,
-                    ]}
-                  >
-                    {isDone
-                      ? `+${item.eco_points || 15} pts Earned 🎉`
-                      : '15 pts credited when resolved'}
+                  <Text style={[styles.rewardValue, isDone ? styles.pointsEarned : styles.pointsPending]}>
+                    {isDone ? `+${item.eco_points || 15} pts Earned 🎉` : '15 pts credited when resolved'}
                   </Text>
                 </View>
               </View>
@@ -274,61 +214,63 @@ export default function MyComplaintsScreen({
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f4f6f8',
+    backgroundColor: tokens.colors.surface,
   },
   topBar: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: '#ffffff',
+    paddingHorizontal: tokens.spacing.md,
+    paddingVertical: tokens.spacing.md,
+    backgroundColor: tokens.colors.background,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    borderBottomColor: tokens.colors.border,
   },
   topLeft: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   menuBtn: {
-    padding: 6,
-    marginRight: 10,
+    padding: tokens.spacing.xs,
+    marginRight: tokens.spacing.sm,
+    minHeight: 44,
+    minWidth: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   menuIcon: {
-    fontSize: 22,
-    color: '#2e7d32',
-    fontWeight: 'bold',
+    fontSize: tokens.typography.size.lg,
+    color: tokens.colors.text,
+    fontWeight: tokens.typography.weight.bold,
   },
   screenTitle: {
-    fontSize: 17,
-    fontWeight: '700',
-    color: '#2e7d32',
+    fontSize: tokens.typography.size.base,
+    fontWeight: tokens.typography.weight.bold,
+    color: tokens.colors.text,
   },
   backHomeBtn: {
-    backgroundColor: '#e8f5e9',
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 6,
+    backgroundColor: tokens.colors.surface,
+    paddingVertical: tokens.spacing.sm,
+    paddingHorizontal: tokens.spacing.md,
+    borderRadius: tokens.radius.sm,
+    minHeight: 44,
+    justifyContent: 'center',
   },
   backHomeText: {
-    color: '#2e7d32',
-    fontSize: 13,
-    fontWeight: '600',
+    color: tokens.colors.accent,
+    fontSize: tokens.typography.size.sm,
+    fontWeight: tokens.typography.weight.bold,
   },
   scrollContent: {
-    padding: 16,
-    paddingBottom: 40,
+    padding: tokens.spacing.md,
+    paddingBottom: tokens.spacing.xxl,
   },
   summaryCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 14,
-    padding: 18,
-    marginBottom: 16,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.07,
-    shadowRadius: 4,
-    elevation: 2,
+    backgroundColor: tokens.colors.background,
+    borderRadius: tokens.radius.xl,
+    padding: tokens.spacing.lg,
+    marginBottom: tokens.spacing.md,
+    ...tokens.shadow.sm,
   },
   ecoRow: {
     flexDirection: 'row',
@@ -336,33 +278,33 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   ecoLabel: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#2e7d32',
+    fontSize: tokens.typography.size.sm,
+    fontWeight: tokens.typography.weight.semibold,
+    color: tokens.colors.accent,
   },
   ecoPointsText: {
-    fontSize: 26,
-    fontWeight: '800',
-    color: '#1b5e20',
+    fontSize: tokens.typography.size.xxl,
+    fontWeight: tokens.typography.weight.extrabold,
+    color: tokens.colors.text,
     marginTop: 2,
   },
   ecoBadge: {
-    backgroundColor: '#e8f5e9',
-    paddingVertical: 5,
-    paddingHorizontal: 10,
-    borderRadius: 10,
+    backgroundColor: tokens.colors.accent + '20',
+    paddingVertical: tokens.spacing.xs,
+    paddingHorizontal: tokens.spacing.sm,
+    borderRadius: tokens.radius.full,
     borderWidth: 1,
-    borderColor: '#c8e6c9',
+    borderColor: tokens.colors.accent + '30',
   },
   ecoBadgeText: {
-    color: '#2e7d32',
-    fontSize: 12,
-    fontWeight: '700',
+    color: tokens.colors.accent,
+    fontSize: tokens.typography.size.xs,
+    fontWeight: tokens.typography.weight.bold,
   },
   statsDivider: {
     height: 1,
-    backgroundColor: '#f0f0f0',
-    marginVertical: 14,
+    backgroundColor: tokens.colors.border,
+    marginVertical: tokens.spacing.md,
   },
   statsRow: {
     flexDirection: 'row',
@@ -372,189 +314,181 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   statNum: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: '#333',
+    fontSize: tokens.typography.size.lg,
+    fontWeight: tokens.typography.weight.bold,
+    color: tokens.colors.text,
   },
   statLabel: {
-    fontSize: 12,
-    color: '#777',
+    fontSize: tokens.typography.size.xs,
+    color: tokens.colors.muted,
     marginTop: 2,
   },
   filterRow: {
     flexDirection: 'row',
-    marginBottom: 16,
-    backgroundColor: '#e0e0e0',
-    borderRadius: 8,
-    padding: 3,
+    marginBottom: tokens.spacing.md,
+    backgroundColor: tokens.colors.border,
+    borderRadius: tokens.radius.md,
+    padding: 4,
   },
   filterPill: {
     flex: 1,
-    paddingVertical: 7,
+    paddingVertical: tokens.spacing.sm,
     alignItems: 'center',
-    borderRadius: 6,
+    borderRadius: tokens.radius.sm,
+    minHeight: 44,
+    justifyContent: 'center',
   },
   activeFilterPill: {
-    backgroundColor: '#ffffff',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 1,
+    backgroundColor: tokens.colors.background,
+    ...tokens.shadow.sm,
   },
   filterPillText: {
-    fontSize: 13,
-    color: '#666',
-    fontWeight: '600',
+    fontSize: tokens.typography.size.sm,
+    color: tokens.colors.muted,
+    fontWeight: tokens.typography.weight.semibold,
   },
   activeFilterPillText: {
-    color: '#2e7d32',
-    fontWeight: '700',
+    color: tokens.colors.text,
+    fontWeight: tokens.typography.weight.bold,
   },
   centerContainer: {
-    padding: 30,
+    padding: tokens.spacing.xxl,
     alignItems: 'center',
   },
   loadingText: {
-    marginTop: 10,
-    color: '#666',
-    fontSize: 14,
+    marginTop: tokens.spacing.sm,
+    color: tokens.colors.muted,
+    fontSize: tokens.typography.size.sm,
   },
   emptyCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 14,
-    padding: 28,
+    backgroundColor: tokens.colors.background,
+    borderRadius: tokens.radius.xl,
+    padding: tokens.spacing.xxl,
     alignItems: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+    ...tokens.shadow.sm,
   },
   emptyIcon: {
-    fontSize: 40,
-    marginBottom: 12,
+    fontSize: tokens.typography.size.xxl,
+    marginBottom: tokens.spacing.sm,
   },
   emptyTitle: {
-    fontSize: 17,
-    fontWeight: '700',
-    color: '#333',
-    marginBottom: 8,
+    fontSize: tokens.typography.size.base,
+    fontWeight: tokens.typography.weight.bold,
+    color: tokens.colors.text,
+    marginBottom: tokens.spacing.sm,
   },
   emptyDesc: {
-    fontSize: 13,
-    color: '#777',
+    fontSize: tokens.typography.size.sm,
+    color: tokens.colors.muted,
     textAlign: 'center',
-    lineHeight: 18,
-    marginBottom: 20,
+    lineHeight: 20,
+    marginBottom: tokens.spacing.lg,
   },
   fileBtn: {
-    backgroundColor: '#2e7d32',
-    paddingVertical: 12,
-    paddingHorizontal: 22,
-    borderRadius: 8,
+    backgroundColor: tokens.colors.accent,
+    paddingVertical: tokens.spacing.md,
+    paddingHorizontal: tokens.spacing.lg,
+    borderRadius: tokens.radius.md,
+    minHeight: 48,
+    justifyContent: 'center',
   },
   fileBtnText: {
-    color: '#ffffff',
-    fontWeight: '700',
-    fontSize: 14,
+    color: tokens.colors.background,
+    fontWeight: tokens.typography.weight.bold,
+    fontSize: tokens.typography.size.sm,
   },
   complaintCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06,
-    shadowRadius: 3,
-    elevation: 2,
+    backgroundColor: tokens.colors.background,
+    borderRadius: tokens.radius.lg,
+    padding: tokens.spacing.md,
+    marginBottom: tokens.spacing.sm,
+    ...tokens.shadow.sm,
   },
   complaintHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: tokens.spacing.sm,
   },
   categoryTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#222',
+    fontSize: tokens.typography.size.base,
+    fontWeight: tokens.typography.weight.bold,
+    color: tokens.colors.text,
   },
   statusPill: {
-    paddingVertical: 3,
-    paddingHorizontal: 8,
-    borderRadius: 8,
+    paddingVertical: tokens.spacing.xs,
+    paddingHorizontal: tokens.spacing.sm,
+    borderRadius: tokens.radius.full,
   },
   statusDone: {
-    backgroundColor: '#e8f5e9',
+    backgroundColor: tokens.colors.accent + '20',
   },
   statusDoneText: {
-    color: '#2e7d32',
-    fontWeight: '700',
-    fontSize: 12,
+    color: tokens.colors.accent,
+    fontWeight: tokens.typography.weight.bold,
+    fontSize: tokens.typography.size.xs,
   },
   statusInProgress: {
     backgroundColor: '#fff3e0',
   },
   statusInProgressText: {
     color: '#e65100',
-    fontWeight: '700',
-    fontSize: 12,
+    fontWeight: tokens.typography.weight.bold,
+    fontSize: tokens.typography.size.xs,
   },
   statusSubmitted: {
     backgroundColor: '#e3f2fd',
   },
   statusSubmittedText: {
     color: '#1565c0',
-    fontWeight: '700',
-    fontSize: 12,
+    fontWeight: tokens.typography.weight.bold,
+    fontSize: tokens.typography.size.xs,
   },
   complaintDesc: {
-    fontSize: 14,
-    color: '#444',
-    marginBottom: 10,
-    lineHeight: 19,
+    fontSize: tokens.typography.size.sm,
+    color: tokens.colors.text,
+    marginBottom: tokens.spacing.sm,
+    lineHeight: 20,
   },
   metaRow: {
     flexDirection: 'row',
     marginBottom: 4,
   },
   metaLabel: {
-    fontSize: 12,
-    color: '#777',
+    fontSize: tokens.typography.size.xs,
+    color: tokens.colors.muted,
     width: 60,
-    fontWeight: '500',
+    fontWeight: tokens.typography.weight.medium,
   },
   metaValue: {
-    fontSize: 12,
-    color: '#333',
-    fontWeight: '600',
+    fontSize: tokens.typography.size.xs,
+    color: tokens.colors.text,
+    fontWeight: tokens.typography.weight.semibold,
     flex: 1,
   },
   rewardRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 8,
-    paddingTop: 8,
+    marginTop: tokens.spacing.sm,
+    paddingTop: tokens.spacing.sm,
     borderTopWidth: 1,
-    borderTopColor: '#f5f5f5',
+    borderTopColor: tokens.colors.border,
   },
   rewardLabel: {
-    fontSize: 12,
-    color: '#555',
-    fontWeight: '600',
-    marginRight: 6,
+    fontSize: tokens.typography.size.xs,
+    color: tokens.colors.muted,
+    fontWeight: tokens.typography.weight.semibold,
+    marginRight: tokens.spacing.xs,
   },
   rewardValue: {
-    fontSize: 12,
-    fontWeight: '700',
+    fontSize: tokens.typography.size.xs,
+    fontWeight: tokens.typography.weight.bold,
   },
   pointsEarned: {
-    color: '#2e7d32',
+    color: tokens.colors.accent,
   },
   pointsPending: {
-    color: '#888',
+    color: tokens.colors.muted,
     fontStyle: 'italic',
   },
 });

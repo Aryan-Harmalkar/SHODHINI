@@ -8,66 +8,62 @@ import {
   TextInput,
   Alert,
 } from 'react-native';
+import { tokens } from '../lib/theme';
 
 export default function WastePickupScreen({ user, onBackToHome, onOpenSidebar }) {
-  const [address, setAddress] = useState('');
   const [selectedPlan, setSelectedPlan] = useState('standard');
+  const [address, setAddress] = useState('');
   const [wasteType, setWasteType] = useState('household');
   const [timeSlot, setTimeSlot] = useState('morning');
   const [note, setNote] = useState('');
-  const [submitted, setSubmitted] = useState(false);
 
   const handleBookPickup = () => {
     if (!address.trim()) {
-      Alert.alert('Missing Address', 'Please provide your pickup address or house number.');
+      Alert.alert('Address Required', 'Please enter your pickup address to proceed.');
       return;
     }
-
-    setSubmitted(true);
     Alert.alert(
-      'Pickup Request Submitted!',
-      'Our sanitation partner has received your request. You will receive a confirmation call shortly before arrival.\n\nFee will be collected at doorstep.',
-      [{ text: 'OK', onPress: onBackToHome }]
+      'Pickup Requested ✅',
+      'A collection worker will be assigned to your address shortly. You can pay them directly via UPI/Cash.',
+      [{ text: 'OK', onPress: () => onBackToHome() }]
     );
   };
 
   return (
     <View style={styles.container}>
-      {/* Top Header */}
       <View style={styles.topBar}>
         <View style={styles.topLeft}>
-          <TouchableOpacity style={styles.menuBtn} onPress={onOpenSidebar}>
+          <TouchableOpacity style={styles.menuBtn} onPress={onOpenSidebar} activeOpacity={0.7}>
             <Text style={styles.menuIcon}>☰</Text>
           </TouchableOpacity>
-          <Text style={styles.screenTitle}>Doorstep Waste Pickup</Text>
+          <Text style={styles.screenTitle}>Waste Pickup</Text>
         </View>
 
-        <TouchableOpacity style={styles.backHomeBtn} onPress={onBackToHome}>
+        <TouchableOpacity style={styles.backHomeBtn} onPress={onBackToHome} activeOpacity={0.7}>
           <Text style={styles.backHomeText}>Home</Text>
         </TouchableOpacity>
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        {/* Paid Service Banner */}
+      <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
         <View style={styles.heroBanner}>
           <View style={styles.paidBadge}>
-            <Text style={styles.paidBadgeText}>⭐ PAID DOORSTEP SERVICE</Text>
+            <Text style={styles.paidBadgeText}>PAID SERVICE</Text>
           </View>
-          <Text style={styles.heroTitle}>No Dustbins Nearby? We'll Pick It Up!</Text>
+          <Text style={styles.heroTitle}>Doorstep Waste Collection</Text>
           <Text style={styles.heroDesc}>
-            Specially designed for residents without accessible community bins, senior citizens, or anyone needing hassle-free doorstep waste collection.
+            No dustbin nearby? Too much waste? Request an immediate pickup directly from your doorstep.
           </Text>
         </View>
 
-        {/* Pricing Options */}
-        <Text style={styles.sectionLabel}>Select Service Option</Text>
+        <Text style={styles.sectionLabel}>Select Volume Plan</Text>
         <View style={styles.plansContainer}>
           <TouchableOpacity
             style={[styles.planCard, selectedPlan === 'standard' && styles.activePlanCard]}
             onPress={() => setSelectedPlan('standard')}
+            activeOpacity={0.7}
           >
             <View style={styles.planHeader}>
-              <Text style={styles.planName}>Standard Bag</Text>
+              <Text style={styles.planName}>Standard</Text>
               <Text style={styles.planPrice}>₹40</Text>
             </View>
             <Text style={styles.planDetails}>Up to 2 bags of regular household daily waste.</Text>
@@ -76,6 +72,7 @@ export default function WastePickupScreen({ user, onBackToHome, onOpenSidebar })
           <TouchableOpacity
             style={[styles.planCard, selectedPlan === 'bulk' && styles.activePlanCard]}
             onPress={() => setSelectedPlan('bulk')}
+            activeOpacity={0.7}
           >
             <View style={styles.planHeader}>
               <Text style={styles.planName}>Bulk / Garden</Text>
@@ -85,11 +82,9 @@ export default function WastePickupScreen({ user, onBackToHome, onOpenSidebar })
           </TouchableOpacity>
         </View>
 
-        {/* Request Form */}
         <View style={styles.formCard}>
           <Text style={styles.formTitle}>Pickup Details</Text>
 
-          {/* Address */}
           <View style={styles.inputGroup}>
             <Text style={styles.inputLabel}>Pickup Address / Flat No. & Landmark</Text>
             <TextInput
@@ -100,7 +95,6 @@ export default function WastePickupScreen({ user, onBackToHome, onOpenSidebar })
             />
           </View>
 
-          {/* Waste Category Selection */}
           <View style={styles.inputGroup}>
             <Text style={styles.inputLabel}>Waste Category</Text>
             <View style={styles.pillRow}>
@@ -113,6 +107,7 @@ export default function WastePickupScreen({ user, onBackToHome, onOpenSidebar })
                   key={item.id}
                   style={[styles.pill, wasteType === item.id && styles.activePill]}
                   onPress={() => setWasteType(item.id)}
+                  activeOpacity={0.7}
                 >
                   <Text style={[styles.pillText, wasteType === item.id && styles.activePillText]}>
                     {item.label}
@@ -122,7 +117,6 @@ export default function WastePickupScreen({ user, onBackToHome, onOpenSidebar })
             </View>
           </View>
 
-          {/* Preferred Time Slot */}
           <View style={styles.inputGroup}>
             <Text style={styles.inputLabel}>Preferred Pickup Time</Text>
             <View style={styles.pillRow}>
@@ -135,6 +129,7 @@ export default function WastePickupScreen({ user, onBackToHome, onOpenSidebar })
                   key={slot.id}
                   style={[styles.pill, timeSlot === slot.id && styles.activePill]}
                   onPress={() => setTimeSlot(slot.id)}
+                  activeOpacity={0.7}
                 >
                   <Text style={[styles.pillText, timeSlot === slot.id && styles.activePillText]}>
                     {slot.label}
@@ -144,27 +139,25 @@ export default function WastePickupScreen({ user, onBackToHome, onOpenSidebar })
             </View>
           </View>
 
-          {/* Special Instructions */}
           <View style={styles.inputGroup}>
             <Text style={styles.inputLabel}>Special Notes (Optional)</Text>
             <TextInput
-              style={[styles.input, { height: 70 }]}
+              style={[styles.input, { minHeight: 70 }]}
               placeholder="Any specific instructions for the collection worker..."
               multiline
               value={note}
               onChangeText={setNote}
+              textAlignVertical="top"
             />
           </View>
 
-          {/* Payment Notice */}
           <View style={styles.noticeBox}>
             <Text style={styles.noticeText}>
               💳 Payment of {selectedPlan === 'standard' ? '₹40' : '₹120'} can be made directly to the collection partner via Cash or UPI upon pickup.
             </Text>
           </View>
 
-          {/* Submit Button */}
-          <TouchableOpacity style={styles.submitBtn} onPress={handleBookPickup}>
+          <TouchableOpacity style={styles.submitBtn} onPress={handleBookPickup} activeOpacity={0.7}>
             <Text style={styles.submitBtnText}>Request Doorstep Pickup 🚚</Text>
           </TouchableOpacity>
         </View>
@@ -176,204 +169,212 @@ export default function WastePickupScreen({ user, onBackToHome, onOpenSidebar })
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f4f6f8',
+    backgroundColor: tokens.colors.surface,
   },
   topBar: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    backgroundColor: '#ffffff',
+    paddingHorizontal: tokens.spacing.md,
+    paddingVertical: tokens.spacing.md,
+    backgroundColor: tokens.colors.background,
     borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
+    borderBottomColor: tokens.colors.border,
   },
   topLeft: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   menuBtn: {
-    padding: 6,
-    marginRight: 10,
+    padding: tokens.spacing.xs,
+    marginRight: tokens.spacing.sm,
+    minHeight: 44,
+    minWidth: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   menuIcon: {
-    fontSize: 22,
-    color: '#2e7d32',
-    fontWeight: 'bold',
+    fontSize: tokens.typography.size.lg,
+    color: tokens.colors.text,
+    fontWeight: tokens.typography.weight.bold,
   },
   screenTitle: {
-    fontSize: 17,
-    fontWeight: '700',
-    color: '#2e7d32',
+    fontSize: tokens.typography.size.base,
+    fontWeight: tokens.typography.weight.bold,
+    color: tokens.colors.text,
   },
   backHomeBtn: {
-    backgroundColor: '#e8f5e9',
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 6,
+    backgroundColor: tokens.colors.surface,
+    paddingVertical: tokens.spacing.sm,
+    paddingHorizontal: tokens.spacing.md,
+    borderRadius: tokens.radius.sm,
+    minHeight: 44,
+    justifyContent: 'center',
   },
   backHomeText: {
-    color: '#2e7d32',
-    fontSize: 13,
-    fontWeight: '600',
+    color: tokens.colors.accent,
+    fontSize: tokens.typography.size.sm,
+    fontWeight: tokens.typography.weight.bold,
   },
   scrollContent: {
-    padding: 16,
-    paddingBottom: 40,
+    padding: tokens.spacing.md,
+    paddingBottom: tokens.spacing.xxl,
   },
   heroBanner: {
-    backgroundColor: '#2e7d32',
-    borderRadius: 14,
-    padding: 20,
-    marginBottom: 16,
+    backgroundColor: tokens.colors.accent,
+    borderRadius: tokens.radius.xl,
+    padding: tokens.spacing.lg,
+    marginBottom: tokens.spacing.md,
   },
   paidBadge: {
     alignSelf: 'flex-start',
     backgroundColor: '#ffb300',
-    paddingVertical: 4,
-    paddingHorizontal: 10,
-    borderRadius: 12,
-    marginBottom: 8,
+    paddingVertical: tokens.spacing.xs,
+    paddingHorizontal: tokens.spacing.md,
+    borderRadius: tokens.radius.full,
+    marginBottom: tokens.spacing.sm,
   },
   paidBadgeText: {
-    fontSize: 11,
-    fontWeight: '800',
+    fontSize: tokens.typography.size.xs,
+    fontWeight: tokens.typography.weight.extrabold,
     color: '#212121',
   },
   heroTitle: {
-    fontSize: 20,
-    fontWeight: '800',
-    color: '#ffffff',
-    marginBottom: 6,
+    fontSize: tokens.typography.size.lg,
+    fontWeight: tokens.typography.weight.extrabold,
+    color: tokens.colors.background,
+    marginBottom: tokens.spacing.xs,
   },
   heroDesc: {
-    fontSize: 13,
-    color: '#e8f5e9',
-    lineHeight: 18,
+    fontSize: tokens.typography.size.sm,
+    color: tokens.colors.background,
+    opacity: 0.9,
+    lineHeight: 20,
   },
   sectionLabel: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#333',
-    marginBottom: 10,
+    fontSize: tokens.typography.size.sm,
+    fontWeight: tokens.typography.weight.bold,
+    color: tokens.colors.text,
+    marginBottom: tokens.spacing.sm,
   },
   plansContainer: {
     flexDirection: 'row',
-    gap: 12,
-    marginBottom: 18,
+    gap: tokens.spacing.md,
+    marginBottom: tokens.spacing.lg,
   },
   planCard: {
     flex: 1,
-    backgroundColor: '#ffffff',
-    borderRadius: 12,
-    padding: 14,
+    backgroundColor: tokens.colors.background,
+    borderRadius: tokens.radius.md,
+    padding: tokens.spacing.md,
     borderWidth: 2,
-    borderColor: '#e0e0e0',
+    borderColor: tokens.colors.border,
   },
   activePlanCard: {
-    borderColor: '#2e7d32',
-    backgroundColor: '#f1f8e9',
+    borderColor: tokens.colors.accent,
+    backgroundColor: tokens.colors.accent + '10',
   },
   planHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 6,
+    marginBottom: tokens.spacing.sm,
   },
   planName: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#222',
+    fontSize: tokens.typography.size.sm,
+    fontWeight: tokens.typography.weight.bold,
+    color: tokens.colors.text,
   },
   planPrice: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: '#2e7d32',
+    fontSize: tokens.typography.size.lg,
+    fontWeight: tokens.typography.weight.extrabold,
+    color: tokens.colors.accent,
   },
   planDetails: {
-    fontSize: 12,
-    color: '#666',
-    lineHeight: 16,
+    fontSize: tokens.typography.size.xs,
+    color: tokens.colors.muted,
+    lineHeight: 18,
   },
   formCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 14,
-    padding: 18,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.06,
-    shadowRadius: 4,
-    elevation: 2,
+    backgroundColor: tokens.colors.background,
+    borderRadius: tokens.radius.xl,
+    padding: tokens.spacing.lg,
+    ...tokens.shadow.sm,
   },
   formTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#222',
-    marginBottom: 14,
+    fontSize: tokens.typography.size.base,
+    fontWeight: tokens.typography.weight.bold,
+    color: tokens.colors.text,
+    marginBottom: tokens.spacing.md,
   },
   inputGroup: {
-    marginBottom: 14,
+    marginBottom: tokens.spacing.md,
   },
   inputLabel: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#444',
-    marginBottom: 6,
+    fontSize: tokens.typography.size.sm,
+    fontWeight: tokens.typography.weight.semibold,
+    color: tokens.colors.text,
+    marginBottom: tokens.spacing.sm,
   },
   input: {
-    backgroundColor: '#fafafa',
+    backgroundColor: tokens.colors.background,
     borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    fontSize: 14,
-    color: '#222',
+    borderColor: tokens.colors.border,
+    borderRadius: tokens.radius.md,
+    paddingHorizontal: tokens.spacing.md,
+    paddingVertical: tokens.spacing.sm,
+    fontSize: tokens.typography.size.sm,
+    color: tokens.colors.text,
+    minHeight: 48,
   },
   pillRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
+    gap: tokens.spacing.sm,
   },
   pill: {
-    backgroundColor: '#f0f0f0',
-    paddingVertical: 7,
-    paddingHorizontal: 12,
-    borderRadius: 8,
+    backgroundColor: tokens.colors.surface,
+    paddingVertical: tokens.spacing.sm,
+    paddingHorizontal: tokens.spacing.md,
+    borderRadius: tokens.radius.sm,
+    minHeight: 44,
+    justifyContent: 'center',
   },
   activePill: {
-    backgroundColor: '#2e7d32',
+    backgroundColor: tokens.colors.accent,
   },
   pillText: {
-    fontSize: 12,
-    color: '#444',
-    fontWeight: '600',
+    fontSize: tokens.typography.size.sm,
+    color: tokens.colors.text,
+    fontWeight: tokens.typography.weight.semibold,
   },
   activePillText: {
-    color: '#ffffff',
+    color: tokens.colors.background,
   },
   noticeBox: {
     backgroundColor: '#fff8e1',
     borderWidth: 1,
     borderColor: '#ffe082',
-    borderRadius: 8,
-    padding: 10,
-    marginBottom: 16,
+    borderRadius: tokens.radius.md,
+    padding: tokens.spacing.sm,
+    marginBottom: tokens.spacing.md,
   },
   noticeText: {
-    fontSize: 12,
+    fontSize: tokens.typography.size.xs,
     color: '#795548',
-    lineHeight: 17,
+    lineHeight: 20,
   },
   submitBtn: {
-    backgroundColor: '#2e7d32',
-    paddingVertical: 14,
-    borderRadius: 8,
+    backgroundColor: tokens.colors.accent,
+    paddingVertical: tokens.spacing.md,
+    borderRadius: tokens.radius.md,
     alignItems: 'center',
+    minHeight: 48,
+    justifyContent: 'center',
   },
   submitBtnText: {
-    color: '#ffffff',
-    fontSize: 15,
-    fontWeight: '700',
+    color: tokens.colors.background,
+    fontSize: tokens.typography.size.sm,
+    fontWeight: tokens.typography.weight.bold,
   },
 });
