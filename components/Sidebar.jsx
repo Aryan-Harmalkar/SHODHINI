@@ -22,322 +22,242 @@ export default function Sidebar({
   const isWorker = isCollector || user?.role === 'worker';
 
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={onClose}>
+    <Modal
+      visible={visible}
+      animationType="fade"
+      transparent={true}
+      onRequestClose={onClose}
+    >
       <View style={styles.overlay}>
-        <TouchableOpacity style={styles.backdrop} activeOpacity={1} onPress={onClose} />
-        
+        {/* Backdrop */}
+        <TouchableOpacity
+          style={styles.backdrop}
+          activeOpacity={1}
+          onPress={onClose}
+        />
+
+        {/* Drawer Content */}
         <View style={styles.drawer}>
-          {/* Drawer Header */}
-          <View style={[styles.drawerHeader, isWorker && styles.drawerHeaderWorker]}>
-            <View>
-              <Text style={styles.appTitle}>{isWorker ? 'SHODHINI WORKER' : 'SHODHINI'}</Text>
-              <Text style={styles.userGreeting}>
-                {isWorker ? `👷 ${user?.name || 'Sanitation Team'}` : `Hello, ${user?.name || 'Citizen'}`}
+          {/* Minimal Drawer Header */}
+          <View style={styles.drawerHeader}>
+            <View style={styles.userInfo}>
+              <Text style={styles.userName}>{user?.name || 'User'}</Text>
+              <Text style={styles.userRole}>
+                {isWorker ? 'Sanitation Worker' : 'Citizen'} • {user?.area || (user?.area_id ? `Ward ${user.area_id}` : 'Ward 1')}
               </Text>
             </View>
-            <TouchableOpacity style={styles.closeBtn} onPress={onClose} activeOpacity={0.7}>
-              <Text style={styles.closeBtnText}>✕</Text>
+            <TouchableOpacity
+              style={styles.closeBtn}
+              onPress={onClose}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.closeIcon}>✕</Text>
             </TouchableOpacity>
           </View>
 
-          {/* Role Status Banner */}
+          {/* Quick Status / Points Strip */}
           {isWorker ? (
-            <View style={styles.workerStatusBox}>
-              <View style={styles.workerStatusHeader}>
-                <View style={styles.dutyPill}>
-                  <View style={styles.dutyDot} />
-                  <Text style={styles.dutyPillText}>DUTY ACTIVE</Text>
-                </View>
-                <Text style={styles.workerAreaText}>📍 {user?.area || 'Ward 1'}</Text>
-              </View>
-              <Text style={styles.workerSubText}>Field Operations & Waste Hotspot Clearance</Text>
+            <View style={styles.workerStatusStrip}>
+              <View style={styles.dutyDot} />
+              <Text style={styles.workerStatusText}>Active Duty • {user?.area || 'Ward 1'}</Text>
             </View>
           ) : (
             <TouchableOpacity
-              style={styles.ecoPointsBox}
-              activeOpacity={0.8}
+              style={styles.ecoPointsStrip}
+              activeOpacity={0.7}
               onPress={() => {
                 onNavigate('rewards');
                 onClose();
               }}
             >
-              <View>
-                <Text style={styles.ecoPointsLabel}>🌱 Eco Points</Text>
-                <Text style={styles.ecoPointsSub}>Tap to redeem rewards</Text>
-              </View>
-              <Text style={styles.ecoPointsVal}>{ecoPoints} pts →</Text>
+              <Text style={styles.ecoPointsText}>🌱 {ecoPoints} Eco Points</Text>
+              <Text style={styles.ecoPointsArrow}>Redeem →</Text>
             </TouchableOpacity>
           )}
 
-          {/* Collector Menu */}
-          {isWorker ? (
-            <ScrollView style={styles.menuList} showsVerticalScrollIndicator={false}>
-              {/* 1. Duty Dashboard */}
-              <TouchableOpacity
-                style={[styles.menuItem, currentScreen === 'home' && styles.activeMenuItem]}
-                onPress={() => { onNavigate('home'); onClose(); }}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.menuIcon}>🏠</Text>
-                <View style={styles.menuItemCol}>
-                  <Text style={[styles.menuText, currentScreen === 'home' && styles.activeMenuText]}>
-                    Duty Dashboard
-                  </Text>
-                  <Text style={styles.menuItemSub}>Live area feed & complaint radar</Text>
-                </View>
-              </TouchableOpacity>
-
-              {/* 2. Tasks Master Menu */}
-              <TouchableOpacity
-                style={[
-                  styles.menuItem,
-                  (currentScreen === 'collector_tasks' || currentScreen.startsWith('collector_tasks')) && styles.activeMenuItem,
-                ]}
-                onPress={() => { onNavigate('collector_tasks_available'); onClose(); }}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.menuIcon}>📋</Text>
-                <View style={styles.menuItemCol}>
-                  <View style={styles.menuItemRow}>
-                    <Text
-                      style={[
-                        styles.menuText,
-                        (currentScreen === 'collector_tasks' || currentScreen.startsWith('collector_tasks')) &&
-                          styles.activeMenuText,
-                      ]}
-                    >
-                      Tasks & Operations
-                    </Text>
-                    <View style={styles.rankPill}>
-                      <Text style={styles.rankPillText}>TASKS</Text>
-                    </View>
-                  </View>
-                  <Text style={styles.menuItemSub}>Available, pending & location tracking</Text>
-                </View>
-              </TouchableOpacity>
-
-              {/* Sub-menu items for Collector Tasks */}
-              <View style={styles.subMenuList}>
+          {/* Menu Items List */}
+          <ScrollView style={styles.menuList} showsVerticalScrollIndicator={false}>
+            {isWorker ? (
+              /* COLLECTOR MENU */
+              <>
                 <TouchableOpacity
-                  style={styles.subMenuItem}
+                  style={[styles.menuItem, currentScreen === 'home' && styles.activeMenuItem]}
+                  onPress={() => { onNavigate('home'); onClose(); }}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.menuIcon}>🏠</Text>
+                  <Text style={[styles.menuText, currentScreen === 'home' && styles.activeMenuText]}>
+                    Dashboard
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.menuItem, currentScreen === 'collector_tasks_available' && styles.activeMenuItem]}
                   onPress={() => { onNavigate('collector_tasks_available'); onClose(); }}
                   activeOpacity={0.7}
                 >
-                  <Text style={styles.subMenuBullet}>↳</Text>
-                  <Text style={styles.subMenuText}>Tasks Available</Text>
-                  <Text style={[styles.subMenuTag, { color: '#0284c7', borderColor: '#bae6fd' }]}>NEW</Text>
+                  <Text style={styles.menuIcon}>🔔</Text>
+                  <Text style={[styles.menuText, currentScreen === 'collector_tasks_available' && styles.activeMenuText]}>
+                    Tasks Available
+                  </Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                  style={styles.subMenuItem}
+                  style={[styles.menuItem, currentScreen === 'collector_tasks_pending' && styles.activeMenuItem]}
                   onPress={() => { onNavigate('collector_tasks_pending'); onClose(); }}
                   activeOpacity={0.7}
                 >
-                  <Text style={styles.subMenuBullet}>↳</Text>
-                  <Text style={styles.subMenuText}>Pending Tasks</Text>
-                  <Text style={[styles.subMenuTag, { color: '#d97706', borderColor: '#fde68a' }]}>ACTIVE</Text>
+                  <Text style={styles.menuIcon}>⏳</Text>
+                  <Text style={[styles.menuText, currentScreen === 'collector_tasks_pending' && styles.activeMenuText]}>
+                    Pending Tasks
+                  </Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                  style={styles.subMenuItem}
+                  style={[styles.menuItem, currentScreen === 'collector_track_location' && styles.activeMenuItem]}
                   onPress={() => { onNavigate('collector_track_location'); onClose(); }}
                   activeOpacity={0.7}
                 >
-                  <Text style={styles.subMenuBullet}>↳</Text>
-                  <Text style={styles.subMenuText}>Track Location</Text>
-                  <Text style={[styles.subMenuTag, { color: '#2563eb', borderColor: '#bfdbfe' }]}>MAP GPS</Text>
+                  <Text style={styles.menuIcon}>📍</Text>
+                  <Text style={[styles.menuText, currentScreen === 'collector_track_location' && styles.activeMenuText]}>
+                    Track Location
+                  </Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                  style={styles.subMenuItem}
+                  style={[styles.menuItem, currentScreen === 'collector_tasks_completed' && styles.activeMenuItem]}
                   onPress={() => { onNavigate('collector_tasks_completed'); onClose(); }}
                   activeOpacity={0.7}
                 >
-                  <Text style={styles.subMenuBullet}>↳</Text>
-                  <Text style={styles.subMenuText}>Completed Tasks</Text>
-                  <Text style={[styles.subMenuTag, { color: tokens.colors.accent, borderColor: tokens.colors.accent + '40' }]}>DONE</Text>
+                  <Text style={styles.menuIcon}>✅</Text>
+                  <Text style={[styles.menuText, currentScreen === 'collector_tasks_completed' && styles.activeMenuText]}>
+                    Completed Tasks
+                  </Text>
                 </TouchableOpacity>
-              </View>
 
-              {/* 3. Ward Scoreboard */}
-              <TouchableOpacity
-                style={[styles.menuItem, currentScreen === 'scoreboard' && styles.activeMenuItem]}
-                onPress={() => { onNavigate('scoreboard'); onClose(); }}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.menuIcon}>🏆</Text>
-                <View style={styles.menuItemCol}>
-                  <View style={styles.menuItemRow}>
-                    <Text style={[styles.menuText, currentScreen === 'scoreboard' && styles.activeMenuText]}>
-                      Ward Scoreboard
-                    </Text>
-                    <View style={styles.rankPill}>
-                      <Text style={styles.rankPillText}>RANKS</Text>
-                    </View>
-                  </View>
-                  <Text style={styles.menuItemSub}>City cleanliness rankings & ward standings</Text>
-                </View>
-              </TouchableOpacity>
-            </ScrollView>
-          ) : (
-            /* Citizen Menu */
-            <ScrollView style={styles.menuList} showsVerticalScrollIndicator={false}>
-              {/* 1. Home */}
-              <TouchableOpacity
-                style={[styles.menuItem, currentScreen === 'home' && styles.activeMenuItem]}
-                onPress={() => { onNavigate('home'); onClose(); }}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.menuIcon}>🏠</Text>
-                <Text style={[styles.menuText, currentScreen === 'home' && styles.activeMenuText]}>Home</Text>
-              </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.menuItem, currentScreen === 'scoreboard' && styles.activeMenuItem]}
+                  onPress={() => { onNavigate('scoreboard'); onClose(); }}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.menuIcon}>🏆</Text>
+                  <Text style={[styles.menuText, currentScreen === 'scoreboard' && styles.activeMenuText]}>
+                    Ward Scoreboard
+                  </Text>
+                </TouchableOpacity>
+              </>
+            ) : (
+              /* CITIZEN MENU */
+              <>
+                <TouchableOpacity
+                  style={[styles.menuItem, currentScreen === 'home' && styles.activeMenuItem]}
+                  onPress={() => { onNavigate('home'); onClose(); }}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.menuIcon}>🏠</Text>
+                  <Text style={[styles.menuText, currentScreen === 'home' && styles.activeMenuText]}>Home</Text>
+                </TouchableOpacity>
 
-              {/* 2. File a Complaint */}
-              <TouchableOpacity
-                style={[styles.menuItem, currentScreen === 'complaint' && styles.activeMenuItem]}
-                onPress={() => { onNavigate('complaint'); onClose(); }}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.menuIcon}>📝</Text>
-                <View style={styles.menuItemCol}>
+                <TouchableOpacity
+                  style={[styles.menuItem, currentScreen === 'complaint' && styles.activeMenuItem]}
+                  onPress={() => { onNavigate('complaint'); onClose(); }}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.menuIcon}>📸</Text>
                   <Text style={[styles.menuText, currentScreen === 'complaint' && styles.activeMenuText]}>
-                    File a Complaint
+                    Report Waste
                   </Text>
-                  <Text style={styles.menuItemSub}>Report waste hotspots in your ward</Text>
-                </View>
-              </TouchableOpacity>
+                </TouchableOpacity>
 
-              {/* 3. Complaints & Details (Track Status) */}
-              <TouchableOpacity
-                style={[styles.menuItem, currentScreen === 'my_complaints' && styles.activeMenuItem]}
-                onPress={() => { onNavigate('my_complaints'); onClose(); }}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.menuIcon}>📋</Text>
-                <View style={styles.menuItemCol}>
+                <TouchableOpacity
+                  style={[styles.menuItem, currentScreen === 'my_complaints' && styles.activeMenuItem]}
+                  onPress={() => { onNavigate('my_complaints'); onClose(); }}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.menuIcon}>📋</Text>
                   <Text style={[styles.menuText, currentScreen === 'my_complaints' && styles.activeMenuText]}>
-                    My Complaints & Status
+                    My Complaints
                   </Text>
-                  <Text style={styles.menuItemSub}>Live tracking & points earned</Text>
-                </View>
-              </TouchableOpacity>
-
-              {/* 4. Request Garbage Collector (Doorstep Pickup) */}
-              <TouchableOpacity
-                style={[styles.menuItem, currentScreen === 'waste_pickup' && styles.activeMenuItem]}
-                onPress={() => { onNavigate('waste_pickup'); onClose(); }}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.menuIcon}>🚚</Text>
-                <View style={styles.menuItemCol}>
-                  <View style={styles.menuItemRow}>
-                    <Text style={[styles.menuText, currentScreen === 'waste_pickup' && styles.activeMenuText]}>
-                      Request Garbage Collector
-                    </Text>
-                    <View style={styles.paidPill}>
-                      <Text style={styles.paidPillText}>DOORSTEP</Text>
-                    </View>
-                  </View>
-                  <Text style={styles.menuItemSub}>Direct collection for areas without bins</Text>
-                </View>
-              </TouchableOpacity>
-
-              {/* 5. Scoreboard & Leaderboard */}
-              <TouchableOpacity
-                style={[styles.menuItem, currentScreen === 'scoreboard' && styles.activeMenuItem]}
-                onPress={() => { onNavigate('scoreboard'); onClose(); }}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.menuIcon}>🏆</Text>
-                <View style={styles.menuItemCol}>
-                  <View style={styles.menuItemRow}>
-                    <Text style={[styles.menuText, currentScreen === 'scoreboard' && styles.activeMenuText]}>
-                      Scoreboard & Rankings
-                    </Text>
-                    <View style={styles.rankPill}>
-                      <Text style={styles.rankPillText}>RANKS</Text>
-                    </View>
-                  </View>
-                  <Text style={styles.menuItemSub}>Citywide Champions & Ward rankings</Text>
-                </View>
-              </TouchableOpacity>
-
-              {/* 6. Rewards Hub: Redeem Points & Coupons */}
-              <TouchableOpacity
-                style={[styles.menuItem, currentScreen === 'rewards' && styles.activeMenuItem]}
-                onPress={() => { onNavigate('rewards'); onClose(); }}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.menuIcon}>🎁</Text>
-                <View style={styles.menuItemCol}>
-                  <View style={styles.menuItemRow}>
-                    <Text style={[styles.menuText, currentScreen === 'rewards' && styles.activeMenuText]}>
-                      Rewards & Coupons
-                    </Text>
-                    <View style={styles.ecoPill}>
-                      <Text style={styles.ecoPillText}>REDEEM</Text>
-                    </View>
-                  </View>
-                  <Text style={styles.menuItemSub}>Redeem points, coupons & points earned</Text>
-                </View>
-              </TouchableOpacity>
-
-              {/* Sub-menu items for Rewards: Redeem points, Use coupons, Points earned */}
-              <View style={styles.subMenuList}>
-                <TouchableOpacity
-                  style={styles.subMenuItem}
-                  onPress={() => { onNavigate('rewards_redeem'); onClose(); }}
-                  activeOpacity={0.7}
-                >
-                  <Text style={styles.subMenuBullet}>↳</Text>
-                  <Text style={styles.subMenuText}>Redeem Points</Text>
-                  <Text style={styles.subMenuTag}>Catalog</Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                  style={styles.subMenuItem}
-                  onPress={() => { onNavigate('rewards_coupons'); onClose(); }}
+                  style={[styles.menuItem, currentScreen === 'scoreboard' && styles.activeMenuItem]}
+                  onPress={() => { onNavigate('scoreboard'); onClose(); }}
                   activeOpacity={0.7}
                 >
-                  <Text style={styles.subMenuBullet}>↳</Text>
-                  <Text style={styles.subMenuText}>Use Coupons / Earned</Text>
-                  <Text style={styles.subMenuTag}>Codes</Text>
+                  <Text style={styles.menuIcon}>🏆</Text>
+                  <Text style={[styles.menuText, currentScreen === 'scoreboard' && styles.activeMenuText]}>
+                    Scoreboard
+                  </Text>
                 </TouchableOpacity>
 
                 <TouchableOpacity
-                  style={styles.subMenuItem}
-                  onPress={() => { onNavigate('rewards_history'); onClose(); }}
+                  style={[styles.menuItem, (currentScreen === 'rewards' || currentScreen.startsWith('rewards_')) && styles.activeMenuItem]}
+                  onPress={() => { onNavigate('rewards'); onClose(); }}
                   activeOpacity={0.7}
                 >
-                  <Text style={styles.subMenuBullet}>↳</Text>
-                  <Text style={styles.subMenuText}>Points Earned</Text>
-                  <Text style={styles.subMenuTag}>History</Text>
+                  <Text style={styles.menuIcon}>🎁</Text>
+                  <Text style={[styles.menuText, (currentScreen === 'rewards' || currentScreen.startsWith('rewards_')) && styles.activeMenuText]}>
+                    Rewards & Coupons
+                  </Text>
                 </TouchableOpacity>
-              </View>
 
-              {/* 7. Recycle & Scrap */}
-              <TouchableOpacity
-                style={[styles.menuItem, currentScreen === 'recycle' && styles.activeMenuItem]}
-                onPress={() => { onNavigate('recycle'); onClose(); }}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.menuIcon}>♻️</Text>
-                <View style={styles.menuItemCol}>
-                  <View style={styles.menuItemRow}>
-                    <Text style={[styles.menuText, currentScreen === 'recycle' && styles.activeMenuText]}>
-                      Recycle & Scrap
-                    </Text>
-                    <View style={styles.ecoPill}>
-                      <Text style={styles.ecoPillText}>+PTS</Text>
-                    </View>
-                  </View>
-                  <Text style={styles.menuItemSub}>E-waste, metal, paper & plastics</Text>
+                {/* Indented Sub-items */}
+                <View style={styles.subMenuList}>
+                  <TouchableOpacity
+                    style={styles.subMenuItem}
+                    onPress={() => { onNavigate('rewards_redeem'); onClose(); }}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.subMenuDot}>•</Text>
+                    <Text style={styles.subMenuText}>Redeem Points</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.subMenuItem}
+                    onPress={() => { onNavigate('rewards_coupons'); onClose(); }}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.subMenuDot}>•</Text>
+                    <Text style={styles.subMenuText}>My Coupons</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.subMenuItem}
+                    onPress={() => { onNavigate('rewards_history'); onClose(); }}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.subMenuDot}>•</Text>
+                    <Text style={styles.subMenuText}>Points History</Text>
+                  </TouchableOpacity>
                 </View>
-              </TouchableOpacity>
-            </ScrollView>
-          )}
 
-          {/* Logout Button */}
+                <TouchableOpacity
+                  style={[styles.menuItem, currentScreen === 'waste_pickup' && styles.activeMenuItem]}
+                  onPress={() => { onNavigate('waste_pickup'); onClose(); }}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.menuIcon}>🚚</Text>
+                  <Text style={[styles.menuText, currentScreen === 'waste_pickup' && styles.activeMenuText]}>
+                    Doorstep Pickup
+                  </Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={[styles.menuItem, currentScreen === 'recycle' && styles.activeMenuItem]}
+                  onPress={() => { onNavigate('recycle'); onClose(); }}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.menuIcon}>♻️</Text>
+                  <Text style={[styles.menuText, currentScreen === 'recycle' && styles.activeMenuText]}>
+                    Scrap Recycling
+                  </Text>
+                </TouchableOpacity>
+              </>
+            )}
+          </ScrollView>
+
+          {/* Minimal Drawer Footer */}
           <View style={styles.drawerFooter}>
             <TouchableOpacity style={styles.logoutBtn} onPress={() => { onClose(); onLogout(); }} activeOpacity={0.7}>
               <Text style={styles.logoutText}>🚪 Log Out</Text>
@@ -350,50 +270,65 @@ export default function Sidebar({
 }
 
 const styles = StyleSheet.create({
-  overlay: { flex: 1, flexDirection: 'row' },
-  backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(15, 23, 42, 0.45)' },
+  overlay: {
+    flex: 1,
+    flexDirection: 'row',
+  },
+  backdrop: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(15, 23, 42, 0.35)',
+  },
   drawer: {
-    width: '85%',
-    maxWidth: 330,
+    width: '78%',
+    maxWidth: 300,
     backgroundColor: tokens.colors.background,
     height: '100%',
+    paddingTop: 44,
+    paddingHorizontal: tokens.spacing.md,
+    paddingBottom: tokens.spacing.lg,
     ...tokens.shadow.md,
-    flexDirection: 'column',
   },
   drawerHeader: {
-    paddingTop: tokens.spacing.xxl,
-    paddingHorizontal: tokens.spacing.lg,
-    paddingBottom: tokens.spacing.md,
-    backgroundColor: tokens.colors.accent,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-  },
-  drawerHeaderWorker: {
-    backgroundColor: '#0f172a',
-  },
-  workerStatusBox: {
-    backgroundColor: tokens.colors.surface,
-    margin: tokens.spacing.md,
-    padding: tokens.spacing.md,
-    borderRadius: tokens.radius.md,
-    borderWidth: 1,
-    borderColor: tokens.colors.border,
-    ...tokens.shadow.sm,
-  },
-  workerStatusHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 4,
+    paddingBottom: tokens.spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: tokens.colors.border,
+    marginBottom: tokens.spacing.sm,
   },
-  dutyPill: {
+  userInfo: {
+    flex: 1,
+  },
+  userName: {
+    fontSize: tokens.typography.size.base,
+    fontWeight: tokens.typography.weight.bold,
+    color: tokens.colors.text,
+  },
+  userRole: {
+    fontSize: tokens.typography.size.xs,
+    color: tokens.colors.muted,
+    marginTop: 1,
+  },
+  closeBtn: {
+    padding: tokens.spacing.xs,
+    minHeight: 36,
+    minWidth: 36,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  closeIcon: {
+    fontSize: tokens.typography.size.base,
+    color: tokens.colors.muted,
+  },
+  workerStatusStrip: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#dcfce7',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: tokens.radius.full,
+    backgroundColor: tokens.colors.accent + '10',
+    paddingVertical: 6,
+    paddingHorizontal: tokens.spacing.sm,
+    borderRadius: tokens.radius.sm,
+    marginBottom: tokens.spacing.sm,
   },
   dutyDot: {
     width: 6,
@@ -402,206 +337,95 @@ const styles = StyleSheet.create({
     backgroundColor: tokens.colors.accent,
     marginRight: 6,
   },
-  dutyPillText: {
-    fontSize: 9,
-    fontWeight: tokens.typography.weight.extrabold,
-    color: tokens.colors.accent,
-    letterSpacing: 0.5,
-  },
-  workerAreaText: {
+  workerStatusText: {
     fontSize: tokens.typography.size.xs,
     fontWeight: tokens.typography.weight.bold,
-    color: tokens.colors.text,
+    color: tokens.colors.accent,
   },
-  workerSubText: {
-    fontSize: 10,
-    color: tokens.colors.muted,
-    marginTop: 2,
-  },
-  appTitle: {
-    fontSize: tokens.typography.size.xl,
-    fontWeight: tokens.typography.weight.extrabold,
-    color: tokens.colors.background,
-    letterSpacing: 0.5,
-  },
-  userGreeting: {
-    fontSize: tokens.typography.size.sm,
-    color: tokens.colors.background,
-    opacity: 0.9,
-    marginTop: tokens.spacing.xs,
-    fontWeight: tokens.typography.weight.medium,
-  },
-  closeBtn: {
-    padding: tokens.spacing.xs,
-    minWidth: 44,
-    minHeight: 44,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  closeBtnText: {
-    color: tokens.colors.background,
-    fontSize: tokens.typography.size.lg,
-    fontWeight: tokens.typography.weight.bold,
-  },
-  ecoPointsBox: {
-    backgroundColor: tokens.colors.background,
-    margin: tokens.spacing.md,
-    padding: tokens.spacing.md,
-    borderRadius: tokens.radius.md,
+  ecoPointsStrip: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    borderWidth: 1,
-    borderColor: tokens.colors.borderFocus,
-    ...tokens.shadow.sm,
+    backgroundColor: tokens.colors.accent + '10',
+    paddingVertical: 6,
+    paddingHorizontal: tokens.spacing.sm,
+    borderRadius: tokens.radius.sm,
+    marginBottom: tokens.spacing.sm,
   },
-  ecoPointsLabel: {
-    fontSize: tokens.typography.size.sm,
+  ecoPointsText: {
+    fontSize: tokens.typography.size.xs,
+    fontWeight: tokens.typography.weight.bold,
+    color: tokens.colors.accent,
+  },
+  ecoPointsArrow: {
+    fontSize: tokens.typography.size.xs,
+    color: tokens.colors.accent,
     fontWeight: tokens.typography.weight.semibold,
-    color: tokens.colors.accent,
-  },
-  ecoPointsSub: {
-    fontSize: 10,
-    color: tokens.colors.muted,
-    marginTop: 2,
-  },
-  ecoPointsVal: {
-    fontSize: tokens.typography.size.base,
-    fontWeight: tokens.typography.weight.extrabold,
-    color: tokens.colors.accent,
   },
   menuList: {
     flex: 1,
-    paddingHorizontal: tokens.spacing.md,
-    paddingTop: tokens.spacing.xs,
   },
   menuItem: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: tokens.spacing.sm,
+    paddingVertical: 10,
     paddingHorizontal: tokens.spacing.sm,
     borderRadius: tokens.radius.md,
-    marginBottom: tokens.spacing.xs,
-    minHeight: 52,
+    marginBottom: 2,
   },
   activeMenuItem: {
     backgroundColor: tokens.colors.accent + '15',
   },
   menuIcon: {
-    fontSize: tokens.typography.size.lg,
-    marginRight: tokens.spacing.md,
-  },
-  menuItemCol: { flex: 1 },
-  menuItemRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
+    fontSize: 18,
+    marginRight: tokens.spacing.sm,
+    width: 24,
+    textAlign: 'center',
   },
   menuText: {
     fontSize: tokens.typography.size.sm,
-    fontWeight: tokens.typography.weight.semibold,
+    fontWeight: tokens.typography.weight.medium,
     color: tokens.colors.text,
   },
   activeMenuText: {
     color: tokens.colors.accent,
     fontWeight: tokens.typography.weight.bold,
   },
-  menuItemSub: {
-    fontSize: 11,
-    color: tokens.colors.muted,
-    marginTop: 2,
-  },
-  paidPill: {
-    backgroundColor: tokens.colors.surface,
-    borderWidth: 1,
-    borderColor: tokens.colors.border,
-    paddingVertical: 1,
-    paddingHorizontal: 6,
-    borderRadius: tokens.radius.sm,
-  },
-  paidPillText: {
-    fontSize: 9,
-    fontWeight: tokens.typography.weight.extrabold,
-    color: tokens.colors.muted,
-  },
-  rankPill: {
-    backgroundColor: '#fef3c7',
-    paddingVertical: 1,
-    paddingHorizontal: 6,
-    borderRadius: tokens.radius.sm,
-  },
-  rankPillText: {
-    fontSize: 9,
-    fontWeight: tokens.typography.weight.extrabold,
-    color: '#d97706',
-  },
-  ecoPill: {
-    backgroundColor: tokens.colors.accent + '20',
-    paddingVertical: 1,
-    paddingHorizontal: 6,
-    borderRadius: tokens.radius.sm,
-  },
-  ecoPillText: {
-    fontSize: 9,
-    fontWeight: tokens.typography.weight.extrabold,
-    color: tokens.colors.accent,
-  },
   subMenuList: {
-    marginLeft: 38,
-    marginRight: tokens.spacing.sm,
-    marginBottom: tokens.spacing.sm,
-    paddingLeft: tokens.spacing.sm,
-    borderLeftWidth: 2,
-    borderLeftColor: tokens.colors.border,
+    paddingLeft: 34,
+    marginBottom: 4,
   },
   subMenuItem: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: 6,
     paddingHorizontal: tokens.spacing.xs,
-    borderRadius: tokens.radius.sm,
   },
-  subMenuBullet: {
-    fontSize: tokens.typography.size.xs,
-    color: tokens.colors.accent,
-    marginRight: 6,
-    fontWeight: tokens.typography.weight.bold,
+  subMenuDot: {
+    fontSize: tokens.typography.size.base,
+    color: tokens.colors.muted,
+    marginRight: tokens.spacing.xs,
   },
   subMenuText: {
     fontSize: tokens.typography.size.xs,
-    fontWeight: tokens.typography.weight.semibold,
-    color: tokens.colors.text,
-    flex: 1,
-  },
-  subMenuTag: {
-    fontSize: 9,
-    fontWeight: tokens.typography.weight.bold,
     color: tokens.colors.muted,
-    backgroundColor: tokens.colors.surface,
-    paddingHorizontal: 4,
-    paddingVertical: 1,
-    borderRadius: tokens.radius.sm,
-    borderWidth: 1,
-    borderColor: tokens.colors.border,
+    fontWeight: tokens.typography.weight.medium,
   },
   drawerFooter: {
+    paddingTop: tokens.spacing.sm,
     borderTopWidth: 1,
     borderTopColor: tokens.colors.border,
-    padding: tokens.spacing.md,
-    backgroundColor: tokens.colors.background,
   },
   logoutBtn: {
-    backgroundColor: tokens.colors.danger + '10',
-    borderRadius: tokens.radius.md,
-    paddingVertical: tokens.spacing.md,
-    paddingHorizontal: tokens.spacing.md,
+    flexDirection: 'row',
     alignItems: 'center',
-    minHeight: 48,
-    justifyContent: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: tokens.spacing.sm,
+    borderRadius: tokens.radius.md,
   },
   logoutText: {
+    fontSize: tokens.typography.size.sm,
+    fontWeight: tokens.typography.weight.semibold,
     color: tokens.colors.danger,
-    fontSize: tokens.typography.size.base,
-    fontWeight: tokens.typography.weight.bold,
   },
 });

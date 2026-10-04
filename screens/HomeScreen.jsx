@@ -32,6 +32,8 @@ export default function HomeScreen({ user, onLogout }) {
   const [rewardsTab, setRewardsTab] = useState('redeem');
   const [collectorTasksTab, setCollectorTasksTab] = useState('available');
 
+  const isCollector = user?.role === 'worker';
+
   const handleNavigate = (screen) => {
     if (isCollector && (screen === 'rewards' || screen.startsWith('rewards_') || screen === 'complaint' || screen === 'waste_pickup' || screen === 'recycle')) {
       return;
@@ -73,8 +75,6 @@ export default function HomeScreen({ user, onLogout }) {
   const [updatingId, setUpdatingId] = useState(null);
   const [collectorFilter, setCollectorFilter] = useState('ALL');
 
-  const isCollector = user?.role === 'worker';
-
   useEffect(() => {
     if (user?.id && !isCollector) {
       loadEcoPoints();
@@ -98,7 +98,6 @@ export default function HomeScreen({ user, onLogout }) {
           filter: `area_id=eq.${user.area_id}`,
         },
         async (payload) => {
-          console.log('Realtime INSERT for collector area:', payload.new.id);
           loadCollectorData();
         }
       )
@@ -111,7 +110,6 @@ export default function HomeScreen({ user, onLogout }) {
           filter: `area_id=eq.${user.area_id}`,
         },
         (payload) => {
-          console.log('Realtime UPDATE for complaint:', payload.new.id);
           setCollectorComplaints((prev) =>
             prev.map((c) =>
               c.id === payload.new.id
@@ -372,11 +370,14 @@ export default function HomeScreen({ user, onLogout }) {
     return true;
   });
 
+  const availableCount = collectorComplaints.filter((c) => !c.status || c.status === 'Submitted').length;
+  const inProgressCount = collectorComplaints.filter((c) => c.status === 'In Progress' || c.status === 'Assigned').length;
   const activeCount = collectorComplaints.filter((c) => c.status !== 'Completed').length;
   const completedCount = collectorComplaints.filter((c) => c.status === 'Completed').length;
 
   return (
     <View style={styles.container}>
+      {/* Sleek Minimal Top Bar */}
       <View style={styles.topBar}>
         <View style={styles.topLeft}>
           <TouchableOpacity
@@ -389,241 +390,142 @@ export default function HomeScreen({ user, onLogout }) {
           <Text style={styles.appName}>SHODHINI</Text>
         </View>
 
-        {isCollector && (
-          <TouchableOpacity style={styles.logoutBtn} onPress={onLogout} activeOpacity={0.7}>
-            <Text style={styles.logoutBtnText}>Log Out</Text>
+        {!isCollector ? (
+          <TouchableOpacity
+            style={styles.topPointsPill}
+            onPress={() => handleNavigate('rewards')}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.topPointsText}>🌱 {ecoPoints} pts</Text>
           </TouchableOpacity>
+        ) : (
+          <View style={styles.topDutyPill}>
+            <View style={styles.dutyDot} />
+            <Text style={styles.topDutyText}>{user?.area || 'Ward 1'}</Text>
+          </View>
         )}
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={styles.userCard}>
-          <View style={styles.badgeRow}>
-            <View style={[styles.roleBadge, isCollector ? styles.collectorBadge : styles.citizenBadge]}>
-              <Text style={[styles.roleBadgeText, isCollector && { color: tokens.colors.background }]}>
-                {isCollector ? 'Garbage Collector' : 'Citizen / User'}
-              </Text>
-            </View>
-
-            {isCollector && (
-              <View style={styles.liveIndicator}>
-                <View style={styles.liveDot} />
-                <Text style={styles.liveText}>Live Feed</Text>
-              </View>
-            )}
-          </View>
-
-          <Text style={styles.welcomeText}>Welcome, {user?.name || 'User'}!</Text>
-
-          <View style={styles.infoRow}>
-            <Text style={styles.infoLabel}>Phone Number:</Text>
-            <Text style={styles.infoValue}>📱 {user?.phone || 'N/A'}</Text>
-          </View>
-          {user?.area && (
-            <View style={styles.infoRow}>
-              <Text style={styles.infoLabel}>{isCollector ? 'Assigned Area:' : 'Home Area:'}</Text>
-              <Text style={styles.infoValue}>📍 {user.area}</Text>
-            </View>
-          )}
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        {/* Clean Greeting Header */}
+        <View style={styles.greetingHeader}>
+          <Text style={styles.greetingTitle}>Welcome, {user?.name || 'User'}</Text>
+          <Text style={styles.greetingSub}>
+            📍 {user?.area || 'Ward 1'} • {isCollector ? 'Garbage Collector' : 'Citizen Resident'}
+          </Text>
         </View>
 
+        {/* CITIZEN VIEW: MINIMAL, FAST & PURPOSEFUL */}
         {!isCollector && (
           <>
+            {/* Primary Action Button */}
             <TouchableOpacity
-              style={styles.ecoPointsCard}
-              onPress={() => handleNavigate('rewards')}
-              activeOpacity={0.8}
+              style={styles.heroReportBtn}
+              onPress={() => setCurrentScreen('complaint')}
+              activeOpacity={0.85}
             >
-              <View style={styles.ecoHeaderRow}>
-                <View>
-                  <Text style={styles.ecoTitle}>🌱 Your Eco Points</Text>
-                  <Text style={styles.ecoPointsNumber}>{ecoPoints} pts</Text>
+              <View style={styles.heroLeft}>
+                <View style={styles.heroIconBox}>
+                  <Text style={styles.heroIcon}>📸</Text>
                 </View>
-                <View style={styles.ecoBadge}>
-                  <Text style={styles.ecoBadgeText}>
-                    {ecoPoints > 0 ? 'Eco Champion' : 'Level 1 Eco Citizen'}
-                  </Text>
+                <View>
+                  <Text style={styles.heroTitle}>Report Waste Spot</Text>
+                  <Text style={styles.heroSubtitle}>Capture photo & alert area collectors</Text>
                 </View>
               </View>
-              <Text style={styles.ecoSubtitle}>
-                Earn 15 points each time a reported complaint is completed! Tap to view Rewards & Redeem Points →
-              </Text>
+              <Text style={styles.heroArrow}>→</Text>
             </TouchableOpacity>
 
-            <View style={styles.sidebarPromptCard}>
-              <View style={styles.promptHeader}>
-                <Text style={styles.promptIcon}>🧭</Text>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.promptTitle}>Looking for more services?</Text>
-                  <Text style={styles.promptText}>
-                    Open the sidebar menu (☰) to file complaints, request paid doorstep waste pickup, recycle e-waste, and track status.
-                  </Text>
-                </View>
-              </View>
-              <View style={styles.promptButtonRow}>
-                <TouchableOpacity
-                  style={styles.openSidebarBtn}
-                  onPress={() => setSidebarVisible(true)}
-                  activeOpacity={0.7}
-                >
-                  <Text style={styles.openSidebarBtnText}>Open Sidebar ☰</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.trackComplaintsQuickBtn}
-                  onPress={() => setCurrentScreen('my_complaints')}
-                  activeOpacity={0.7}
-                >
-                  <Text style={styles.trackComplaintsQuickText}>Track Status 📋</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
+            {/* Clean Services Grid (No bloated multi-line text) */}
+            <Text style={styles.sectionTitle}>Services</Text>
 
-            <View style={styles.actionCard}>
-              <Text style={styles.sectionHeader}>Quick Actions</Text>
-              <Text style={styles.sectionDesc}>
-                Spot illegal waste dumping or overflowing municipal dustbins? Submit a quick report.
-              </Text>
+            <View style={styles.gridContainer}>
               <TouchableOpacity
-                style={styles.actionButton}
-                onPress={() => setCurrentScreen('complaint')}
+                style={styles.gridCard}
+                onPress={() => setCurrentScreen('my_complaints')}
                 activeOpacity={0.7}
               >
-                <Text style={styles.actionButtonText}>📝 Report Waste / File Complaint</Text>
-              </TouchableOpacity>
-            </View>
-
-            {/* Row 1: Waste Pickup & Recycle */}
-            <View style={styles.servicesGrid}>
-              <TouchableOpacity
-                style={styles.serviceTile}
-                onPress={() => handleNavigate('waste_pickup')}
-                activeOpacity={0.7}
-              >
-                <View style={styles.serviceTileHeader}>
-                  <Text style={styles.serviceTileIcon}>🚚</Text>
-                  <View style={styles.paidMiniBadge}>
-                    <Text style={styles.paidMiniBadgeText}>DOORSTEP</Text>
-                  </View>
-                </View>
-                <Text style={styles.serviceTileTitle}>Waste Pickup</Text>
-                <Text style={styles.serviceTileDesc}>No bins nearby? Book convenient doorstep collection.</Text>
+                <Text style={styles.gridCardIcon}>📋</Text>
+                <Text style={styles.gridCardTitle}>My Reports</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={styles.serviceTile}
-                onPress={() => handleNavigate('recycle')}
-                activeOpacity={0.7}
-              >
-                <View style={styles.serviceTileHeader}>
-                  <Text style={styles.serviceTileIcon}>♻️</Text>
-                  <View style={styles.ecoMiniBadge}>
-                    <Text style={styles.ecoMiniBadgeText}>+PTS</Text>
-                  </View>
-                </View>
-                <Text style={styles.serviceTileTitle}>Recycle Scrap</Text>
-                <Text style={styles.serviceTileDesc}>Dispose of e-waste, metal, paper and earn bonus Eco Points.</Text>
-              </TouchableOpacity>
-            </View>
-
-            {/* Row 2: Scoreboard & Rewards Hub */}
-            <View style={[styles.servicesGrid, { marginTop: tokens.spacing.md }]}>
-              <TouchableOpacity
-                style={styles.serviceTile}
+                style={styles.gridCard}
                 onPress={() => handleNavigate('scoreboard')}
                 activeOpacity={0.7}
               >
-                <View style={styles.serviceTileHeader}>
-                  <Text style={styles.serviceTileIcon}>🏆</Text>
-                  <View style={[styles.paidMiniBadge, { backgroundColor: '#fef3c7', borderColor: '#fde68a' }]}>
-                    <Text style={[styles.paidMiniBadgeText, { color: '#d97706' }]}>RANKS</Text>
-                  </View>
-                </View>
-                <Text style={styles.serviceTileTitle}>Scoreboard</Text>
-                <Text style={styles.serviceTileDesc}>Ward standings & Community Champions leaderboard.</Text>
+                <Text style={styles.gridCardIcon}>🏆</Text>
+                <Text style={styles.gridCardTitle}>Scoreboard</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={styles.serviceTile}
+                style={styles.gridCard}
                 onPress={() => handleNavigate('rewards')}
                 activeOpacity={0.7}
               >
-                <View style={styles.serviceTileHeader}>
-                  <Text style={styles.serviceTileIcon}>🎁</Text>
-                  <View style={styles.ecoMiniBadge}>
-                    <Text style={styles.ecoMiniBadgeText}>REDEEM</Text>
-                  </View>
-                </View>
-                <Text style={styles.serviceTileTitle}>Rewards Hub</Text>
-                <Text style={styles.serviceTileDesc}>Redeem points, active coupons & points earned history.</Text>
+                <Text style={styles.gridCardIcon}>🎁</Text>
+                <Text style={styles.gridCardTitle}>Rewards</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.gridCard}
+                onPress={() => handleNavigate('waste_pickup')}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.gridCardIcon}>🚚</Text>
+                <Text style={styles.gridCardTitle}>Doorstep Pickup</Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={styles.gridCard}
+                onPress={() => handleNavigate('recycle')}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.gridCardIcon}>♻️</Text>
+                <Text style={styles.gridCardTitle}>Scrap Recycling</Text>
               </TouchableOpacity>
             </View>
           </>
         )}
 
+        {/* COLLECTOR VIEW: CLEAN FIELD OPERATIONS */}
         {isCollector && (
           <View style={styles.collectorFeedContainer}>
-            {/* Quick Operations Strip for Collector */}
-            <View style={styles.collectorOpsCard}>
-              <View style={styles.opsHeaderRow}>
-                <Text style={styles.opsTitle}>📋 Field Operations & Routing</Text>
-                <TouchableOpacity
-                  style={styles.openSidebarQuickBtn}
-                  onPress={() => setSidebarVisible(true)}
-                  activeOpacity={0.7}
-                >
-                  <Text style={styles.openSidebarQuickText}>Menu ☰</Text>
-                </TouchableOpacity>
-              </View>
+            {/* Quick Operations Strip */}
+            <View style={styles.collectorOpsStrip}>
+              <TouchableOpacity
+                style={styles.opsChip}
+                onPress={() => handleNavigate('collector_tasks_available')}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.opsChipNumber}>{availableCount}</Text>
+                <Text style={styles.opsChipLabel}>Available</Text>
+              </TouchableOpacity>
 
-              <View style={styles.opsGrid}>
-                <TouchableOpacity
-                  style={styles.opsTile}
-                  onPress={() => handleNavigate('collector_tasks_available')}
-                  activeOpacity={0.7}
-                >
-                  <Text style={styles.opsTileIcon}>🔔</Text>
-                  <Text style={[styles.opsTileNumber, { color: '#0284c7' }]}>
-                    {collectorComplaints.filter((c) => !c.status || c.status === 'Submitted').length}
-                  </Text>
-                  <Text style={styles.opsTileLabel}>Available</Text>
-                </TouchableOpacity>
+              <View style={styles.opsChipDivider} />
 
-                <TouchableOpacity
-                  style={styles.opsTile}
-                  onPress={() => handleNavigate('collector_tasks_pending')}
-                  activeOpacity={0.7}
-                >
-                  <Text style={styles.opsTileIcon}>⏳</Text>
-                  <Text style={[styles.opsTileNumber, { color: '#d97706' }]}>
-                    {collectorComplaints.filter((c) => c.status === 'In Progress' || c.status === 'Assigned').length}
-                  </Text>
-                  <Text style={styles.opsTileLabel}>Pending</Text>
-                </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.opsChip}
+                onPress={() => handleNavigate('collector_tasks_pending')}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.opsChipNumber, { color: '#d97706' }]}>{inProgressCount}</Text>
+                <Text style={styles.opsChipLabel}>Pending</Text>
+              </TouchableOpacity>
 
-                <TouchableOpacity
-                  style={styles.opsTile}
-                  onPress={() => handleNavigate('collector_track_location')}
-                  activeOpacity={0.7}
-                >
-                  <Text style={styles.opsTileIcon}>📍</Text>
-                  <Text style={[styles.opsTileNumber, { color: tokens.colors.accent }]}>
-                    {collectorComplaints.filter((c) => c.status !== 'Completed').length}
-                  </Text>
-                  <Text style={styles.opsTileLabel}>Track Route</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
+              <View style={styles.opsChipDivider} />
 
-            <View style={styles.feedHeaderRow}>
-              <View>
-                <Text style={styles.sectionHeader}>Complaints in Your Area</Text>
-                <Text style={styles.feedSubtext}>Live updates for {user?.area || `Ward ${user?.area_id || ''}`}</Text>
-              </View>
-              <TouchableOpacity style={styles.refreshBtn} onPress={loadCollectorData} activeOpacity={0.7}>
-                <Text style={styles.refreshBtnText}>🔄 Refresh</Text>
+              <TouchableOpacity
+                style={styles.opsChip}
+                onPress={() => handleNavigate('collector_track_location')}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.opsChipNumber, { color: tokens.colors.accent }]}>{activeCount}</Text>
+                <Text style={styles.opsChipLabel}>Map Route</Text>
               </TouchableOpacity>
             </View>
 
+            {/* Filter Pills */}
             <View style={styles.collectorFilterRow}>
               <TouchableOpacity
                 style={[styles.collectorPill, collectorFilter === 'ALL' && styles.collectorPillActive]}
@@ -634,6 +536,7 @@ export default function HomeScreen({ user, onLogout }) {
                   All ({collectorComplaints.length})
                 </Text>
               </TouchableOpacity>
+
               <TouchableOpacity
                 style={[styles.collectorPill, collectorFilter === 'ACTIVE' && styles.collectorPillActive]}
                 onPress={() => setCollectorFilter('ACTIVE')}
@@ -643,28 +546,29 @@ export default function HomeScreen({ user, onLogout }) {
                   Active ({activeCount})
                 </Text>
               </TouchableOpacity>
+
               <TouchableOpacity
                 style={[styles.collectorPill, collectorFilter === 'COMPLETED' && styles.collectorPillActive]}
                 onPress={() => setCollectorFilter('COMPLETED')}
                 activeOpacity={0.7}
               >
                 <Text style={[styles.collectorPillText, collectorFilter === 'COMPLETED' && styles.collectorPillTextActive]}>
-                  Completed ({completedCount})
+                  Done ({completedCount})
                 </Text>
               </TouchableOpacity>
             </View>
 
             {collectorLoading ? (
               <View style={styles.loadingBox}>
-                <ActivityIndicator size="large" color={tokens.colors.accent} />
-                <Text style={styles.loadingBoxText}>Loading area complaints feed...</Text>
+                <ActivityIndicator size="small" color={tokens.colors.accent} />
+                <Text style={styles.loadingBoxText}>Loading area feed...</Text>
               </View>
             ) : filteredCollectorComplaints.length === 0 ? (
               <View style={styles.emptyCollectorBox}>
                 <Text style={styles.emptyIcon}>🎉</Text>
-                <Text style={styles.emptyCollectorTitle}>No Complaints Pending!</Text>
+                <Text style={styles.emptyCollectorTitle}>No Complaints Pending</Text>
                 <Text style={styles.emptyCollectorDesc}>
-                  Your assigned area ({user?.area || 'Ward'}) has no complaints matching this filter.
+                  {user?.area || 'Ward'} currently has no active waste hotspots.
                 </Text>
               </View>
             ) : (
@@ -705,7 +609,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: tokens.spacing.md,
-    paddingVertical: tokens.spacing.md,
+    paddingVertical: tokens.spacing.sm,
     backgroundColor: tokens.colors.background,
     borderBottomWidth: 1,
     borderBottomColor: tokens.colors.border,
@@ -717,8 +621,8 @@ const styles = StyleSheet.create({
   hamburgerBtn: {
     padding: tokens.spacing.xs,
     marginRight: tokens.spacing.sm,
-    minHeight: 44,
-    minWidth: 44,
+    minHeight: 40,
+    minWidth: 40,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -728,378 +632,175 @@ const styles = StyleSheet.create({
     fontWeight: tokens.typography.weight.bold,
   },
   appName: {
-    fontSize: tokens.typography.size.lg,
+    fontSize: tokens.typography.size.base,
     fontWeight: tokens.typography.weight.extrabold,
     color: tokens.colors.accent,
     letterSpacing: 0.5,
   },
-  logoutBtn: {
-    paddingVertical: tokens.spacing.sm,
-    paddingHorizontal: tokens.spacing.md,
-    borderRadius: tokens.radius.sm,
+  topPointsPill: {
+    backgroundColor: tokens.colors.accent + '15',
+    paddingVertical: 5,
+    paddingHorizontal: tokens.spacing.sm,
+    borderRadius: tokens.radius.full,
     borderWidth: 1,
-    borderColor: tokens.colors.danger,
-    minHeight: 44,
-    justifyContent: 'center',
+    borderColor: tokens.colors.accent + '30',
   },
-  logoutBtnText: {
-    color: tokens.colors.danger,
-    fontSize: tokens.typography.size.sm,
-    fontWeight: tokens.typography.weight.semibold,
+  topPointsText: {
+    color: tokens.colors.accent,
+    fontSize: tokens.typography.size.xs,
+    fontWeight: tokens.typography.weight.bold,
+  },
+  topDutyPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: tokens.colors.accent + '15',
+    paddingVertical: 4,
+    paddingHorizontal: tokens.spacing.sm,
+    borderRadius: tokens.radius.full,
+  },
+  dutyDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    backgroundColor: tokens.colors.accent,
+    marginRight: 6,
+  },
+  topDutyText: {
+    color: tokens.colors.accent,
+    fontSize: tokens.typography.size.xs,
+    fontWeight: tokens.typography.weight.bold,
   },
   scrollContent: {
     padding: tokens.spacing.md,
     paddingBottom: tokens.spacing.xxl,
   },
-  userCard: {
-    backgroundColor: tokens.colors.background,
-    borderRadius: tokens.radius.xl,
-    padding: tokens.spacing.lg,
-    marginBottom: tokens.spacing.md,
-    ...tokens.shadow.sm,
-  },
-  badgeRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: tokens.spacing.sm,
-  },
-  roleBadge: {
-    paddingVertical: tokens.spacing.xs,
-    paddingHorizontal: tokens.spacing.md,
-    borderRadius: tokens.radius.full,
-  },
-  citizenBadge: {
-    backgroundColor: tokens.colors.accent + '20',
-  },
-  collectorBadge: {
-    backgroundColor: tokens.colors.accent,
-  },
-  roleBadgeText: {
-    fontSize: tokens.typography.size.xs,
-    fontWeight: tokens.typography.weight.bold,
-    color: tokens.colors.accent,
-  },
-  liveIndicator: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: tokens.colors.danger + '20',
-    paddingVertical: tokens.spacing.xs,
-    paddingHorizontal: tokens.spacing.sm,
-    borderRadius: tokens.radius.full,
-  },
-  liveDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: tokens.colors.danger,
-    marginRight: tokens.spacing.xs,
-  },
-  liveText: {
-    fontSize: tokens.typography.size.xs,
-    fontWeight: tokens.typography.weight.bold,
-    color: tokens.colors.danger,
-  },
-  welcomeText: {
-    fontSize: tokens.typography.size.xl,
-    fontWeight: tokens.typography.weight.bold,
-    color: tokens.colors.text,
+  greetingHeader: {
     marginBottom: tokens.spacing.md,
   },
-  infoRow: {
-    flexDirection: 'row',
-    marginBottom: tokens.spacing.xs,
-  },
-  infoLabel: {
-    fontSize: tokens.typography.size.sm,
-    color: tokens.colors.muted,
-    width: 125,
-    fontWeight: tokens.typography.weight.medium,
-  },
-  infoValue: {
-    fontSize: tokens.typography.size.sm,
-    color: tokens.colors.text,
-    fontWeight: tokens.typography.weight.semibold,
-    flex: 1,
-  },
-  ecoPointsCard: {
-    backgroundColor: tokens.colors.background,
-    borderRadius: tokens.radius.xl,
-    padding: tokens.spacing.lg,
-    marginBottom: tokens.spacing.md,
-    borderWidth: 1,
-    borderColor: tokens.colors.accent,
-    ...tokens.shadow.sm,
-  },
-  ecoHeaderRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-  },
-  ecoTitle: {
-    fontSize: tokens.typography.size.base,
-    fontWeight: tokens.typography.weight.bold,
-    color: tokens.colors.text,
-  },
-  ecoPointsNumber: {
-    fontSize: tokens.typography.size.xxl,
-    fontWeight: tokens.typography.weight.extrabold,
-    color: tokens.colors.accent,
-    marginVertical: tokens.spacing.xs,
-  },
-  ecoBadge: {
-    backgroundColor: tokens.colors.accent + '20',
-    paddingHorizontal: tokens.spacing.sm,
-    paddingVertical: tokens.spacing.xs,
-    borderRadius: tokens.radius.full,
-  },
-  ecoBadgeText: {
-    fontSize: tokens.typography.size.xs,
-    fontWeight: tokens.typography.weight.bold,
-    color: tokens.colors.accent,
-  },
-  ecoSubtitle: {
-    fontSize: tokens.typography.size.sm,
-    color: tokens.colors.muted,
-    lineHeight: 20,
-  },
-  sidebarPromptCard: {
-    backgroundColor: tokens.colors.background,
-    borderRadius: tokens.radius.xl,
-    padding: tokens.spacing.lg,
-    marginBottom: tokens.spacing.md,
-    ...tokens.shadow.sm,
-  },
-  promptHeader: {
-    flexDirection: 'row',
-    marginBottom: tokens.spacing.md,
-  },
-  promptIcon: {
-    fontSize: 24,
-    marginRight: tokens.spacing.sm,
-  },
-  promptTitle: {
-    fontSize: tokens.typography.size.base,
-    fontWeight: tokens.typography.weight.bold,
-    color: tokens.colors.text,
-  },
-  promptText: {
-    fontSize: tokens.typography.size.sm,
-    color: tokens.colors.muted,
-    marginTop: tokens.spacing.xs,
-    lineHeight: 20,
-  },
-  promptButtonRow: {
-    flexDirection: 'row',
-    gap: tokens.spacing.md,
-  },
-  openSidebarBtn: {
-    flex: 1,
-    backgroundColor: tokens.colors.surface,
-    borderWidth: 1,
-    borderColor: tokens.colors.border,
-    borderRadius: tokens.radius.md,
-    minHeight: 44,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  openSidebarBtnText: {
-    fontSize: tokens.typography.size.sm,
-    fontWeight: tokens.typography.weight.bold,
-    color: tokens.colors.text,
-  },
-  trackComplaintsQuickBtn: {
-    flex: 1,
-    backgroundColor: tokens.colors.surface,
-    borderWidth: 1,
-    borderColor: tokens.colors.border,
-    borderRadius: tokens.radius.md,
-    minHeight: 44,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  trackComplaintsQuickText: {
-    fontSize: tokens.typography.size.sm,
-    fontWeight: tokens.typography.weight.bold,
-    color: tokens.colors.text,
-  },
-  actionCard: {
-    backgroundColor: tokens.colors.background,
-    borderRadius: tokens.radius.xl,
-    padding: tokens.spacing.lg,
-    marginBottom: tokens.spacing.md,
-    ...tokens.shadow.sm,
-  },
-  sectionHeader: {
+  greetingTitle: {
     fontSize: tokens.typography.size.lg,
     fontWeight: tokens.typography.weight.bold,
     color: tokens.colors.text,
   },
-  sectionDesc: {
-    fontSize: tokens.typography.size.sm,
+  greetingSub: {
+    fontSize: tokens.typography.size.xs,
     color: tokens.colors.muted,
-    marginVertical: tokens.spacing.sm,
-    lineHeight: 20,
+    marginTop: 2,
   },
-  actionButton: {
+  heroReportBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     backgroundColor: tokens.colors.accent,
+    paddingVertical: tokens.spacing.md,
+    paddingHorizontal: tokens.spacing.md,
+    borderRadius: tokens.radius.lg,
+    marginBottom: tokens.spacing.lg,
+    ...tokens.shadow.sm,
+  },
+  heroLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: tokens.spacing.sm,
+    flex: 1,
+  },
+  heroIconBox: {
+    width: 40,
+    height: 40,
     borderRadius: tokens.radius.md,
-    minHeight: 48,
+    backgroundColor: 'rgba(255,255,255,0.2)',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  actionButtonText: {
-    color: tokens.colors.background,
+  heroIcon: {
+    fontSize: 20,
+  },
+  heroTitle: {
+    color: '#ffffff',
     fontSize: tokens.typography.size.base,
     fontWeight: tokens.typography.weight.bold,
   },
-  servicesGrid: {
-    flexDirection: 'row',
-    gap: tokens.spacing.md,
-  },
-  serviceTile: {
-    flex: 1,
-    backgroundColor: tokens.colors.background,
-    borderRadius: tokens.radius.xl,
-    padding: tokens.spacing.md,
-    ...tokens.shadow.sm,
-    minHeight: 120,
-  },
-  serviceTileHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: tokens.spacing.sm,
-  },
-  serviceTileIcon: {
-    fontSize: 24,
-  },
-  paidMiniBadge: {
-    backgroundColor: tokens.colors.surface,
-    paddingHorizontal: tokens.spacing.xs,
-    paddingVertical: 2,
-    borderRadius: tokens.radius.sm,
-  },
-  paidMiniBadgeText: {
-    fontSize: 10,
-    fontWeight: tokens.typography.weight.bold,
-    color: tokens.colors.muted,
-  },
-  ecoMiniBadge: {
-    backgroundColor: tokens.colors.accent + '20',
-    paddingHorizontal: tokens.spacing.xs,
-    paddingVertical: 2,
-    borderRadius: tokens.radius.sm,
-  },
-  ecoMiniBadgeText: {
-    fontSize: 10,
-    fontWeight: tokens.typography.weight.bold,
-    color: tokens.colors.accent,
-  },
-  serviceTileTitle: {
-    fontSize: tokens.typography.size.base,
-    fontWeight: tokens.typography.weight.bold,
-    color: tokens.colors.text,
-    marginBottom: tokens.spacing.xs,
-  },
-  serviceTileDesc: {
-    fontSize: tokens.typography.size.sm,
-    color: tokens.colors.muted,
-    lineHeight: 18,
-  },
-  collectorOpsCard: {
-    backgroundColor: tokens.colors.background,
-    borderRadius: tokens.radius.xl,
-    padding: tokens.spacing.md,
-    marginBottom: tokens.spacing.md,
-    borderWidth: 1,
-    borderColor: tokens.colors.border,
-    ...tokens.shadow.sm,
-  },
-  opsHeaderRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: tokens.spacing.sm,
-  },
-  opsTitle: {
-    fontSize: tokens.typography.size.sm,
-    fontWeight: tokens.typography.weight.bold,
-    color: tokens.colors.text,
-  },
-  openSidebarQuickBtn: {
-    backgroundColor: tokens.colors.surface,
-    paddingHorizontal: tokens.spacing.sm,
-    paddingVertical: 4,
-    borderRadius: tokens.radius.sm,
-    borderWidth: 1,
-    borderColor: tokens.colors.border,
-  },
-  openSidebarQuickText: {
+  heroSubtitle: {
+    color: 'rgba(255,255,255,0.85)',
     fontSize: tokens.typography.size.xs,
-    fontWeight: tokens.typography.weight.bold,
-    color: tokens.colors.accent,
+    marginTop: 1,
   },
-  opsGrid: {
+  heroArrow: {
+    color: '#ffffff',
+    fontSize: tokens.typography.size.lg,
+    fontWeight: tokens.typography.weight.bold,
+    marginLeft: tokens.spacing.xs,
+  },
+  sectionTitle: {
+    fontSize: tokens.typography.size.sm,
+    fontWeight: tokens.typography.weight.bold,
+    color: tokens.colors.muted,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: tokens.spacing.sm,
+  },
+  gridContainer: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     gap: tokens.spacing.sm,
   },
-  opsTile: {
-    flex: 1,
-    backgroundColor: tokens.colors.surface,
-    borderRadius: tokens.radius.md,
-    paddingVertical: tokens.spacing.sm,
-    paddingHorizontal: tokens.spacing.xs,
+  gridCard: {
+    width: '48%',
+    backgroundColor: tokens.colors.background,
+    borderRadius: tokens.radius.lg,
+    paddingVertical: tokens.spacing.md,
+    paddingHorizontal: tokens.spacing.sm,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 1,
     borderColor: tokens.colors.border,
+    minHeight: 88,
   },
-  opsTileIcon: {
-    fontSize: 20,
-    marginBottom: 2,
+  gridCardIcon: {
+    fontSize: 26,
+    marginBottom: 6,
   },
-  opsTileNumber: {
-    fontSize: tokens.typography.size.base,
+  gridCardTitle: {
+    fontSize: tokens.typography.size.xs,
+    fontWeight: tokens.typography.weight.bold,
+    color: tokens.colors.text,
+    textAlign: 'center',
+  },
+  collectorFeedContainer: {
+    marginTop: tokens.spacing.xs,
+  },
+  collectorOpsStrip: {
+    flexDirection: 'row',
+    backgroundColor: tokens.colors.background,
+    borderRadius: tokens.radius.lg,
+    paddingVertical: tokens.spacing.sm,
+    borderWidth: 1,
+    borderColor: tokens.colors.border,
+    marginBottom: tokens.spacing.md,
+  },
+  opsChip: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  opsChipNumber: {
+    fontSize: tokens.typography.size.lg,
     fontWeight: tokens.typography.weight.extrabold,
+    color: '#0284c7',
   },
-  opsTileLabel: {
-    fontSize: 10,
+  opsChipLabel: {
+    fontSize: 11,
     color: tokens.colors.muted,
     marginTop: 2,
     fontWeight: tokens.typography.weight.medium,
   },
-  collectorFeedContainer: {
-    marginTop: tokens.spacing.md,
-  },
-  feedHeaderRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: tokens.spacing.md,
-  },
-  feedSubtext: {
-    fontSize: tokens.typography.size.sm,
-    color: tokens.colors.muted,
-  },
-  refreshBtn: {
-    backgroundColor: tokens.colors.background,
-    borderWidth: 1,
-    borderColor: tokens.colors.border,
-    borderRadius: tokens.radius.md,
-    paddingHorizontal: tokens.spacing.md,
-    minHeight: 44,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  refreshBtnText: {
-    fontSize: tokens.typography.size.sm,
-    fontWeight: tokens.typography.weight.bold,
-    color: tokens.colors.text,
+  opsChipDivider: {
+    width: 1,
+    backgroundColor: tokens.colors.border,
   },
   collectorFilterRow: {
     flexDirection: 'row',
-    gap: tokens.spacing.sm,
+    gap: tokens.spacing.xs,
     marginBottom: tokens.spacing.md,
   },
   collectorPill: {
@@ -1108,8 +809,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: tokens.colors.border,
     borderRadius: tokens.radius.full,
-    minHeight: 40,
-    justifyContent: 'center',
+    paddingVertical: 6,
     alignItems: 'center',
   },
   collectorPillActive: {
@@ -1117,9 +817,9 @@ const styles = StyleSheet.create({
     borderColor: tokens.colors.accent,
   },
   collectorPillText: {
-    fontSize: tokens.typography.size.sm,
-    fontWeight: tokens.typography.weight.medium,
+    fontSize: tokens.typography.size.xs,
     color: tokens.colors.muted,
+    fontWeight: tokens.typography.weight.medium,
   },
   collectorPillTextActive: {
     color: tokens.colors.background,
@@ -1127,37 +827,36 @@ const styles = StyleSheet.create({
   },
   loadingBox: {
     alignItems: 'center',
-    padding: tokens.spacing.xl,
+    padding: tokens.spacing.lg,
     backgroundColor: tokens.colors.background,
-    borderRadius: tokens.radius.xl,
+    borderRadius: tokens.radius.lg,
   },
   loadingBoxText: {
-    marginTop: tokens.spacing.md,
-    fontSize: tokens.typography.size.sm,
+    marginTop: tokens.spacing.sm,
+    fontSize: tokens.typography.size.xs,
     color: tokens.colors.muted,
   },
   emptyCollectorBox: {
     alignItems: 'center',
     padding: tokens.spacing.xl,
     backgroundColor: tokens.colors.background,
-    borderRadius: tokens.radius.xl,
+    borderRadius: tokens.radius.lg,
     borderWidth: 1,
     borderColor: tokens.colors.border,
   },
   emptyIcon: {
-    fontSize: tokens.typography.size.xxl,
-    marginBottom: tokens.spacing.sm,
-  },
-  emptyCollectorTitle: {
-    fontSize: tokens.typography.size.lg,
-    fontWeight: tokens.typography.weight.bold,
-    color: tokens.colors.text,
+    fontSize: 28,
     marginBottom: tokens.spacing.xs,
   },
+  emptyCollectorTitle: {
+    fontSize: tokens.typography.size.base,
+    fontWeight: tokens.typography.weight.bold,
+    color: tokens.colors.text,
+  },
   emptyCollectorDesc: {
-    fontSize: tokens.typography.size.sm,
+    fontSize: tokens.typography.size.xs,
     color: tokens.colors.muted,
     textAlign: 'center',
-    lineHeight: 20,
+    marginTop: 2,
   },
 });

@@ -71,7 +71,7 @@ export default function CollectorTasksScreen({
           <TouchableOpacity style={styles.menuBtn} onPress={onOpenSidebar} activeOpacity={0.7}>
             <Text style={styles.menuIcon}>☰</Text>
           </TouchableOpacity>
-          <Text style={styles.screenTitle}>📋 Collector Tasks</Text>
+          <Text style={styles.screenTitle}>📋 Tasks</Text>
         </View>
 
         <View style={styles.topRight}>
@@ -87,75 +87,19 @@ export default function CollectorTasksScreen({
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {/* Worker Overview Card */}
-        <View style={styles.workerSummaryCard}>
-          <View style={styles.summaryTopRow}>
-            <View>
-              <Text style={styles.summaryLabel}>Sanitation Operations</Text>
-              <Text style={styles.summaryName}>👷 {user?.name || 'Sanitation Team'}</Text>
-            </View>
-            <View style={styles.dutyPill}>
-              <View style={styles.dutyDot} />
-              <Text style={styles.dutyPillText}>ON DUTY</Text>
-            </View>
+        {/* Sleek Worker Header */}
+        <View style={styles.workerHeader}>
+          <View>
+            <Text style={styles.workerName}>👷 {user?.name || 'Sanitation Team'}</Text>
+            <Text style={styles.workerArea}>📍 {user?.area || 'Ward 1'}</Text>
           </View>
-
-          <View style={styles.assignedAreaRow}>
-            <Text style={styles.assignedAreaLabel}>📍 Assigned Area:</Text>
-            <Text style={styles.assignedAreaVal}>{user?.area || 'Ward 1'}</Text>
-          </View>
-
-          {/* Quick Stats Strip */}
-          <View style={styles.statsStrip}>
-            <TouchableOpacity
-              style={[styles.statBox, activeTab === 'available' && styles.statBoxActive]}
-              onPress={() => setActiveTab('available')}
-              activeOpacity={0.7}
-            >
-              <Text style={[styles.statVal, { color: '#0284c7' }]}>{availableTasks.length}</Text>
-              <Text style={styles.statLabel}>Available</Text>
-            </TouchableOpacity>
-
-            <View style={styles.statDivider} />
-
-            <TouchableOpacity
-              style={[styles.statBox, activeTab === 'pending' && styles.statBoxActive]}
-              onPress={() => setActiveTab('pending')}
-              activeOpacity={0.7}
-            >
-              <Text style={[styles.statVal, { color: '#d97706' }]}>{pendingTasks.length}</Text>
-              <Text style={styles.statLabel}>Pending</Text>
-            </TouchableOpacity>
-
-            <View style={styles.statDivider} />
-
-            <TouchableOpacity
-              style={[styles.statBox, activeTab === 'location' && styles.statBoxActive]}
-              onPress={() => setActiveTab('location')}
-              activeOpacity={0.7}
-            >
-              <Text style={[styles.statVal, { color: tokens.colors.accent }]}>
-                {activeGeoTasks.length}
-              </Text>
-              <Text style={styles.statLabel}>Hotspots</Text>
-            </TouchableOpacity>
-
-            <View style={styles.statDivider} />
-
-            <TouchableOpacity
-              style={[styles.statBox, activeTab === 'completed' && styles.statBoxActive]}
-              onPress={() => setActiveTab('completed')}
-              activeOpacity={0.7}
-            >
-              <Text style={[styles.statVal, { color: tokens.colors.accent }]}>
-                {completedTasks.length}
-              </Text>
-              <Text style={styles.statLabel}>Completed</Text>
-            </TouchableOpacity>
+          <View style={styles.dutyPill}>
+            <View style={styles.dutyDot} />
+            <Text style={styles.dutyText}>ON DUTY</Text>
           </View>
         </View>
 
-        {/* Tab Navigation Buttons */}
+        {/* Single Cohesive Tab Selector */}
         <View style={styles.tabBar}>
           <TouchableOpacity
             style={[styles.tabButton, activeTab === 'available' && styles.tabButtonActive]}
@@ -163,7 +107,7 @@ export default function CollectorTasksScreen({
             activeOpacity={0.7}
           >
             <Text style={[styles.tabButtonText, activeTab === 'available' && styles.tabButtonTextActive]}>
-              🔔 Available ({availableTasks.length})
+              Available ({availableTasks.length})
             </Text>
           </TouchableOpacity>
 
@@ -173,7 +117,7 @@ export default function CollectorTasksScreen({
             activeOpacity={0.7}
           >
             <Text style={[styles.tabButtonText, activeTab === 'pending' && styles.tabButtonTextActive]}>
-              ⏳ Pending ({pendingTasks.length})
+              Pending ({pendingTasks.length})
             </Text>
           </TouchableOpacity>
 
@@ -183,7 +127,7 @@ export default function CollectorTasksScreen({
             activeOpacity={0.7}
           >
             <Text style={[styles.tabButtonText, activeTab === 'location' && styles.tabButtonTextActive]}>
-              📍 Track Location
+              Route ({activeGeoTasks.length})
             </Text>
           </TouchableOpacity>
 
@@ -193,55 +137,40 @@ export default function CollectorTasksScreen({
             activeOpacity={0.7}
           >
             <Text style={[styles.tabButtonText, activeTab === 'completed' && styles.tabButtonTextActive]}>
-              ✅ Done ({completedTasks.length})
+              Done ({completedTasks.length})
             </Text>
           </TouchableOpacity>
         </View>
 
-        {/* TAB 1: TASKS AVAILABLE */}
+        {/* TAB 1: AVAILABLE TASKS */}
         {activeTab === 'available' && (
-          <View style={styles.tabContent}>
-            <View style={styles.sectionHeaderRow}>
-              <View>
-                <Text style={styles.sectionTitle}>New Tasks Waiting for Pickup</Text>
-                <Text style={styles.sectionSub}>Reports submitted by citizens in {user?.area || 'your ward'}.</Text>
-              </View>
-            </View>
-
+          <View style={styles.taskList}>
             {availableTasks.length === 0 ? (
-              <View style={styles.emptyCard}>
+              <View style={styles.emptyBox}>
                 <Text style={styles.emptyIcon}>🎉</Text>
-                <Text style={styles.emptyTitle}>All Caught Up!</Text>
-                <Text style={styles.emptySub}>No new unassigned waste reports in your area right now.</Text>
+                <Text style={styles.emptyTitle}>All Caught Up</Text>
+                <Text style={styles.emptySub}>No unassigned waste reports right now.</Text>
               </View>
             ) : (
               availableTasks.map((item) => {
                 const isUpdating = updatingId === item.id;
                 return (
                   <View key={item.id} style={styles.taskCard}>
-                    <View style={styles.cardHeader}>
-                      <View style={styles.badgeNew}>
-                        <Text style={styles.badgeNewText}>NEW REPORT</Text>
-                      </View>
-                      <Text style={styles.cardDate}>
-                        {item.created_at ? new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Today'}
+                    <View style={styles.cardTop}>
+                      <Text style={styles.categoryTitle}>{item.category || 'General Waste'}</Text>
+                      <Text style={styles.cardTime}>
+                        {item.created_at ? new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'New'}
                       </Text>
                     </View>
 
-                    <Text style={styles.categoryTitle}>{item.category || 'General Waste'}</Text>
                     <Text style={styles.descriptionText}>{item.description}</Text>
 
-                    <View style={styles.detailRow}>
-                      <Text style={styles.detailKey}>📍 Location:</Text>
-                      <Text style={styles.detailVal}>{item.location}</Text>
-                    </View>
+                    <Text style={styles.locationText}>📍 {item.location}</Text>
+                    {item.citizenName && (
+                      <Text style={styles.citizenText}>👤 {item.citizenName}</Text>
+                    )}
 
-                    <View style={styles.detailRow}>
-                      <Text style={styles.detailKey}>👤 Citizen:</Text>
-                      <Text style={styles.detailVal}>{item.citizenName || 'Local Citizen'}</Text>
-                    </View>
-
-                    <View style={styles.actionButtonRow}>
+                    <View style={styles.actionRow}>
                       <TouchableOpacity
                         style={[styles.primaryActionBtn, isUpdating && styles.btnDisabled]}
                         onPress={() => onUpdateStatus(item.id, 'In Progress')}
@@ -249,9 +178,9 @@ export default function CollectorTasksScreen({
                         activeOpacity={0.8}
                       >
                         {isUpdating ? (
-                          <ActivityIndicator size="small" color={tokens.colors.background} />
+                          <ActivityIndicator size="small" color="#ffffff" />
                         ) : (
-                          <Text style={styles.primaryActionText}>🚀 Accept & Start Work</Text>
+                          <Text style={styles.primaryActionText}>Accept Job</Text>
                         )}
                       </TouchableOpacity>
 
@@ -260,16 +189,16 @@ export default function CollectorTasksScreen({
                         onPress={() => handleOpenMaps(item.latitude, item.longitude, item.location)}
                         activeOpacity={0.7}
                       >
-                        <Text style={styles.secondaryActionText}>📍 Navigate Map</Text>
+                        <Text style={styles.secondaryActionText}>📍 Map</Text>
                       </TouchableOpacity>
 
                       {item.citizenPhone && (
                         <TouchableOpacity
-                          style={styles.callIconBtn}
+                          style={styles.callBtn}
                           onPress={() => handleCallCitizen(item.citizenPhone)}
                           activeOpacity={0.7}
                         >
-                          <Text style={styles.callIconText}>📞</Text>
+                          <Text style={styles.callIcon}>📞</Text>
                         </TouchableOpacity>
                       )}
                     </View>
@@ -282,60 +211,43 @@ export default function CollectorTasksScreen({
 
         {/* TAB 2: PENDING TASKS */}
         {activeTab === 'pending' && (
-          <View style={styles.tabContent}>
-            <View style={styles.sectionHeaderRow}>
-              <View>
-                <Text style={styles.sectionTitle}>In-Progress & Assigned Tasks</Text>
-                <Text style={styles.sectionSub}>Active waste clearing jobs currently being handled.</Text>
-              </View>
-            </View>
-
+          <View style={styles.taskList}>
             {pendingTasks.length === 0 ? (
-              <View style={styles.emptyCard}>
+              <View style={styles.emptyBox}>
                 <Text style={styles.emptyIcon}>⏳</Text>
                 <Text style={styles.emptyTitle}>No Pending Tasks</Text>
-                <Text style={styles.emptySub}>You have no tasks currently in progress. Accept tasks from the Available tab.</Text>
+                <Text style={styles.emptySub}>Accept tasks from the Available tab to start clearing.</Text>
               </View>
             ) : (
               pendingTasks.map((item) => {
                 const isUpdating = updatingId === item.id;
                 return (
-                  <View key={item.id} style={[styles.taskCard, styles.pendingBorder]}>
-                    <View style={styles.cardHeader}>
-                      <View style={styles.badgePending}>
-                        <Text style={styles.badgePendingText}>⚡ IN PROGRESS</Text>
+                  <View key={item.id} style={styles.taskCard}>
+                    <View style={styles.cardTop}>
+                      <Text style={styles.categoryTitle}>{item.category || 'Waste Clearing'}</Text>
+                      <View style={styles.pendingPill}>
+                        <Text style={styles.pendingPillText}>IN PROGRESS</Text>
                       </View>
-                      <Text style={styles.cardDate}>
-                        {item.created_at ? new Date(item.created_at).toLocaleDateString() : 'Active'}
-                      </Text>
                     </View>
 
-                    <Text style={styles.categoryTitle}>{item.category || 'Waste Clearing'}</Text>
                     <Text style={styles.descriptionText}>{item.description}</Text>
 
-                    <View style={styles.detailRow}>
-                      <Text style={styles.detailKey}>📍 Location:</Text>
-                      <Text style={styles.detailVal}>{item.location}</Text>
-                    </View>
+                    <Text style={styles.locationText}>📍 {item.location}</Text>
+                    {item.citizenName && (
+                      <Text style={styles.citizenText}>👤 {item.citizenName}</Text>
+                    )}
 
-                    <View style={styles.detailRow}>
-                      <Text style={styles.detailKey}>👤 Citizen:</Text>
-                      <Text style={styles.detailVal}>
-                        {item.citizenName} {item.citizenPhone ? `(${item.citizenPhone})` : ''}
-                      </Text>
-                    </View>
-
-                    <View style={styles.actionButtonRow}>
+                    <View style={styles.actionRow}>
                       <TouchableOpacity
-                        style={[styles.doneActionBtn, isUpdating && styles.btnDisabled]}
+                        style={[styles.doneBtn, isUpdating && styles.btnDisabled]}
                         onPress={() => onUpdateStatus(item.id, 'Completed')}
                         disabled={isUpdating}
                         activeOpacity={0.8}
                       >
                         {isUpdating ? (
-                          <ActivityIndicator size="small" color={tokens.colors.background} />
+                          <ActivityIndicator size="small" color="#ffffff" />
                         ) : (
-                          <Text style={styles.doneActionText}>✅ Mark Cleaned & Done</Text>
+                          <Text style={styles.doneBtnText}>✅ Mark Done</Text>
                         )}
                       </TouchableOpacity>
 
@@ -344,16 +256,16 @@ export default function CollectorTasksScreen({
                         onPress={() => handleOpenMaps(item.latitude, item.longitude, item.location)}
                         activeOpacity={0.7}
                       >
-                        <Text style={styles.secondaryActionText}>🗺️ Map Route</Text>
+                        <Text style={styles.secondaryActionText}>🗺️ Route</Text>
                       </TouchableOpacity>
 
                       {item.citizenPhone && (
                         <TouchableOpacity
-                          style={styles.callIconBtn}
+                          style={styles.callBtn}
                           onPress={() => handleCallCitizen(item.citizenPhone)}
                           activeOpacity={0.7}
                         >
-                          <Text style={styles.callIconText}>📞</Text>
+                          <Text style={styles.callIcon}>📞</Text>
                         </TouchableOpacity>
                       )}
                     </View>
@@ -366,162 +278,56 @@ export default function CollectorTasksScreen({
 
         {/* TAB 3: TRACK LOCATION & ROUTE */}
         {activeTab === 'location' && (
-          <View style={styles.tabContent}>
-            {/* Visual Radar Card */}
-            <View style={styles.mapRadarCard}>
-              <View style={styles.radarHeader}>
-                <View>
-                  <Text style={styles.radarTitle}>📍 Hotspot Location & GPS Navigator</Text>
-                  <Text style={styles.radarSub}>Turn-by-turn routing to active waste coordinates</Text>
-                </View>
-                <View style={styles.gpsPill}>
-                  <Text style={styles.gpsPillText}>GPS LIVE</Text>
-                </View>
-              </View>
-
-              <View style={styles.radarVisualBox}>
-                <Text style={styles.radarGraphic}>🧭 🚚 ---------------- 📍 🗑️</Text>
-                <Text style={styles.radarCoordsText}>
-                  Assigned Ward: {user?.area || 'Ward 1'} • {activeGeoTasks.length} Active Hotspots
-                </Text>
-              </View>
-            </View>
-
-            <Text style={[styles.sectionTitle, { marginTop: tokens.spacing.md, marginBottom: tokens.spacing.xs }]}>
-              Hotspots to Clear ({activeGeoTasks.length})
-            </Text>
-
+          <View style={styles.taskList}>
             {activeGeoTasks.length === 0 ? (
-              <View style={styles.emptyCard}>
+              <View style={styles.emptyBox}>
                 <Text style={styles.emptyIcon}>🎉</Text>
-                <Text style={styles.emptyTitle}>No Hotspots Pending</Text>
-                <Text style={styles.emptySub}>All reported waste locations in your area are cleared!</Text>
+                <Text style={styles.emptyTitle}>All Spots Cleared</Text>
+                <Text style={styles.emptySub}>No active hotspots to route to in your ward.</Text>
               </View>
             ) : (
-              activeGeoTasks.map((item, idx) => {
-                const isUpdating = updatingId === item.id;
-                const hasCoords = item.latitude && item.longitude;
-                return (
-                  <View key={item.id} style={styles.locationTaskCard}>
-                    <View style={styles.locCardTop}>
-                      <View style={styles.locNumBadge}>
-                        <Text style={styles.locNumText}>#{idx + 1}</Text>
-                      </View>
-                      <View style={{ flex: 1, marginLeft: tokens.spacing.sm }}>
-                        <Text style={styles.categoryTitle}>{item.category}</Text>
-                        <Text style={styles.locationSubText}>📍 {item.location}</Text>
-                      </View>
-                      <View style={[styles.statusMiniBadge, item.status === 'In Progress' ? styles.miniPending : styles.miniSubmitted]}>
-                        <Text style={styles.statusMiniText}>{item.status || 'Waiting'}</Text>
-                      </View>
-                    </View>
-
-                    {hasCoords ? (
-                      <View style={styles.coordsBox}>
-                        <Text style={styles.coordsLabel}>GPS Coordinates:</Text>
-                        <Text style={styles.coordsVal}>
-                          Lat: {item.latitude.toFixed(5)}, Lng: {item.longitude.toFixed(5)}
-                        </Text>
-                      </View>
-                    ) : (
-                      <View style={styles.coordsBox}>
-                        <Text style={styles.coordsLabel}>Address Area:</Text>
-                        <Text style={styles.coordsVal}>{item.location}</Text>
-                      </View>
-                    )}
-
-                    <Text style={styles.descriptionText} numberOfLines={2}>
-                      {item.description}
-                    </Text>
-
-                    <View style={styles.locActionRow}>
-                      <TouchableOpacity
-                        style={styles.googleMapsBtn}
-                        onPress={() => handleOpenMaps(item.latitude, item.longitude, item.location)}
-                        activeOpacity={0.8}
-                      >
-                        <Text style={styles.googleMapsBtnText}>🗺️ Open in Google Maps (Directions) →</Text>
-                      </TouchableOpacity>
-
-                      <View style={styles.locSecondaryRow}>
-                        {item.status !== 'In Progress' ? (
-                          <TouchableOpacity
-                            style={[styles.smallAcceptBtn, isUpdating && styles.btnDisabled]}
-                            onPress={() => onUpdateStatus(item.id, 'In Progress')}
-                            disabled={isUpdating}
-                            activeOpacity={0.7}
-                          >
-                            <Text style={styles.smallAcceptText}>🚀 Start Work</Text>
-                          </TouchableOpacity>
-                        ) : (
-                          <TouchableOpacity
-                            style={[styles.smallDoneBtn, isUpdating && styles.btnDisabled]}
-                            onPress={() => onUpdateStatus(item.id, 'Completed')}
-                            disabled={isUpdating}
-                            activeOpacity={0.7}
-                          >
-                            <Text style={styles.smallDoneText}>✅ Mark Done</Text>
-                          </TouchableOpacity>
-                        )}
-
-                        {item.citizenPhone && (
-                          <TouchableOpacity
-                            style={styles.smallCallBtn}
-                            onPress={() => handleCallCitizen(item.citizenPhone)}
-                            activeOpacity={0.7}
-                          >
-                            <Text style={styles.smallCallText}>📞 Call Reporter</Text>
-                          </TouchableOpacity>
-                        )}
-                      </View>
+              activeGeoTasks.map((item, idx) => (
+                <View key={item.id} style={styles.geoCard}>
+                  <View style={styles.geoLeft}>
+                    <Text style={styles.geoNumber}>#{idx + 1}</Text>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.geoCategory}>{item.category}</Text>
+                      <Text style={styles.geoLocation}>📍 {item.location}</Text>
                     </View>
                   </View>
-                );
-              })
+                  <TouchableOpacity
+                    style={styles.geoNavBtn}
+                    onPress={() => handleOpenMaps(item.latitude, item.longitude, item.location)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={styles.geoNavText}>Open Map 🗺️</Text>
+                  </TouchableOpacity>
+                </View>
+              ))
             )}
           </View>
         )}
 
         {/* TAB 4: COMPLETED TASKS */}
         {activeTab === 'completed' && (
-          <View style={styles.tabContent}>
-            <View style={styles.sectionHeaderRow}>
-              <View>
-                <Text style={styles.sectionTitle}>Completed Clearing History</Text>
-                <Text style={styles.sectionSub}>All waste hotspots cleared and verified.</Text>
-              </View>
-            </View>
-
+          <View style={styles.taskList}>
             {completedTasks.length === 0 ? (
-              <View style={styles.emptyCard}>
-                <Text style={styles.emptyIcon}>🧹</Text>
-                <Text style={styles.emptyTitle}>No Completed Tasks Yet</Text>
-                <Text style={styles.emptySub}>Complete your first waste collection job to see your history here.</Text>
+              <View style={styles.emptyBox}>
+                <Text style={styles.emptyIcon}>📋</Text>
+                <Text style={styles.emptyTitle}>No Completed Tasks</Text>
+                <Text style={styles.emptySub}>Resolved jobs will appear here.</Text>
               </View>
             ) : (
               completedTasks.map((item) => (
                 <View key={item.id} style={styles.completedCard}>
-                  <View style={styles.completedTopRow}>
-                    <View style={styles.completedBadge}>
-                      <Text style={styles.completedBadgeText}>✓ RESOLVED</Text>
+                  <View style={styles.completedLeft}>
+                    <Text style={styles.completedCheck}>✓</Text>
+                    <View style={{ flex: 1 }}>
+                      <Text style={styles.completedCategory}>{item.category}</Text>
+                      <Text style={styles.completedLocation}>📍 {item.location}</Text>
                     </View>
-                    <Text style={styles.cardDate}>
-                      {item.created_at ? new Date(item.created_at).toLocaleDateString() : 'Recently'}
-                    </Text>
                   </View>
-
-                  <Text style={styles.categoryTitle}>{item.category}</Text>
-                  <Text style={styles.descriptionText}>{item.description}</Text>
-
-                  <View style={styles.detailRow}>
-                    <Text style={styles.detailKey}>📍 Location:</Text>
-                    <Text style={styles.detailVal}>{item.location}</Text>
-                  </View>
-
-                  <View style={styles.detailRow}>
-                    <Text style={styles.detailKey}>👤 Citizen:</Text>
-                    <Text style={styles.detailVal}>{item.citizenName || 'Citizen'}</Text>
-                  </View>
+                  <Text style={styles.completedTag}>Cleaned</Text>
                 </View>
               ))
             )}
@@ -542,8 +348,7 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: tokens.spacing.md,
-    paddingTop: tokens.spacing.xl,
-    paddingBottom: tokens.spacing.md,
+    paddingVertical: tokens.spacing.sm,
     backgroundColor: tokens.colors.background,
     borderBottomWidth: 1,
     borderBottomColor: tokens.colors.border,
@@ -553,21 +358,22 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   menuBtn: {
-    marginRight: tokens.spacing.sm,
     padding: tokens.spacing.xs,
-    minWidth: 44,
-    minHeight: 44,
+    marginRight: tokens.spacing.sm,
+    minHeight: 40,
+    minWidth: 40,
     justifyContent: 'center',
     alignItems: 'center',
   },
   menuIcon: {
     fontSize: tokens.typography.size.lg,
     color: tokens.colors.text,
+    fontWeight: tokens.typography.weight.bold,
   },
   screenTitle: {
-    fontSize: tokens.typography.size.lg,
-    fontWeight: tokens.typography.weight.bold,
-    color: tokens.colors.text,
+    fontSize: tokens.typography.size.base,
+    fontWeight: tokens.typography.weight.extrabold,
+    color: tokens.colors.accent,
   },
   topRight: {
     flexDirection: 'row',
@@ -576,134 +382,66 @@ const styles = StyleSheet.create({
   },
   refreshIconBtn: {
     padding: tokens.spacing.xs,
-    minWidth: 38,
-    minHeight: 38,
+    minHeight: 36,
+    minWidth: 36,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: tokens.colors.surface,
+  },
+  refreshIconText: {
+    fontSize: tokens.typography.size.sm,
+  },
+  backHomeBtn: {
+    paddingVertical: 6,
+    paddingHorizontal: tokens.spacing.sm,
     borderRadius: tokens.radius.sm,
+    backgroundColor: tokens.colors.surface,
     borderWidth: 1,
     borderColor: tokens.colors.border,
   },
-  refreshIconText: {
-    fontSize: 16,
-  },
-  backHomeBtn: {
-    backgroundColor: tokens.colors.accent,
-    paddingHorizontal: tokens.spacing.md,
-    paddingVertical: tokens.spacing.xs,
-    borderRadius: tokens.radius.sm,
-    minHeight: 36,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
   backHomeText: {
-    color: tokens.colors.background,
+    color: tokens.colors.text,
     fontSize: tokens.typography.size.xs,
-    fontWeight: tokens.typography.weight.bold,
+    fontWeight: tokens.typography.weight.semibold,
   },
   scrollContent: {
     padding: tokens.spacing.md,
     paddingBottom: tokens.spacing.xxl,
   },
-  workerSummaryCard: {
-    backgroundColor: tokens.colors.background,
-    borderRadius: tokens.radius.xl,
-    padding: tokens.spacing.lg,
-    marginBottom: tokens.spacing.md,
-    ...tokens.shadow.sm,
-    borderWidth: 1,
-    borderColor: tokens.colors.border,
-  },
-  summaryTopRow: {
+  workerHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    alignItems: 'center',
+    marginBottom: tokens.spacing.md,
   },
-  summaryLabel: {
-    fontSize: tokens.typography.size.xs,
-    color: tokens.colors.muted,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    fontWeight: tokens.typography.weight.semibold,
-  },
-  summaryName: {
-    fontSize: tokens.typography.size.lg,
+  workerName: {
+    fontSize: tokens.typography.size.base,
     fontWeight: tokens.typography.weight.bold,
     color: tokens.colors.text,
+  },
+  workerArea: {
+    fontSize: tokens.typography.size.xs,
+    color: tokens.colors.muted,
     marginTop: 2,
   },
   dutyPill: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: tokens.colors.accent + '20',
+    backgroundColor: tokens.colors.accent + '15',
+    paddingVertical: 4,
     paddingHorizontal: tokens.spacing.sm,
-    paddingVertical: tokens.spacing.xs,
     borderRadius: tokens.radius.full,
   },
   dutyDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
     backgroundColor: tokens.colors.accent,
     marginRight: 6,
   },
-  dutyPillText: {
-    fontSize: 10,
-    fontWeight: tokens.typography.weight.extrabold,
+  dutyText: {
     color: tokens.colors.accent,
-  },
-  assignedAreaRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: tokens.spacing.sm,
-  },
-  assignedAreaLabel: {
-    fontSize: tokens.typography.size.xs,
-    color: tokens.colors.muted,
-    marginRight: tokens.spacing.xs,
-  },
-  assignedAreaVal: {
-    fontSize: tokens.typography.size.sm,
+    fontSize: 10,
     fontWeight: tokens.typography.weight.bold,
-    color: tokens.colors.accent,
-  },
-  statsStrip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: tokens.colors.surface,
-    borderRadius: tokens.radius.md,
-    paddingVertical: tokens.spacing.sm,
-    paddingHorizontal: tokens.spacing.xs,
-    marginTop: tokens.spacing.md,
-    borderWidth: 1,
-    borderColor: tokens.colors.border,
-  },
-  statBox: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 4,
-    borderRadius: tokens.radius.sm,
-  },
-  statBoxActive: {
-    backgroundColor: tokens.colors.background,
-  },
-  statVal: {
-    fontSize: tokens.typography.size.base,
-    fontWeight: tokens.typography.weight.extrabold,
-  },
-  statLabel: {
-    fontSize: 10,
-    color: tokens.colors.muted,
-    marginTop: 2,
-    fontWeight: tokens.typography.weight.medium,
-  },
-  statDivider: {
-    width: 1,
-    height: 24,
-    backgroundColor: tokens.colors.border,
   },
   tabBar: {
     flexDirection: 'row',
@@ -714,7 +452,7 @@ const styles = StyleSheet.create({
   },
   tabButton: {
     flex: 1,
-    paddingVertical: tokens.spacing.sm,
+    paddingVertical: 7,
     alignItems: 'center',
     borderRadius: tokens.radius.sm,
   },
@@ -723,163 +461,94 @@ const styles = StyleSheet.create({
     ...tokens.shadow.sm,
   },
   tabButtonText: {
-    fontSize: 10,
+    fontSize: 11,
     fontWeight: tokens.typography.weight.semibold,
     color: tokens.colors.muted,
-    textAlign: 'center',
   },
   tabButtonTextActive: {
     color: tokens.colors.accent,
     fontWeight: tokens.typography.weight.bold,
   },
-  tabContent: {
-    marginTop: tokens.spacing.xs,
-  },
-  sectionHeaderRow: {
-    marginBottom: tokens.spacing.sm,
-  },
-  sectionTitle: {
-    fontSize: tokens.typography.size.base,
-    fontWeight: tokens.typography.weight.bold,
-    color: tokens.colors.text,
-  },
-  sectionSub: {
-    fontSize: tokens.typography.size.xs,
-    color: tokens.colors.muted,
-    marginTop: 2,
-  },
-  emptyCard: {
-    backgroundColor: tokens.colors.background,
-    borderRadius: tokens.radius.xl,
-    padding: tokens.spacing.xl,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: tokens.spacing.md,
-    ...tokens.shadow.sm,
-  },
-  emptyIcon: {
-    fontSize: 40,
-    marginBottom: tokens.spacing.sm,
-  },
-  emptyTitle: {
-    fontSize: tokens.typography.size.base,
-    fontWeight: tokens.typography.weight.bold,
-    color: tokens.colors.text,
-  },
-  emptySub: {
-    fontSize: tokens.typography.size.xs,
-    color: tokens.colors.muted,
-    textAlign: 'center',
-    marginTop: tokens.spacing.xs,
-    lineHeight: 18,
+  taskList: {
+    gap: tokens.spacing.sm,
   },
   taskCard: {
     backgroundColor: tokens.colors.background,
-    borderRadius: tokens.radius.xl,
+    borderRadius: tokens.radius.lg,
     padding: tokens.spacing.md,
-    marginBottom: tokens.spacing.md,
-    ...tokens.shadow.sm,
     borderWidth: 1,
     borderColor: tokens.colors.border,
   },
-  pendingBorder: {
-    borderColor: '#f59e0b',
-  },
-  cardHeader: {
+  cardTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: tokens.spacing.xs,
   },
-  badgeNew: {
-    backgroundColor: '#e0f2fe',
-    paddingHorizontal: tokens.spacing.sm,
-    paddingVertical: 2,
-    borderRadius: tokens.radius.sm,
+  categoryTitle: {
+    fontSize: tokens.typography.size.sm,
+    fontWeight: tokens.typography.weight.bold,
+    color: tokens.colors.text,
   },
-  badgeNewText: {
+  cardTime: {
     fontSize: 10,
-    fontWeight: tokens.typography.weight.extrabold,
-    color: '#0284c7',
+    color: tokens.colors.muted,
   },
-  badgePending: {
+  pendingPill: {
     backgroundColor: '#fef3c7',
-    paddingHorizontal: tokens.spacing.sm,
+    paddingHorizontal: 6,
     paddingVertical: 2,
-    borderRadius: tokens.radius.sm,
+    borderRadius: tokens.radius.full,
   },
-  badgePendingText: {
-    fontSize: 10,
+  pendingPillText: {
+    fontSize: 9,
     fontWeight: tokens.typography.weight.extrabold,
     color: '#d97706',
   },
-  cardDate: {
-    fontSize: 11,
-    color: tokens.colors.muted,
-  },
-  categoryTitle: {
-    fontSize: tokens.typography.size.base,
-    fontWeight: tokens.typography.weight.bold,
-    color: tokens.colors.text,
-    marginBottom: 4,
-  },
   descriptionText: {
-    fontSize: tokens.typography.size.sm,
+    fontSize: tokens.typography.size.xs,
     color: tokens.colors.text,
     marginBottom: tokens.spacing.sm,
-    lineHeight: 20,
   },
-  detailRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  detailKey: {
+  locationText: {
     fontSize: tokens.typography.size.xs,
     color: tokens.colors.muted,
-    width: 80,
-    fontWeight: tokens.typography.weight.medium,
+    marginBottom: 2,
   },
-  detailVal: {
+  citizenText: {
     fontSize: tokens.typography.size.xs,
-    color: tokens.colors.text,
-    fontWeight: tokens.typography.weight.semibold,
-    flex: 1,
+    color: tokens.colors.muted,
+    marginBottom: tokens.spacing.sm,
   },
-  actionButtonRow: {
+  actionRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: tokens.spacing.sm,
-    marginTop: tokens.spacing.md,
-    paddingTop: tokens.spacing.sm,
-    borderTopWidth: 1,
-    borderTopColor: tokens.colors.surface,
+    gap: tokens.spacing.xs,
+    marginTop: tokens.spacing.xs,
   },
   primaryActionBtn: {
     flex: 1,
     backgroundColor: tokens.colors.accent,
-    borderRadius: tokens.radius.md,
-    paddingVertical: tokens.spacing.sm,
+    paddingVertical: 8,
+    borderRadius: tokens.radius.sm,
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: 42,
   },
   primaryActionText: {
-    color: tokens.colors.background,
+    color: '#ffffff',
     fontSize: tokens.typography.size.xs,
     fontWeight: tokens.typography.weight.bold,
   },
-  doneActionBtn: {
+  doneBtn: {
     flex: 1,
-    backgroundColor: '#059669',
-    borderRadius: tokens.radius.md,
-    paddingVertical: tokens.spacing.sm,
+    backgroundColor: tokens.colors.accent,
+    paddingVertical: 8,
+    borderRadius: tokens.radius.sm,
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: 42,
   },
-  doneActionText: {
-    color: tokens.colors.background,
+  doneBtnText: {
+    color: '#ffffff',
     fontSize: tokens.typography.size.xs,
     fontWeight: tokens.typography.weight.bold,
   },
@@ -887,242 +556,126 @@ const styles = StyleSheet.create({
     backgroundColor: tokens.colors.surface,
     borderWidth: 1,
     borderColor: tokens.colors.border,
-    borderRadius: tokens.radius.md,
-    paddingHorizontal: tokens.spacing.md,
-    paddingVertical: tokens.spacing.sm,
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 42,
+    paddingVertical: 8,
+    paddingHorizontal: tokens.spacing.sm,
+    borderRadius: tokens.radius.sm,
   },
   secondaryActionText: {
-    color: tokens.colors.text,
     fontSize: tokens.typography.size.xs,
     fontWeight: tokens.typography.weight.semibold,
+    color: tokens.colors.text,
   },
-  callIconBtn: {
+  callBtn: {
     backgroundColor: tokens.colors.surface,
     borderWidth: 1,
     borderColor: tokens.colors.border,
-    borderRadius: tokens.radius.md,
-    width: 42,
-    height: 42,
-    alignItems: 'center',
-    justifyContent: 'center',
+    paddingVertical: 8,
+    paddingHorizontal: tokens.spacing.sm,
+    borderRadius: tokens.radius.sm,
   },
-  callIconText: {
-    fontSize: 18,
+  callIcon: {
+    fontSize: tokens.typography.size.xs,
   },
   btnDisabled: {
     opacity: 0.6,
   },
-  // Map Radar Card
-  mapRadarCard: {
-    backgroundColor: '#0f172a',
-    borderRadius: tokens.radius.xl,
-    padding: tokens.spacing.md,
-    marginBottom: tokens.spacing.sm,
-  },
-  radarHeader: {
+  geoCard: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: tokens.spacing.md,
-  },
-  radarTitle: {
-    fontSize: tokens.typography.size.base,
-    fontWeight: tokens.typography.weight.bold,
-    color: '#ffffff',
-  },
-  radarSub: {
-    fontSize: 11,
-    color: '#94a3b8',
-    marginTop: 2,
-  },
-  gpsPill: {
-    backgroundColor: '#10b981',
-    paddingHorizontal: tokens.spacing.sm,
-    paddingVertical: 2,
-    borderRadius: tokens.radius.full,
-  },
-  gpsPillText: {
-    fontSize: 9,
-    fontWeight: tokens.typography.weight.extrabold,
-    color: '#ffffff',
-  },
-  radarVisualBox: {
-    backgroundColor: '#1e293b',
-    borderRadius: tokens.radius.md,
-    padding: tokens.spacing.lg,
     alignItems: 'center',
-    justifyContent: 'center',
-  },
-  radarGraphic: {
-    fontSize: 20,
-    color: '#38bdf8',
-    letterSpacing: 2,
-    marginBottom: tokens.spacing.xs,
-  },
-  radarCoordsText: {
-    fontSize: 11,
-    color: '#94a3b8',
-    fontWeight: tokens.typography.weight.medium,
-  },
-  locationTaskCard: {
+    justifyContent: 'space-between',
     backgroundColor: tokens.colors.background,
-    borderRadius: tokens.radius.xl,
+    borderRadius: tokens.radius.lg,
     padding: tokens.spacing.md,
-    marginBottom: tokens.spacing.md,
-    ...tokens.shadow.sm,
     borderWidth: 1,
     borderColor: tokens.colors.border,
   },
-  locCardTop: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    marginBottom: tokens.spacing.xs,
-  },
-  locNumBadge: {
-    backgroundColor: tokens.colors.accent,
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  locNumText: {
-    color: tokens.colors.background,
-    fontSize: 11,
-    fontWeight: tokens.typography.weight.extrabold,
-  },
-  locationSubText: {
-    fontSize: 11,
-    color: tokens.colors.muted,
-    marginTop: 2,
-  },
-  statusMiniBadge: {
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: tokens.radius.sm,
-  },
-  miniSubmitted: {
-    backgroundColor: '#e0f2fe',
-  },
-  miniPending: {
-    backgroundColor: '#fef3c7',
-  },
-  statusMiniText: {
-    fontSize: 9,
-    fontWeight: tokens.typography.weight.bold,
-    color: tokens.colors.text,
-  },
-  coordsBox: {
-    backgroundColor: tokens.colors.surface,
-    padding: tokens.spacing.xs,
-    borderRadius: tokens.radius.sm,
-    marginVertical: tokens.spacing.xs,
+  geoLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-  },
-  coordsLabel: {
-    fontSize: 10,
-    color: tokens.colors.muted,
-    marginRight: 6,
-  },
-  coordsVal: {
-    fontSize: 10,
-    fontWeight: tokens.typography.weight.bold,
-    color: tokens.colors.accent,
-  },
-  locActionRow: {
-    marginTop: tokens.spacing.sm,
-  },
-  googleMapsBtn: {
-    backgroundColor: '#2563eb',
-    borderRadius: tokens.radius.md,
-    paddingVertical: tokens.spacing.sm,
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 42,
-    marginBottom: tokens.spacing.xs,
-  },
-  googleMapsBtnText: {
-    color: tokens.colors.background,
-    fontSize: tokens.typography.size.xs,
-    fontWeight: tokens.typography.weight.bold,
-  },
-  locSecondaryRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flex: 1,
     gap: tokens.spacing.sm,
   },
-  smallAcceptBtn: {
-    flex: 1,
-    backgroundColor: tokens.colors.accent,
-    borderRadius: tokens.radius.sm,
-    paddingVertical: tokens.spacing.xs,
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 36,
+  geoNumber: {
+    fontSize: tokens.typography.size.sm,
+    fontWeight: tokens.typography.weight.extrabold,
+    color: tokens.colors.accent,
+    width: 24,
   },
-  smallAcceptText: {
-    color: tokens.colors.background,
+  geoCategory: {
     fontSize: tokens.typography.size.xs,
     fontWeight: tokens.typography.weight.bold,
+    color: tokens.colors.text,
   },
-  smallDoneBtn: {
-    flex: 1,
-    backgroundColor: '#059669',
-    borderRadius: tokens.radius.sm,
-    paddingVertical: tokens.spacing.xs,
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 36,
+  geoLocation: {
+    fontSize: 11,
+    color: tokens.colors.muted,
+    marginTop: 1,
   },
-  smallDoneText: {
-    color: tokens.colors.background,
-    fontSize: tokens.typography.size.xs,
-    fontWeight: tokens.typography.weight.bold,
-  },
-  smallCallBtn: {
-    flex: 1,
+  geoNavBtn: {
     backgroundColor: tokens.colors.surface,
     borderWidth: 1,
     borderColor: tokens.colors.border,
+    paddingVertical: 6,
+    paddingHorizontal: tokens.spacing.sm,
     borderRadius: tokens.radius.sm,
-    paddingVertical: tokens.spacing.xs,
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 36,
   },
-  smallCallText: {
-    color: tokens.colors.text,
+  geoNavText: {
     fontSize: tokens.typography.size.xs,
     fontWeight: tokens.typography.weight.semibold,
+    color: tokens.colors.accent,
   },
   completedCard: {
-    backgroundColor: tokens.colors.background,
-    borderRadius: tokens.radius.xl,
-    padding: tokens.spacing.md,
-    marginBottom: tokens.spacing.md,
-    borderLeftWidth: 4,
-    borderLeftColor: tokens.colors.accent,
-    ...tokens.shadow.sm,
-  },
-  completedTopRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: tokens.colors.background,
+    borderRadius: tokens.radius.lg,
+    padding: tokens.spacing.sm,
+    borderWidth: 1,
+    borderColor: tokens.colors.border,
+  },
+  completedLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    gap: tokens.spacing.sm,
+  },
+  completedCheck: {
+    fontSize: 14,
+    color: tokens.colors.accent,
+    fontWeight: tokens.typography.weight.extrabold,
+  },
+  completedCategory: {
+    fontSize: tokens.typography.size.xs,
+    fontWeight: tokens.typography.weight.semibold,
+    color: tokens.colors.text,
+  },
+  completedLocation: {
+    fontSize: 10,
+    color: tokens.colors.muted,
+  },
+  completedTag: {
+    fontSize: 10,
+    color: tokens.colors.accent,
+    fontWeight: tokens.typography.weight.bold,
+  },
+  emptyBox: {
+    padding: tokens.spacing.xl,
+    alignItems: 'center',
+  },
+  emptyIcon: {
+    fontSize: 28,
     marginBottom: tokens.spacing.xs,
   },
-  completedBadge: {
-    backgroundColor: tokens.colors.accent + '20',
-    paddingHorizontal: tokens.spacing.sm,
-    paddingVertical: 2,
-    borderRadius: tokens.radius.sm,
+  emptyTitle: {
+    fontSize: tokens.typography.size.sm,
+    fontWeight: tokens.typography.weight.bold,
+    color: tokens.colors.text,
   },
-  completedBadgeText: {
-    fontSize: 10,
-    fontWeight: tokens.typography.weight.extrabold,
-    color: tokens.colors.accent,
+  emptySub: {
+    fontSize: tokens.typography.size.xs,
+    color: tokens.colors.muted,
+    textAlign: 'center',
+    marginTop: 2,
   },
 });

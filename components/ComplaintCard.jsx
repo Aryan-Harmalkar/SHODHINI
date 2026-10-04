@@ -4,14 +4,13 @@ import { tokens } from '../lib/theme';
 
 export default function ComplaintCard({ item, updatingId, onUpdateStatus }) {
   const isCompleted = item.status === 'Completed';
-  const isInProgress = item.status === 'In Progress';
-  const isAssigned = item.status === 'Assigned';
+  const isInProgress = item.status === 'In Progress' || item.status === 'Assigned';
   const isUpdating = updatingId === item.id;
 
   const getStatusColor = () => {
     if (isCompleted) return tokens.colors.accent;
-    if (isInProgress) return '#f59e0b'; // amber
-    return tokens.colors.muted;
+    if (isInProgress) return '#d97706';
+    return '#0284c7';
   };
 
   return (
@@ -20,11 +19,11 @@ export default function ComplaintCard({ item, updatingId, onUpdateStatus }) {
         <View style={styles.headerText}>
           <Text style={styles.category}>{item.category || 'General Waste'}</Text>
           <Text style={styles.date}>
-            {item.created_at ? new Date(item.created_at).toLocaleString() : 'Just now'}
+            {item.created_at ? new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Today'}
           </Text>
         </View>
 
-        <View style={[styles.badge, { backgroundColor: getStatusColor() + '20' }]}>
+        <View style={[styles.badge, { backgroundColor: getStatusColor() + '15' }]}>
           <Text style={[styles.badgeText, { color: getStatusColor() }]}>
             {item.status || 'Submitted'}
           </Text>
@@ -34,59 +33,57 @@ export default function ComplaintCard({ item, updatingId, onUpdateStatus }) {
       <Text style={styles.description}>{item.description}</Text>
 
       <View style={styles.metaRow}>
-        <Text style={styles.metaKey}>📍 Location:</Text>
-        <Text style={styles.metaVal}>{item.location}</Text>
+        <Text style={styles.metaVal}>📍 {item.location}</Text>
       </View>
 
-      <View style={styles.metaRow}>
-        <Text style={styles.metaKey}>👤 Citizen:</Text>
-        <Text style={styles.metaVal}>
-          {item.citizenName} {item.citizenPhone ? `(${item.citizenPhone})` : ''}
-        </Text>
-      </View>
-
-      <View style={styles.divider} />
-      <Text style={styles.actionLabel}>Update Status:</Text>
-
-      <View style={styles.actionGroup}>
-        <TouchableOpacity
-          style={[styles.pill, isAssigned && styles.pillActive]}
-          disabled={isUpdating || isAssigned || isCompleted}
-          onPress={() => onUpdateStatus(item.id, 'Assigned')}
-          activeOpacity={0.7}
-        >
-          <Text style={[styles.pillLabel, isAssigned && styles.pillLabelActive]}>
-            📌 Assigned
+      {item.citizenName && (
+        <View style={styles.metaRow}>
+          <Text style={styles.metaVal}>
+            👤 {item.citizenName} {item.citizenPhone ? `(${item.citizenPhone})` : ''}
           </Text>
-        </TouchableOpacity>
+        </View>
+      )}
 
-        <TouchableOpacity
-          style={[styles.pill, isInProgress && styles.pillActive]}
-          disabled={isUpdating || isInProgress || isCompleted}
-          onPress={() => onUpdateStatus(item.id, 'In Progress')}
-          activeOpacity={0.7}
-        >
-          <Text style={[styles.pillLabel, isInProgress && styles.pillLabelActive]}>
-            ⏳ In Progress
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[styles.pill, isCompleted && styles.pillCompletedActive]}
-          disabled={isUpdating || isCompleted}
-          onPress={() => onUpdateStatus(item.id, 'Completed')}
-          activeOpacity={0.7}
-        >
-          <Text style={[styles.pillLabel, isCompleted && styles.pillLabelCompletedActive]}>
-            {isCompleted ? '✓ Completed' : '✅ Mark Done'}
-          </Text>
-        </TouchableOpacity>
-      </View>
+      {/* Contextual Single Action Button */}
+      {!isCompleted ? (
+        <View style={styles.actionRow}>
+          {!isInProgress ? (
+            <TouchableOpacity
+              style={[styles.primaryBtn, isUpdating && styles.btnDisabled]}
+              disabled={isUpdating}
+              onPress={() => onUpdateStatus(item.id, 'In Progress')}
+              activeOpacity={0.8}
+            >
+              {isUpdating ? (
+                <ActivityIndicator size="small" color="#ffffff" />
+              ) : (
+                <Text style={styles.primaryBtnText}>Accept Job</Text>
+              )}
+            </TouchableOpacity>
+          ) : (
+            <TouchableOpacity
+              style={[styles.doneBtn, isUpdating && styles.btnDisabled]}
+              disabled={isUpdating}
+              onPress={() => onUpdateStatus(item.id, 'Completed')}
+              activeOpacity={0.8}
+            >
+              {isUpdating ? (
+                <ActivityIndicator size="small" color="#ffffff" />
+              ) : (
+                <Text style={styles.doneBtnText}>✅ Mark Cleaned & Done</Text>
+              )}
+            </TouchableOpacity>
+          )}
+        </View>
+      ) : (
+        <View style={styles.completedBadgeRow}>
+          <Text style={styles.completedBadgeText}>✓ Resolved & Cleared</Text>
+        </View>
+      )}
 
       {isUpdating && (
         <View style={styles.overlay}>
           <ActivityIndicator size="small" color={tokens.colors.accent} />
-          <Text style={styles.overlayText}>Updating...</Text>
         </View>
       )}
     </View>
@@ -96,121 +93,99 @@ export default function ComplaintCard({ item, updatingId, onUpdateStatus }) {
 const styles = StyleSheet.create({
   card: {
     backgroundColor: tokens.colors.background,
-    borderRadius: tokens.radius.xl,
+    borderRadius: tokens.radius.lg,
     padding: tokens.spacing.md,
-    marginBottom: tokens.spacing.md,
-    ...tokens.shadow.md,
+    marginBottom: tokens.spacing.sm,
+    borderWidth: 1,
+    borderColor: tokens.colors.border,
     position: 'relative',
     overflow: 'hidden',
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginBottom: tokens.spacing.sm,
+    alignItems: 'center',
+    marginBottom: tokens.spacing.xs,
   },
   headerText: {
     flex: 1,
   },
   category: {
-    fontSize: tokens.typography.size.base,
+    fontSize: tokens.typography.size.sm,
     fontWeight: tokens.typography.weight.bold,
     color: tokens.colors.text,
   },
   date: {
-    fontSize: tokens.typography.size.xs,
+    fontSize: 10,
     color: tokens.colors.muted,
-    marginTop: 2,
+    marginTop: 1,
   },
   badge: {
     paddingHorizontal: tokens.spacing.sm,
-    paddingVertical: tokens.spacing.xs,
+    paddingVertical: 3,
     borderRadius: tokens.radius.full,
-    marginLeft: tokens.spacing.sm,
   },
   badgeText: {
-    fontSize: tokens.typography.size.xs,
+    fontSize: 10,
     fontWeight: tokens.typography.weight.bold,
   },
   description: {
-    fontSize: tokens.typography.size.sm,
+    fontSize: tokens.typography.size.xs,
     color: tokens.colors.text,
-    marginBottom: tokens.spacing.md,
-    lineHeight: 20,
+    marginBottom: tokens.spacing.sm,
+    lineHeight: 18,
   },
   metaRow: {
-    flexDirection: 'row',
-    marginBottom: tokens.spacing.xs,
-  },
-  metaKey: {
-    fontSize: tokens.typography.size.sm,
-    color: tokens.colors.muted,
-    width: 90,
+    marginBottom: 2,
   },
   metaVal: {
-    flex: 1,
-    fontSize: tokens.typography.size.sm,
-    color: tokens.colors.text,
-    fontWeight: tokens.typography.weight.medium,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: tokens.colors.border,
-    marginVertical: tokens.spacing.md,
-  },
-  actionLabel: {
     fontSize: tokens.typography.size.xs,
     color: tokens.colors.muted,
-    textTransform: 'uppercase',
-    fontWeight: tokens.typography.weight.semibold,
-    marginBottom: tokens.spacing.sm,
   },
-  actionGroup: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: tokens.spacing.sm,
+  actionRow: {
+    marginTop: tokens.spacing.sm,
+    paddingTop: tokens.spacing.xs,
   },
-  pill: {
-    flex: 1,
-    minWidth: 90,
-    minHeight: 44,
-    backgroundColor: tokens.colors.surface,
-    borderWidth: 1,
-    borderColor: tokens.colors.border,
-    borderRadius: tokens.radius.full,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: tokens.spacing.xs,
-  },
-  pillActive: {
-    backgroundColor: tokens.colors.accent + '15',
-    borderColor: tokens.colors.accent,
-  },
-  pillCompletedActive: {
+  primaryBtn: {
     backgroundColor: tokens.colors.accent,
-    borderColor: tokens.colors.accent,
+    paddingVertical: 8,
+    borderRadius: tokens.radius.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  pillLabel: {
+  primaryBtnText: {
+    color: '#ffffff',
     fontSize: tokens.typography.size.xs,
-    color: tokens.colors.muted,
-    fontWeight: tokens.typography.weight.semibold,
+    fontWeight: tokens.typography.weight.bold,
   },
-  pillLabelActive: {
+  doneBtn: {
+    backgroundColor: tokens.colors.accent,
+    paddingVertical: 8,
+    borderRadius: tokens.radius.sm,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  doneBtnText: {
+    color: '#ffffff',
+    fontSize: tokens.typography.size.xs,
+    fontWeight: tokens.typography.weight.bold,
+  },
+  btnDisabled: {
+    opacity: 0.6,
+  },
+  completedBadgeRow: {
+    marginTop: tokens.spacing.xs,
+    paddingTop: tokens.spacing.xs,
+  },
+  completedBadgeText: {
+    fontSize: 11,
     color: tokens.colors.accent,
-  },
-  pillLabelCompletedActive: {
-    color: tokens.colors.background,
+    fontWeight: tokens.typography.weight.semibold,
   },
   overlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(255,255,255,0.8)',
+    backgroundColor: 'rgba(255,255,255,0.7)',
     justifyContent: 'center',
     alignItems: 'center',
-    flexDirection: 'row',
-  },
-  overlayText: {
-    marginLeft: tokens.spacing.sm,
-    color: tokens.colors.accent,
-    fontWeight: tokens.typography.weight.bold,
   },
 });
