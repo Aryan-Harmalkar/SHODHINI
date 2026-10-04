@@ -372,19 +372,18 @@ export async function getUserComplaints(userId) {
 }
 
 /**
- * Fetch total eco points for a user
+ * Fetch total eco points for a user (citizens only)
  */
 export async function getUserEcoPoints(userId) {
   if (!userId) return 0;
   try {
     const { data, error } = await supabase
       .from('profiles')
-      .select('eco_points')
+      .select('eco_points, role')
       .eq('id', userId)
       .maybeSingle();
 
-    if (error) {
-      console.warn('Error fetching eco points:', error.message);
+    if (error || !data || data.role === 'worker') {
       return 0;
     }
 
@@ -392,6 +391,135 @@ export async function getUserEcoPoints(userId) {
   } catch (e) {
     console.warn('Error in getUserEcoPoints:', e);
     return 0;
+  }
+}
+
+/**
+ * Fetch real registered citizens for the community leaderboard
+ */
+export async function getCitizenLeaderboard() {
+  try {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('id, name, area_id, eco_points, areas(name)')
+      .eq('role', 'citizen')
+      .order('eco_points', { ascending: false })
+      .limit(50);
+
+    if (error) {
+      console.warn('Error fetching citizen leaderboard:', error.message);
+      return [];
+    }
+
+    return (data || []).map((p, idx) => ({
+      id: p.id,
+      rank: idx + 1,
+      name: p.name || 'Citizen',
+      ward: p.areas?.name || (p.area_id ? `Ward ${p.area_id}` : 'Ward 1'),
+      points: Number(p.eco_points || 0),
+    }));
+  } catch (e) {
+    console.warn('Leaderboard fetch exception:', e);
+    return [];
+  }
+}
+
+/**
+ * Fetch real ward cleanliness rankings from active & resolved complaints
+ */
+export async function getWardLeaderboard() {
+  try {
+    // 1. Fetch all wards
+    const { data: areasData } = await supabase
+      .from('areas')
+      .select('id, name')
+      .order('id', { ascending: true });
+
+    const areasList =
+      areasData && areasData.length > 0
+        ? areasData
+        : [
+            { id: 1, name: 'Ward 1' },
+            { id: 2, name: 'Ward 2' },
+            { id: 3, name: 'Ward 3' },
+            { id: 4, name: 'Ward 4' },
+            { id: 5, name: 'Ward 5' },
+            { id: 6, name: 'Ward 6' },
+            { id: 7, name: 'Ward 7' },
+            { id: 8, name: 'Ward 8' },
+            { id: 9, name: 'Ward 9' },
+            { id: 10, name: 'Ward 10' },
+          ];
+
+    // 2. Fetch all complaints to compute actual cleanups
+    const { data: complaintsData, error: cErr } = await supabase
+      .from('complaints')
+      .select('id, area_id, status');
+
+    const complaints = complaintsData || [];
+    const wardMap = {};
+
+    areasList.forEach((a) => {
+      wardMap[a.id] = {
+        id: a.id,
+        name: a.name,
+        total: 0,
+        resolved: 0,
+      };
+    });
+
+    complaints.forEach((c) => {
+      if (c.area_id && wardMap[c.area_id]) {
+        wardMap[c.area_id].total += 1;
+        if (c.status === 'Completed') {
+          wardMap[c.area_id].resolved += 1;
+        }
+      }
+    });
+
+    const list = Object.values(wardMap).map((w) => {
+      const score = w.total > 0 ? Math.round((w.resolved / w.total) * 100) : 100;
+      return {
+        id: w.id,
+        name: w.name,
+        resolved: w.resolved,
+        total: w.total,
+        score,
+        active: w.total - w.resolved,
+      };
+    });
+
+    // Sort by resolved desc, then highest cleanliness score desc
+    list.sort((a, b) => b.resolved - a.resolved || b.score - a.score || a.id - b.id);
+
+    return list.map((w, idx) => ({
+      ...w,
+      rank: idx + 1,
+    }));
+  } catch (e) {
+    console.warn('Ward leaderboard fetch exception:', e);
+    return [];
+  }
+}
+
+/**
+ * Fetch cleanup stats for a worker
+ */
+export async function getCollectorCleanupStats(workerId, areaId) {
+  try {
+    let query = supabase.from('complaints').select('id, status');
+    if (workerId) {
+      query = query.or(`assigned_worker_id.eq.${workerId},area_id.eq.${areaId || 0}`);
+    } else if (areaId) {
+      query = query.eq('area_id', areaId);
+    }
+    const { data } = await query;
+    const list = data || [];
+    const completed = list.filter((c) => c.status === 'Completed').length;
+    const active = list.filter((c) => c.status !== 'Completed').length;
+    return { completed, active };
+  } catch (e) {
+    return { completed: 0, active: 0 };
   }
 }
 
@@ -471,3 +599,4 @@ export async function updateUserPushToken(userId, token) {
     console.warn('Failed to update push token:', e);
   }
 }
+

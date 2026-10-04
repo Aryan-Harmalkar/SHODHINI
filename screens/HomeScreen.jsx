@@ -33,6 +33,9 @@ export default function HomeScreen({ user, onLogout }) {
   const [collectorTasksTab, setCollectorTasksTab] = useState('available');
 
   const handleNavigate = (screen) => {
+    if (isCollector && (screen === 'rewards' || screen.startsWith('rewards_') || screen === 'complaint' || screen === 'waste_pickup' || screen === 'recycle')) {
+      return;
+    }
     if (screen === 'rewards_redeem') {
       setRewardsTab('redeem');
       setCurrentScreen('rewards');
@@ -132,6 +135,7 @@ export default function HomeScreen({ user, onLogout }) {
   }, [isCollector, user?.area_id]);
 
   const loadEcoPoints = async () => {
+    if (!user?.id || isCollector) return;
     try {
       const points = await getUserEcoPoints(user.id);
       setEcoPoints(points || 0);
@@ -269,6 +273,7 @@ export default function HomeScreen({ user, onLogout }) {
             ecoPoints={ecoPoints}
             onBackToHome={() => setCurrentScreen('home')}
             onOpenSidebar={() => setSidebarVisible(true)}
+            isCollector={false}
           />
           <Sidebar
             visible={sidebarVisible}
@@ -328,7 +333,7 @@ export default function HomeScreen({ user, onLogout }) {
             currentScreen={currentScreen}
             onNavigate={handleNavigate}
             user={user}
-            ecoPoints={ecoPoints}
+            ecoPoints={0}
             onLogout={onLogout}
             isCollector={true}
           />
@@ -341,9 +346,10 @@ export default function HomeScreen({ user, onLogout }) {
         <>
           <ScoreboardScreen
             user={user}
-            ecoPoints={ecoPoints}
+            ecoPoints={0}
             onBackToHome={() => setCurrentScreen('home')}
             onOpenSidebar={() => setSidebarVisible(true)}
+            isCollector={true}
           />
           <Sidebar
             visible={sidebarVisible}
@@ -351,7 +357,7 @@ export default function HomeScreen({ user, onLogout }) {
             currentScreen={currentScreen}
             onNavigate={handleNavigate}
             user={user}
-            ecoPoints={ecoPoints}
+            ecoPoints={0}
             onLogout={onLogout}
             isCollector={true}
           />
@@ -681,7 +687,7 @@ export default function HomeScreen({ user, onLogout }) {
         currentScreen={currentScreen}
         onNavigate={handleNavigate}
         user={user}
-        ecoPoints={ecoPoints}
+        ecoPoints={isCollector ? 0 : ecoPoints}
         onLogout={onLogout}
         isCollector={isCollector}
       />
