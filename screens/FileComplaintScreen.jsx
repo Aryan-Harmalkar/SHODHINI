@@ -11,11 +11,11 @@ import {
   Image,
   Alert,
 } from 'react-native';
-import * as Location from 'expo-location';
 import * as ImagePicker from 'expo-image-picker';
 import { fileComplaint, getAreas, getCurrentUser } from '../db/database';
 import { tokens } from '../lib/theme';
 import { analyzeWasteImageWithGemini } from '../lib/aiVision';
+import { getHighAccuracyLocation, getReadableAddress } from '../lib/locationHelper';
 
 export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar }) {
   const [currentUser, setCurrentUser] = useState(user || null);
@@ -28,7 +28,11 @@ export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar 
   const [photoUri, setPhotoUri] = useState(null);
   const [photoTimestamp, setPhotoTimestamp] = useState(null);
   const [locationCoords, setLocationCoords] = useState(null);
+  const [locationAccuracy, setLocationAccuracy] = useState(null);
+  const [isCoarseLocation, setIsCoarseLocation] = useState(false);
+  const [readableAddress, setReadableAddress] = useState(null);
   const [capturingPhoto, setCapturingPhoto] = useState(false);
+  const [recalibratingLocation, setRecalibratingLocation] = useState(false);
   const [locationError, setLocationError] = useState('');
 
   // AI Analysis States
@@ -61,13 +65,61 @@ export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar 
         setSelectedAreaId(list[0].id);
         setSelectedAreaName(list[0].name);
       }
+
+      // Pre-warm accurate GPS in the background
+      handleAcquireLocation();
     }
 
     init();
   }, []);
 
   /**
-   * Captures Live Photo using device camera and acquires live GPS geotag
+   * Acquires fresh, high-accuracy GPS coordinates & reverse-geocodes address
+   * Throws an error if internal GPS is not available or turned off
+   */
+  const handleAcquireLocation = async () => {
+    setLocationError('');
+    try {
+      const loc = await getHighAccuracyLocation();
+      setLocationCoords({ latitude: loc.latitude, longitude: loc.longitude });
+      setLocationAccuracy(loc.accuracy);
+      setIsCoarseLocation(loc.isCoarse);
+
+      // Reverse geocode to human-readable address
+      const addr = await getReadableAddress({ latitude: loc.latitude, longitude: loc.longitude });
+      if (addr) {
+        setReadableAddress(addr);
+      }
+      return loc;
+    } catch (err) {
+      console.warn('Strict internal GPS fetch error:', err);
+      setLocationCoords(null);
+      setLocationAccuracy(null);
+      setReadableAddress(null);
+      const msg = err.message || 'Internal GPS is unavailable. Please enable device GPS.';
+      setLocationError(msg);
+      throw new Error(msg);
+    }
+  };
+
+  /**
+   * Recalibrate GPS manually on user tap
+   */
+  const handleRecalibrateLocation = async () => {
+    setRecalibratingLocation(true);
+    setErrorMessage('');
+    try {
+      await handleAcquireLocation();
+    } catch (err) {
+      Alert.alert('Internal GPS Error', err.message, [{ text: 'OK' }]);
+    } finally {
+      setRecalibratingLocation(false);
+    }
+  };
+
+  /**
+   * Captures Live Photo using device camera and acquires fresh live GPS geotag.
+   * Strictly requires internal GPS fix - throws an error if GPS is unavailable!
    */
   const handleTakeLivePhoto = async () => {
     setErrorMessage('');
@@ -75,37 +127,24 @@ export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar 
     setCapturingPhoto(true);
 
     try {
-      // 1. Acquire Live GPS Coordinates
-      let coords = null;
+      // 1. Strict Internal GPS Check: Throws an error if GPS is unavailable
+      let loc = null;
       try {
-        const { status: locStatus } = await Location.requestForegroundPermissionsAsync();
-        if (locStatus === 'granted') {
-          const pos = await Location.getCurrentPositionAsync({
-            accuracy: Location.Accuracy.Balanced,
-          });
-          if (pos?.coords) {
-            coords = {
-              latitude: pos.coords.latitude,
-              longitude: pos.coords.longitude,
-            };
-            setLocationCoords(coords);
-          }
-        } else {
-          setLocationError('GPS permission denied. Geotag will record selected Ward.');
-        }
-      } catch (locErr) {
-        console.warn('GPS location capture warning:', locErr);
-        setLocationError('Could not fetch precise GPS. Defaulting to Ward location.');
+        loc = await handleAcquireLocation();
+      } catch (gpsErr) {
+        throw new Error(
+          `GPS Geotag Error: ${gpsErr.message}\n\nA verified live internal GPS geotag is required to report waste.`
+        );
+      }
+
+      if (!loc || typeof loc.latitude !== 'number' || typeof loc.longitude !== 'number') {
+        throw new Error('Internal GPS is unavailable. Please enable device location/GPS to geotag the complaint.');
       }
 
       // 2. Request Camera Permission & Launch Device Camera
       const cameraPerm = await ImagePicker.requestCameraPermissionsAsync();
       if (cameraPerm.status !== 'granted') {
-        Alert.alert(
-          'Live Camera Permission',
-          'Camera access is required to capture live geotagged waste photos.',
-          [{ text: 'OK' }]
-        );
+        throw new Error('Camera permission denied. Camera access is required to capture live geotagged waste photos.');
       }
 
       const result = await ImagePicker.launchCameraAsync({
@@ -118,14 +157,18 @@ export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar 
       if (!result.canceled && result.assets && result.assets.length > 0) {
         const asset = result.assets[0];
         setPhotoUri(asset.uri);
-        setPhotoTimestamp(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+        setPhotoTimestamp(
+          new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+        );
 
         // 3. Immediately trigger Gemini AI Vision Analysis
         await runGeminiAnalysis(asset.base64, asset.uri);
       }
     } catch (err) {
-      console.error('Camera capture error:', err);
-      setErrorMessage('Could not open camera. Please ensure camera permissions are allowed.');
+      console.error('Camera/GPS capture error:', err);
+      setLocationError(err.message);
+      setErrorMessage(err.message);
+      Alert.alert('GPS Required', err.message, [{ text: 'OK' }]);
     } finally {
       setCapturingPhoto(false);
     }
@@ -168,6 +211,11 @@ export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar 
       return;
     }
 
+    if (!locationCoords || typeof locationCoords.latitude !== 'number' || typeof locationCoords.longitude !== 'number') {
+      setErrorMessage('Cannot submit: A verified internal GPS geotag is required. Please enable device GPS and recalibrate.');
+      return;
+    }
+
     // Reject non-waste items (living animals, humans, clean areas)
     if (!aiResult.isWaste) {
       setErrorMessage(
@@ -191,11 +239,19 @@ export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar 
     try {
       const isLowConfidence = aiResult.confidence < 20;
 
+      // Include reverse-geocoded address into notes if available
+      const fullNotes = [
+        description.trim(),
+        readableAddress?.shortAddress ? `Location: ${readableAddress.shortAddress}` : null,
+      ]
+        .filter(Boolean)
+        .join(' | ');
+
       await fileComplaint({
         citizenId,
         areaId: selectedAreaId,
         category: aiResult.category,
-        description: description.trim(), // Strictly optional!
+        description: fullNotes,
         latitude: locationCoords?.latitude || null,
         longitude: locationCoords?.longitude || null,
         aiAnalysis: aiResult,
@@ -208,6 +264,7 @@ export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar 
         confidence: aiResult.confidence,
         classification: aiResult.classification,
         areaName: selectedAreaName,
+        address: readableAddress?.shortAddress || '',
       });
 
       setTimeout(() => {
@@ -253,6 +310,9 @@ export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar 
                 ? `AI confidence was under 20% (${successData.confidence}%). Your report has been routed to the Municipal Admin for cross-verification before dispatching to ${successData.areaName} collectors.`
                 : `AI verified (${successData.confidence}% sureness). Dispatched directly to sanitation workers in ${successData.areaName}. You will earn 15 Eco Points once resolved!`}
             </Text>
+            {successData.address ? (
+              <Text style={styles.successAddressText}>📍 {successData.address}</Text>
+            ) : null}
             <View style={styles.successBadge}>
               <Text style={styles.successBadgeText}>
                 {successData.isLowConfidence ? '⏳ Status: Admin Review' : '✅ Status: Dispatched'}
@@ -309,10 +369,18 @@ export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar 
                       <Text style={styles.geotagLiveDot}>● LIVE GEOTAG</Text>
                       <Text style={styles.geotagTime}>{photoTimestamp || 'Just now'}</Text>
                     </View>
-                    <Text style={styles.geotagCoord}>
-                      📍 {locationCoords ? `${locationCoords.latitude.toFixed(4)}° N, ${locationCoords.longitude.toFixed(4)}° E` : 'GPS Acquired'}
+
+                    {/* Human-readable street address */}
+                    <Text style={styles.geotagAddress} numberOfLines={1}>
+                      📍 {readableAddress?.shortAddress || (locationCoords ? `${locationCoords.latitude.toFixed(4)}° N, ${locationCoords.longitude.toFixed(4)}° E` : 'GPS Acquired')}
                     </Text>
-                    <Text style={styles.geotagWard}>🏛️ {selectedAreaName || 'Ward 1'}</Text>
+
+                    <View style={styles.geotagMetaRow}>
+                      <Text style={styles.geotagWard}>🏛️ {selectedAreaName || 'Ward 1'}</Text>
+                      <Text style={styles.geotagAccuracy}>
+                        {locationAccuracy ? `🎯 ±${locationAccuracy}m` : '🎯 High Precision'}
+                      </Text>
+                    </View>
                   </View>
 
                   <TouchableOpacity
@@ -320,8 +388,39 @@ export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar 
                     onPress={handleTakeLivePhoto}
                     activeOpacity={0.8}
                   >
-                    <Text style={styles.retakeBtnText}>🔄 Retake Live Photo</Text>
+                    <Text style={styles.retakeBtnText}>🔄 Retake Photo</Text>
                   </TouchableOpacity>
+                </View>
+              )}
+
+              {/* Location Controls & Recalibration */}
+              <View style={styles.locationControlsRow}>
+                <TouchableOpacity
+                  style={styles.recalibrateBtn}
+                  onPress={handleRecalibrateLocation}
+                  disabled={recalibratingLocation}
+                  activeOpacity={0.7}
+                >
+                  {recalibratingLocation ? (
+                    <ActivityIndicator size="small" color={tokens.colors.accent} />
+                  ) : (
+                    <Text style={styles.recalibrateBtnText}>🎯 Recalibrate GPS</Text>
+                  )}
+                </TouchableOpacity>
+
+                {readableAddress?.shortAddress ? (
+                  <Text style={styles.detectedAddressText} numberOfLines={1}>
+                    {readableAddress.shortAddress}
+                  </Text>
+                ) : null}
+              </View>
+
+              {/* Coarse network notice (especially for desktop browsers without GPS chip) */}
+              {isCoarseLocation && (
+                <View style={styles.coarseNoticeBox}>
+                  <Text style={styles.coarseNoticeText}>
+                    ⚠️ Your browser is currently estimating location via network IP (±{locationAccuracy}m). If the detected location is off, please confirm your exact Ward below.
+                  </Text>
                 </View>
               )}
 
@@ -479,6 +578,11 @@ export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar 
                 </Text>
                 <Text style={styles.areaSelectBtnArrow}>Change ▼</Text>
               </TouchableOpacity>
+              {readableAddress?.shortAddress ? (
+                <Text style={styles.fieldHint}>
+                  Detected nearby: {readableAddress.shortAddress}
+                </Text>
+              ) : null}
             </View>
 
             {/* STEP 4: DESCRIPTION (STRICTLY OPTIONAL) */}
@@ -489,7 +593,7 @@ export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar 
               </View>
               <TextInput
                 style={[styles.textArea, focusedInput === 'desc' && styles.inputFocused]}
-                placeholder="Optional: Add nearby landmarks, specific gate numbers, or leave blank to use AI summary..."
+                placeholder="Optional: Add landmarks, gate numbers, or leave blank to use AI summary..."
                 value={description}
                 onChangeText={setDescription}
                 onFocus={() => setFocusedInput('desc')}
@@ -768,7 +872,7 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    backgroundColor: 'rgba(15, 23, 42, 0.78)',
+    backgroundColor: 'rgba(15, 23, 42, 0.82)',
     padding: 10,
   },
   geotagHeader: {
@@ -787,15 +891,26 @@ const styles = StyleSheet.create({
     fontSize: 10,
     color: '#cbd5e1',
   },
-  geotagCoord: {
+  geotagAddress: {
     fontSize: 11,
     color: '#ffffff',
-    fontWeight: tokens.typography.weight.semibold,
+    fontWeight: tokens.typography.weight.bold,
+    marginVertical: 1,
+  },
+  geotagMetaRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 2,
   },
   geotagWard: {
     fontSize: 10,
     color: '#94a3b8',
-    marginTop: 1,
+  },
+  geotagAccuracy: {
+    fontSize: 10,
+    color: '#34d399',
+    fontWeight: tokens.typography.weight.semibold,
   },
   retakeBtn: {
     position: 'absolute',
@@ -810,6 +925,43 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 11,
     fontWeight: tokens.typography.weight.semibold,
+  },
+  locationControlsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 8,
+    gap: 8,
+  },
+  recalibrateBtn: {
+    backgroundColor: tokens.colors.surface,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    borderRadius: tokens.radius.sm,
+    borderWidth: 1,
+    borderColor: tokens.colors.border,
+  },
+  recalibrateBtnText: {
+    fontSize: 11,
+    color: tokens.colors.accent,
+    fontWeight: tokens.typography.weight.semibold,
+  },
+  detectedAddressText: {
+    flex: 1,
+    fontSize: 11,
+    color: tokens.colors.muted,
+  },
+  coarseNoticeBox: {
+    backgroundColor: '#fffbeb',
+    borderRadius: tokens.radius.sm,
+    padding: 8,
+    marginTop: 8,
+    borderLeftWidth: 3,
+    borderLeftColor: '#f59e0b',
+  },
+  coarseNoticeText: {
+    fontSize: 10,
+    color: '#92400e',
+    lineHeight: 14,
   },
   locationNotice: {
     fontSize: 11,
@@ -1106,6 +1258,12 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 18,
     marginBottom: tokens.spacing.md,
+  },
+  successAddressText: {
+    fontSize: 11,
+    color: tokens.colors.accent,
+    fontWeight: tokens.typography.weight.semibold,
+    marginBottom: tokens.spacing.sm,
   },
   successBadge: {
     backgroundColor: tokens.colors.surface,
