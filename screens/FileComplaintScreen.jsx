@@ -812,10 +812,21 @@ export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar 
                 </TouchableOpacity>
               </View>
             ) : aiResult && aiResult.isTooSmall ? (
-              <View style={[styles.blockedSubmitBox, { backgroundColor: '#fffbeb', borderColor: '#fde68a' }]}>
-                <Text style={[styles.blockedSubmitTitle, { color: '#92400e' }]}>⚠️ Waste Too Minor / Self-Cleanable</Text>
-                <Text style={[styles.blockedSubmitText, { color: '#78350f' }]}>
-                  {aiResult.rejectionReason || 'This garbage is too small (e.g. 1 bottle or straw) and can be cleaned up by you directly. Municipal collection is reserved for larger waste piles and overflowing bins.'}
+              <View
+                style={[
+                  styles.blockedSubmitBox,
+                  {
+                    backgroundColor: isDark ? 'rgba(245, 158, 11, 0.15)' : '#fffbeb',
+                    borderColor: isDark ? 'rgba(245, 158, 11, 0.4)' : '#fde68a',
+                  },
+                ]}
+              >
+                <Text style={[styles.blockedSubmitTitle, { color: isDark ? '#fbbf24' : '#92400e' }]}>
+                  ⚠️ Waste Too Minor / Self-Cleanable
+                </Text>
+                <Text style={[styles.blockedSubmitText, { color: isDark ? '#fde68a' : '#78350f' }]}>
+                  {aiResult.rejectionReason ||
+                    'This garbage is too small (e.g. 1 bottle or straw) and can be cleaned up by you directly. Municipal collection is reserved for larger waste piles and overflowing bins.'}
                 </Text>
                 <TouchableOpacity
                   style={[styles.captureBtn, { backgroundColor: '#d97706', marginTop: 10 }]}
