@@ -11,16 +11,27 @@ const CANDIDATE_MODELS = [
   'gemini-3.7-flash',
 ];
 
-const PROMPT = `You are a municipal waste detection AI.
-Inspect this live camera photograph taken by a citizen.
+const PROMPT = `You are a municipal waste detection AI for a civic waste reporting app.
+Inspect this live camera photograph taken by a citizen reporting waste in their area.
 
 Analyze the image carefully and output the following assessment:
 1. isWaste: (boolean)
    - MUST be FALSE if the subject is a living animal (dog, cat, cow, bird, pet), a human/person, or a clean environment with no trash.
    - MUST be TRUE if the subject contains garbage, litter, dumped plastics, overflowing bins, construction debris, hazardous chemical waste, OR a deceased animal carcass.
-2. rejectionReason: (string or null) If isWaste is false, clear explanation of why this photo is rejected as non-waste (e.g., "Living animal detected", "Human detected", "No waste visible").
+2. isTooSmall: (boolean)
+   - MUST be TRUE if the waste visible in the photo is very minor, trivial, or a single small item (such as 1 bottle, a single straw, a single wrapper, a cigarette butt, a single disposable cup, or a tiny scrap of paper) that can easily be picked up and disposed of by the user/citizen themselves into a nearby dustbin, without needing a municipal waste truck or collection team.
+   - MUST be FALSE if there is a substantial amount of garbage, multiple items, a pile, overflowing dumpsters, dumped bags, hazardous waste, deceased animals, or anything requiring municipal team cleanup.
+3. rejectionReason: (string or null)
+   - If isWaste is false: clear explanation of why this photo is rejected (e.g., "Living animal detected. Live animals are not waste.", "Human detected in photo.", "No waste visible.").
+   - If isTooSmall is true: "This waste is too small or minor (e.g., 1 bottle or straw) and can easily be cleaned up by you directly! Please reserve municipal complaints for larger waste piles or overflowing bins."
+   - If valid municipal waste: null.
 
-Return strictly a valid JSON object matching this schema.`;
+Return strictly a valid JSON object matching this schema:
+{
+  "isWaste": boolean,
+  "isTooSmall": boolean,
+  "rejectionReason": string | null
+}`;
 
 export default async function handler(req, res) {
   // CORS Headers

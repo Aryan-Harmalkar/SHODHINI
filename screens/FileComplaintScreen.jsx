@@ -277,7 +277,7 @@ export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar 
       });
       setAiResult(analysis);
       
-      if (analysis && !analysis.isWaste && currentUser?.id) {
+      if (analysis && !analysis.isWaste && !analysis.isTooSmall && currentUser?.id) {
         await updateUserEcoPoints(currentUser.id, -5);
         // Optional: refresh local state
       }
@@ -322,6 +322,14 @@ export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar 
     if (!aiResult.isWaste) {
       setErrorMessage(
         aiResult.rejectionReason || 'Non-waste item detected. Complaints can only be filed for garbage or deceased animal carcasses.'
+      );
+      return;
+    }
+
+    // Reject waste that is too small or minor (can be cleaned by the user directly)
+    if (aiResult.isTooSmall) {
+      setErrorMessage(
+        aiResult.rejectionReason || 'This waste is too small or minor (e.g. 1 bottle or straw) and can easily be cleaned up by you directly! Please reserve municipal complaints for larger waste piles or overflowing bins.'
       );
       return;
     }
@@ -681,13 +689,21 @@ export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar 
                     <View
                       style={[
                         styles.aiClassificationCard,
-                        !aiResult.isWaste ? styles.aiRejectCard : styles.aiVerifiedCard,
+                        !aiResult.isWaste
+                          ? styles.aiRejectCard
+                          : aiResult.isTooSmall
+                          ? styles.aiLowCard
+                          : styles.aiVerifiedCard,
                       ]}
                     >
                       <View style={styles.aiCardTop}>
                         <View style={styles.aiClassificationInfo}>
                           <Text style={styles.aiTagLabel}>
-                            {!aiResult.isWaste ? '🚫 NON-WASTE DETECTED' : '✅ AI VERIFIED WASTE'}
+                            {!aiResult.isWaste
+                              ? '🚫 NON-WASTE DETECTED'
+                              : aiResult.isTooSmall
+                              ? '⚠️ WASTE TOO MINOR / CAN SELF-CLEAN'
+                              : '✅ AI VERIFIED WASTE'}
                           </Text>
                         </View>
                       </View>
@@ -699,6 +715,18 @@ export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar 
                           </Text>
                           <Text style={[styles.rejectionNoticeText, { marginTop: 8, fontWeight: 'bold' }]}>
                             Penalty: 5 Eco Points deducted for uploading a non-waste image.
+                          </Text>
+                        </View>
+                      )}
+
+                      {aiResult.isWaste && aiResult.isTooSmall && (
+                        <View style={styles.adminReviewNoticeBox}>
+                          <Text style={styles.adminReviewNoticeTitle}>
+                            🧹 Waste Too Small for Municipal Dispatch
+                          </Text>
+                          <Text style={styles.adminReviewNoticeText}>
+                            {aiResult.rejectionReason ||
+                              'This waste (e.g. 1 bottle or straw) is too small to dispatch a municipal worker. Please pick it up and dispose of it yourself!'}
                           </Text>
                         </View>
                       )}
@@ -766,6 +794,20 @@ export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar 
                   activeOpacity={0.8}
                 >
                   <Text style={styles.captureBtnText}>📷 Retake Live Photo</Text>
+                </TouchableOpacity>
+              </View>
+            ) : aiResult && aiResult.isTooSmall ? (
+              <View style={[styles.blockedSubmitBox, { backgroundColor: '#fffbeb', borderColor: '#fde68a' }]}>
+                <Text style={[styles.blockedSubmitTitle, { color: '#92400e' }]}>⚠️ Waste Too Minor / Self-Cleanable</Text>
+                <Text style={[styles.blockedSubmitText, { color: '#78350f' }]}>
+                  {aiResult.rejectionReason || 'This garbage is too small (e.g. 1 bottle or straw) and can be cleaned up by you directly. Municipal collection is reserved for larger waste piles and overflowing bins.'}
+                </Text>
+                <TouchableOpacity
+                  style={[styles.captureBtn, { backgroundColor: '#d97706', marginTop: 10 }]}
+                  onPress={handleTakeLivePhoto}
+                  activeOpacity={0.8}
+                >
+                  <Text style={[styles.captureBtnText, { color: '#ffffff' }]}>📷 Retake Photo of Larger Waste</Text>
                 </TouchableOpacity>
               </View>
             ) : (
