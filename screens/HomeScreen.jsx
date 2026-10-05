@@ -154,7 +154,7 @@ export default function HomeScreen({ user, onLogout }) {
     }
   };
 
-  const handleStatusUpdate = async (complaintId, newStatus, collectorImageBase64 = null, resolvedAt = null) => {
+  const handleStatusUpdate = async (complaintId, newStatus, collectorImageBase64 = null, resolvedAt = null, collectorLatitude = null, collectorLongitude = null) => {
     setUpdatingId(complaintId);
     try {
       await updateComplaintStatus({
@@ -163,6 +163,8 @@ export default function HomeScreen({ user, onLogout }) {
         workerId: user.id,
         collectorImageBase64,
         resolvedAt,
+        collectorLatitude,
+        collectorLongitude,
       });
 
       setCollectorComplaints((prev) =>

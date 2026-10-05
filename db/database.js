@@ -642,7 +642,7 @@ export async function getAreaComplaints(areaId) {
 /**
  * Update complaint status (collector action)
  */
-export async function updateComplaintStatus({ complaintId, status, workerId, collectorImageBase64 = null, resolvedAt = null }) {
+export async function updateComplaintStatus({ complaintId, status, workerId, collectorImageBase64 = null, resolvedAt = null, collectorLatitude = null, collectorLongitude = null }) {
   const updatePayload = { status };
   if (workerId) {
     updatePayload.assigned_worker_id = workerId;
@@ -652,6 +652,12 @@ export async function updateComplaintStatus({ complaintId, status, workerId, col
   }
   if (resolvedAt) {
     updatePayload.resolved_at = resolvedAt;
+  }
+  if (collectorLatitude !== null) {
+    updatePayload.collector_latitude = collectorLatitude;
+  }
+  if (collectorLongitude !== null) {
+    updatePayload.collector_longitude = collectorLongitude;
   }
 
   const { data, error } = await supabase

@@ -15,6 +15,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { tokens } from '../lib/theme';
 import { verifyCleanupWithGemini } from '../lib/aiVision';
 import { getComplaintDetails } from '../db/database';
+import { ensureForegroundPermission, watchPreciseLocation, getReadableAddress } from '../lib/locationHelper';
 
 export default function CollectorTasksScreen({
   user,
@@ -37,6 +38,8 @@ export default function CollectorTasksScreen({
   const [isVerifying, setIsVerifying] = useState(false);
   const [verificationResult, setVerificationResult] = useState(null);
   const [isFetchingDetails, setIsFetchingDetails] = useState(false);
+  const [collectorLocation, setCollectorLocation] = useState(null);
+  const [locMessage, setLocMessage] = useState('');
 
   useEffect(() => {
     if (initialTab) {
@@ -60,6 +63,8 @@ export default function CollectorTasksScreen({
     setAfterImageUri(null);
     setAfterImageBase64(null);
     setVerificationResult(null);
+    setCollectorLocation(null);
+    setLocMessage('');
     setIsFetchingDetails(true);
 
     try {
@@ -78,10 +83,22 @@ export default function CollectorTasksScreen({
 
   const handleTakeAfterPhoto = async () => {
     try {
+      setLocMessage('Requesting permissions...');
       const cameraPerm = await ImagePicker.requestCameraPermissionsAsync();
       if (cameraPerm.status !== 'granted') {
         throw new Error('Camera permission is required to verify cleanup.');
       }
+
+      setLocMessage('Getting precise location (this may take a few seconds)...');
+      const hasLocPerm = await ensureForegroundPermission();
+      if (!hasLocPerm) {
+        throw new Error('Location permission is required to verify cleanup location.');
+      }
+
+      const locCtl = watchPreciseLocation({ onUpdate: () => {} });
+      const locFix = await locCtl.promise;
+      setCollectorLocation({ latitude: locFix.latitude, longitude: locFix.longitude });
+      setLocMessage('Location acquired. Ready for photo.');
 
       const result = await ImagePicker.launchCameraAsync({
         mediaTypes: ['images'],
@@ -98,6 +115,7 @@ export default function CollectorTasksScreen({
         if (beforeImageBase64) {
           setIsVerifying(true);
           setVerificationResult(null);
+          setLocMessage('Verifying with AI...');
           try {
             const res = await verifyCleanupWithGemini({
               beforeBase64: beforeImageBase64,
@@ -108,11 +126,15 @@ export default function CollectorTasksScreen({
             setVerificationResult({ isCleaned: false, rejectionReason: err.message });
           } finally {
             setIsVerifying(false);
+            setLocMessage('');
           }
         }
+      } else {
+        setLocMessage(''); // Canceled
       }
     } catch (err) {
-      Alert.alert('Camera Error', err.message);
+      setLocMessage('');
+      Alert.alert('Verification Error', err.message);
     }
   };
 
@@ -123,7 +145,14 @@ export default function CollectorTasksScreen({
     }
     setVerifyModalVisible(false);
     const resolvedAt = new Date().toISOString();
-    await onUpdateStatus(verifyingComplaint.id, 'Completed', afterImageBase64, resolvedAt);
+    await onUpdateStatus(
+      verifyingComplaint.id,
+      'Completed',
+      afterImageBase64,
+      resolvedAt,
+      collectorLocation?.latitude,
+      collectorLocation?.longitude
+    );
   };
 
   const handleOpenMaps = (lat, lng, address) => {
@@ -335,7 +364,7 @@ export default function CollectorTasksScreen({
                         {isUpdating ? (
                           <ActivityIndicator size="small" color="#ffffff" />
                         ) : (
-                          <Text style={styles.doneBtnText}>✅ Mark Done</Text>
+                          <Text style={styles.doneBtnText}>📸 Verify Cleanup</Text>
                         )}
                       </TouchableOpacity>
 
@@ -469,11 +498,25 @@ export default function CollectorTasksScreen({
                           />
                         ) : (
                           <TouchableOpacity style={styles.captureBtn} onPress={handleTakeAfterPhoto}>
-                            <Text style={styles.captureBtnText}>📷 Capture</Text>
+                            <Text style={styles.captureBtnText}>📷 Capture & Locate</Text>
                           </TouchableOpacity>
                         )}
                       </View>
                     </View>
+
+                    {locMessage !== '' && (
+                      <Text style={{ textAlign: 'center', marginTop: 10, color: tokens.colors.muted, fontSize: 12 }}>
+                        {locMessage}
+                      </Text>
+                    )}
+
+                    {collectorLocation && (
+                      <View style={{ marginTop: 10, backgroundColor: '#f1f5f9', padding: 8, borderRadius: 8 }}>
+                        <Text style={{ fontSize: 10, color: '#475569', textAlign: 'center' }}>
+                          Verified Collector GPS: {collectorLocation.latitude.toFixed(5)}, {collectorLocation.longitude.toFixed(5)}
+                        </Text>
+                      </View>
+                    )}
 
                     {afterImageUri && (
                       <View style={{ marginTop: 20 }}>
