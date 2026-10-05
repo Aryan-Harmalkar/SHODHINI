@@ -174,6 +174,17 @@ export default function Sidebar({
               </TouchableOpacity>
 
               <TouchableOpacity
+                style={[styles.menuItem, currentScreen === 'collector_pickups' && styles.activeMenuItem]}
+                onPress={() => { onNavigate('collector_pickups'); onClose(); }}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.menuIcon}>🚚</Text>
+                <Text style={[styles.menuText, currentScreen === 'collector_pickups' && styles.activeMenuText]}>
+                  Doorstep Pickups
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
                 style={[styles.menuItem, currentScreen === 'scoreboard' && styles.activeMenuItem]}
                 onPress={() => { onNavigate('scoreboard'); onClose(); }}
                 activeOpacity={0.7}

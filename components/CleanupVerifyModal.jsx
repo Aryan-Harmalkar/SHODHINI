@@ -584,7 +584,7 @@ const getStyles = (colors, isDark) =>
       alignItems: 'center',
     },
     confirmDoneBtnText: {
-      color: '#ffffff',
+      color: isDark ? '#000000' : '#ffffff',
       fontWeight: 'bold',
       fontSize: tokens.typography.size.sm,
     },

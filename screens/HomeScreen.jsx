@@ -19,6 +19,7 @@ import RecycleScreen from './RecycleScreen';
 import ScoreboardScreen from './ScoreboardScreen';
 import RewardsScreen from './RewardsScreen';
 import CollectorTasksScreen from './CollectorTasksScreen';
+import CollectorPickupsScreen from './CollectorPickupsScreen';
 import ComplaintCard from '../components/ComplaintCard';
 import CleanupVerifyModal from '../components/CleanupVerifyModal';
 import {
@@ -288,6 +289,22 @@ export default function HomeScreen({ user, onLogout }) {
           <CollectorTasksScreen
             user={user}
             initialTab={collectorTasksTab}
+            complaints={collectorComplaints.filter(c => c.category !== 'Doorstep Pickup')}
+            updatingId={updatingId}
+            onUpdateStatus={handleStatusUpdate}
+            onBackToHome={() => setCurrentScreen('home')}
+            onOpenSidebar={() => setSidebarVisible(true)}
+            onRefresh={loadCollectorData}
+            isDutyOnline={isDutyOnline}
+            onToggleDuty={handleToggleDuty}
+          />
+        );
+      }
+      if (currentScreen === 'collector_pickups') {
+        return (
+          <CollectorPickupsScreen
+            user={user}
+            initialTab="available"
             complaints={collectorComplaints}
             updatingId={updatingId}
             onUpdateStatus={handleStatusUpdate}

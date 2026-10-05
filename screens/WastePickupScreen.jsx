@@ -10,7 +10,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { tokens, useTheme } from '../lib/theme';
-import { getUserEcoPoints, updateUserEcoPoints } from '../db/database';
+import { getUserEcoPoints, updateUserEcoPoints, fileComplaint } from '../db/database';
 
 export default function WastePickupScreen({
   user,
@@ -68,39 +68,51 @@ export default function WastePickupScreen({
       return;
     }
 
-    if (paymentChoice === 'points') {
-      if (userPoints < costPoints) {
-        Alert.alert(
-          'Insufficient Eco Points',
-          `You need ${costPoints} Eco Points for this pickup, but currently have ${userPoints} points. Please select 'Pay with Money (₹${costMoney})'.`
-        );
-        return;
-      }
+    if (paymentChoice === 'points' && userPoints < costPoints) {
+      Alert.alert(
+        'Insufficient Eco Points',
+        `You need ${costPoints} Eco Points for this pickup, but currently have ${userPoints} points. Please select 'Pay with Money (₹${costMoney})'.`
+      );
+      return;
+    }
 
-      setSubmitting(true);
-      try {
-        if (user?.id) {
+    setSubmitting(true);
+    try {
+      if (user?.id) {
+        if (paymentChoice === 'points') {
           const updated = await updateUserEcoPoints(user.id, -costPoints);
           setUserPoints(updated);
           if (onPointsUpdated) onPointsUpdated(updated);
         }
 
+        const volumeText = selectedPlan === 'standard' ? 'Less (Standard up to 2 bags)' : 'A Lot (Bulk/Heavy)';
+        const paymentText = paymentChoice === 'points' ? 'Paid via Eco Points' : 'Cash/UPI on arrival';
+
+        await fileComplaint({
+          citizenId: user.id,
+          areaId: user.area_id || 1,
+          category: 'Doorstep Pickup',
+          description: `Pickup Plan: ${volumeText}\nPayment: ${paymentText}\nAddress/Note: ${address}\nTime Slot: ${timeSlot}`,
+        });
+      }
+
+      if (paymentChoice === 'points') {
         Alert.alert(
           'Pickup Booked with Eco Points! 🌱',
           `Successfully redeemed ${costPoints} Eco Points for your ${selectedPlan === 'standard' ? 'Standard' : 'Bulk'} doorstep pickup. A sanitation worker will arrive at your address. No cash payment needed!`,
           [{ text: 'OK', onPress: () => onBackToHome() }]
         );
-      } catch (err) {
-        Alert.alert('Error', err.message || 'Could not process points redemption.');
-      } finally {
-        setSubmitting(false);
+      } else {
+        Alert.alert(
+          'Pickup Requested ✅',
+          `A collection partner will be assigned to your address for ${timeSlot} pickup. Please pay ₹${costMoney} directly via Cash or UPI upon arrival.`,
+          [{ text: 'OK', onPress: () => onBackToHome() }]
+        );
       }
-    } else {
-      Alert.alert(
-        'Pickup Requested ✅',
-        `A collection partner will be assigned to your address for ${timeSlot} pickup. Please pay ₹${costMoney} directly via Cash or UPI upon arrival.`,
-        [{ text: 'OK', onPress: () => onBackToHome() }]
-      );
+    } catch (err) {
+      Alert.alert('Error', err.message || 'Could not process pickup request.');
+    } finally {
+      setSubmitting(false);
     }
   };
 
