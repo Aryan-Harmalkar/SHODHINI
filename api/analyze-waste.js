@@ -6,10 +6,10 @@
  */
 
 const CANDIDATE_MODELS = [
-  'gemini-2.0-flash',
-  'gemini-1.5-flash',
-  'gemini-2.5-flash',
-  'gemini-3.7-flash',
+  'gemini-flash-lite-latest',
+  'gemini-3.1-flash-lite',
+  'gemini-3.8-flash',
+  'gemini-3.5-flash',
 ];
 
 const PROMPT = `You are an expert AI inspector for a municipal civic waste reporting system.
@@ -111,11 +111,15 @@ export default async function handler(req, res) {
   // Try active models in order of speed and stability
   for (const model of CANDIDATE_MODELS) {
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 7500);
+
       const response = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          signal: controller.signal,
           body: JSON.stringify({
             contents: [
               {
@@ -137,6 +141,7 @@ export default async function handler(req, res) {
           }),
         }
       );
+      clearTimeout(timeoutId);
 
       if (!response.ok) {
         const errText = await response.text();

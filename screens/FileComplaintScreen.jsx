@@ -242,7 +242,7 @@ export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar 
       const result = await ImagePicker.launchCameraAsync({
         mediaTypes: ['images'],
         allowsEditing: false,
-        quality: 0.7,
+        quality: 0.35,
         base64: true,
       });
 
