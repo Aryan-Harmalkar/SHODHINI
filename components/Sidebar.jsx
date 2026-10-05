@@ -167,9 +167,9 @@ export default function Sidebar({
                 onPress={() => { onNavigate('supervisor_dashboard'); onClose(); }}
                 activeOpacity={0.7}
               >
-                <Text style={styles.menuIcon}>📊</Text>
+                <Text style={styles.menuIcon}>📈</Text>
                 <Text style={[styles.menuText, currentScreen === 'supervisor_dashboard' && styles.activeMenuText]}>
-                  ROI & Supervisor
+                  ROI Dashboard
                 </Text>
               </TouchableOpacity>
 
@@ -226,6 +226,17 @@ export default function Sidebar({
                 <Text style={styles.menuIcon}>🏆</Text>
                 <Text style={[styles.menuText, currentScreen === 'scoreboard' && styles.activeMenuText]}>
                   Scoreboard
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.menuItem, currentScreen === 'supervisor_dashboard' && styles.activeMenuItem]}
+                onPress={() => { onNavigate('supervisor_dashboard'); onClose(); }}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.menuIcon}>📈</Text>
+                <Text style={[styles.menuText, currentScreen === 'supervisor_dashboard' && styles.activeMenuText]}>
+                  ROI Dashboard
                 </Text>
               </TouchableOpacity>
 

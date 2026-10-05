@@ -295,6 +295,15 @@ export default function HomeScreen({ user, onLogout }) {
         );
       }
 
+      if (currentScreen === 'supervisor_dashboard') {
+        return (
+          <SupervisorDashboardScreen
+            onBackToHome={() => setCurrentScreen('home')}
+            onOpenSidebar={() => setSidebarVisible(true)}
+          />
+        );
+      }
+
     }
 
     if (isCollector) {
@@ -345,16 +354,6 @@ export default function HomeScreen({ user, onLogout }) {
       if (currentScreen === 'training') {
         return (
           <TrainingScreen
-            onBackToHome={() => setCurrentScreen('home')}
-            onOpenSidebar={() => setSidebarVisible(true)}
-          />
-        );
-      }
-      if (currentScreen === 'supervisor_dashboard') {
-        return (
-          <SupervisorDashboardScreen
-            complaints={collectorComplaints}
-            onUpdateStatus={handleStatusUpdate}
             onBackToHome={() => setCurrentScreen('home')}
             onOpenSidebar={() => setSidebarVisible(true)}
           />
