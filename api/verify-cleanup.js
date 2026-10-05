@@ -17,8 +17,8 @@ The FIRST image is the 'Before' photo taken by a citizen showing a waste spot.
 The SECOND image is the 'After' photo taken by the garbage collector claiming to have cleaned it.
 
 Analyze the images carefully and output the following assessment:
-1. isSameLocation: (boolean) Are these photos taken in the exact same location/environment? (Check for matching background, landmarks, ground texture, etc.)
-2. isCleaned: (boolean) Is the waste/garbage visible in the first photo completely removed in the second photo?
+1. isSameLocation: (boolean) Are these photos taken in the exact same physical environment? (Check for matching background, landmarks, ground texture). If they are clearly random or unrelated dummy photos, return false.
+2. isCleaned: (boolean) Did the first photo contain actual waste/garbage, AND is that specific waste completely gone in the second photo? (IMPORTANT: If the first photo had NO waste to begin with, this MUST be false).
 3. rejectionReason: (string or null) If either isSameLocation or isCleaned is false, provide a clear explanation.
 
 Return strictly a valid JSON object matching this schema.`;
