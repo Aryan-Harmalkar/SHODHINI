@@ -450,6 +450,8 @@ export default function CollectorTasksScreen({
             )}
           </View>
         )}
+      </ScrollView>
+
         {/* VERIFICATION MODAL */}
         <Modal
           visible={verifyModalVisible}
@@ -559,9 +561,7 @@ export default function CollectorTasksScreen({
             </View>
           </View>
         </Modal>
-
       </View>
-    </View>
   );
 }
 
