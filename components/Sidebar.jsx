@@ -253,7 +253,7 @@ export default function Sidebar({
                 </Text>
               </TouchableOpacity>
 
-              <TouchableOpacity
+              {/* <TouchableOpacity
                 style={[styles.menuItem, currentScreen === 'recycle' && styles.activeMenuItem]}
                 onPress={() => { onNavigate('recycle'); onClose(); }}
                 activeOpacity={0.7}
@@ -262,7 +262,7 @@ export default function Sidebar({
                 <Text style={[styles.menuText, currentScreen === 'recycle' && styles.activeMenuText]}>
                   Scrap Recycling
                 </Text>
-              </TouchableOpacity>
+              </TouchableOpacity> */}
             </>
           )}
         </ScrollView>

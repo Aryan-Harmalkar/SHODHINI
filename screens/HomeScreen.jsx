@@ -495,14 +495,14 @@ export default function HomeScreen({ user, onLogout }) {
                   <Text style={styles.gridCardTitle}>Doorstep Pickup</Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity
+                {/* <TouchableOpacity
                   style={styles.gridCard}
                   onPress={() => handleNavigate('recycle')}
                   activeOpacity={0.7}
                 >
                   <Text style={styles.gridCardIcon}>♻️</Text>
                   <Text style={styles.gridCardTitle}>Scrap Recycling</Text>
-                </TouchableOpacity>
+                </TouchableOpacity> */}
               </View>
 
               <AdvertisementCarousel isDark={isDark} />
