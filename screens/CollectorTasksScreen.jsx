@@ -525,7 +525,7 @@ export default function CollectorTasksScreen({
                 </TouchableOpacity>
               </View>
 
-              <ScrollView style={{ maxHeight: '80%' }}>
+              <ScrollView contentContainerStyle={{ paddingBottom: 20 }}>
                 {isFetchingDetails ? (
                   <View style={{ padding: 20, alignItems: 'center' }}>
                     <ActivityIndicator color={tokens.colors.accent} />
@@ -1078,10 +1078,11 @@ const styles = StyleSheet.create({
   modalCard: {
     backgroundColor: tokens.colors.background,
     borderRadius: tokens.radius.xl,
-    maxHeight: '100%',
+    maxHeight: '90%',
     padding: tokens.spacing.lg,
     width: '100%',
     maxWidth: 600,
+    flexShrink: 1,
   },
   modalHeader: {
     flexDirection: 'row',
