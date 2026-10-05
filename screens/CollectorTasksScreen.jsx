@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   StyleSheet,
   Text,
@@ -9,7 +9,7 @@ import {
   ActivityIndicator,
   Alert,
 } from 'react-native';
-import { tokens } from '../lib/theme';
+import { tokens, useTheme } from '../lib/theme';
 import CleanupVerifyModal from '../components/CleanupVerifyModal';
 
 // Max allowed distance (metres) between citizen's reported GPS and collector's live GPS
@@ -46,6 +46,9 @@ export default function CollectorTasksScreen({
   onOpenSidebar,
   onRefresh,
 }) {
+  const { colors, isDark, toggleTheme } = useTheme();
+  const styles = useMemo(() => getStyles(colors, isDark), [colors, isDark]);
+
   const [activeTab, setActiveTab] = useState(initialTab || 'available');
 
   // Verification State
@@ -107,6 +110,14 @@ export default function CollectorTasksScreen({
         </View>
 
         <View style={styles.topRight}>
+          <TouchableOpacity
+            style={styles.themeToggleBtn}
+            onPress={toggleTheme}
+            activeOpacity={0.7}
+            accessibilityLabel="Toggle Day/Dark Theme"
+          >
+            <Text style={styles.themeToggleIcon}>{isDark ? '☀️' : '🌙'}</Text>
+          </TouchableOpacity>
           {onRefresh && (
             <TouchableOpacity style={styles.refreshIconBtn} onPress={onRefresh} activeOpacity={0.7}>
               <Text style={styles.refreshIconText}>🔄</Text>
@@ -387,564 +398,362 @@ export default function CollectorTasksScreen({
   );
 }
 
-const styles = StyleSheet.create({
-  reportPanel: {
-    backgroundColor: '#f0f9ff',
-    borderWidth: 1,
-    borderColor: '#bae6fd',
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 14,
-  },
-  reportPanelTitle: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: '#0c4a6e',
-    marginBottom: 6,
-  },
-  reportRow: {
-    fontSize: 12,
-    color: '#334155',
-    marginTop: 3,
-  },
-  reportNavBtn: {
-    marginTop: 10,
-    alignSelf: 'flex-start',
-    backgroundColor: '#0ea5e9',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 999,
-  },
-  reportNavText: {
-    color: '#fff',
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  gpsBox: {
-    marginTop: 12,
-    backgroundColor: '#f1f5f9',
-    padding: 10,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#e2e8f0',
-  },
-  gpsBoxOk: {
-    backgroundColor: '#ecfdf5',
-    borderColor: '#6ee7b7',
-  },
-  gpsBoxBad: {
-    backgroundColor: '#fef2f2',
-    borderColor: '#fca5a5',
-  },
-  gpsTitle: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#0f172a',
-    textAlign: 'center',
-  },
-  gpsSub: {
-    fontSize: 10,
-    color: '#475569',
-    textAlign: 'center',
-    marginTop: 2,
-  },
-  container: {
-    flex: 1,
-    backgroundColor: tokens.colors.surface,
-  },
-  topBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: tokens.spacing.md,
-    paddingVertical: tokens.spacing.sm,
-    backgroundColor: tokens.colors.background,
-    borderBottomWidth: 1,
-    borderBottomColor: tokens.colors.border,
-  },
-  topLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  menuBtn: {
-    padding: tokens.spacing.xs,
-    marginRight: tokens.spacing.sm,
-    minHeight: 40,
-    minWidth: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  menuIcon: {
-    fontSize: tokens.typography.size.lg,
-    color: tokens.colors.text,
-    fontWeight: tokens.typography.weight.bold,
-  },
-  screenTitle: {
-    fontSize: tokens.typography.size.base,
-    fontWeight: tokens.typography.weight.extrabold,
-    color: tokens.colors.accent,
-  },
-  topRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: tokens.spacing.xs,
-  },
-  refreshIconBtn: {
-    padding: tokens.spacing.xs,
-    minHeight: 36,
-    minWidth: 36,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  refreshIconText: {
-    fontSize: tokens.typography.size.sm,
-  },
-  backHomeBtn: {
-    paddingVertical: 6,
-    paddingHorizontal: tokens.spacing.sm,
-    borderRadius: tokens.radius.sm,
-    backgroundColor: tokens.colors.surface,
-    borderWidth: 1,
-    borderColor: tokens.colors.border,
-  },
-  backHomeText: {
-    color: tokens.colors.text,
-    fontSize: tokens.typography.size.xs,
-    fontWeight: tokens.typography.weight.semibold,
-  },
-  scrollContent: {
-    padding: tokens.spacing.md,
-    paddingBottom: tokens.spacing.xxl,
-  },
-  workerHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: tokens.spacing.md,
-  },
-  workerName: {
-    fontSize: tokens.typography.size.base,
-    fontWeight: tokens.typography.weight.bold,
-    color: tokens.colors.text,
-  },
-  workerArea: {
-    fontSize: tokens.typography.size.xs,
-    color: tokens.colors.muted,
-    marginTop: 2,
-  },
-  dutyPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: tokens.colors.accent + '15',
-    paddingVertical: 4,
-    paddingHorizontal: tokens.spacing.sm,
-    borderRadius: tokens.radius.full,
-  },
-  dutyDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: tokens.colors.accent,
-    marginRight: 6,
-  },
-  dutyText: {
-    color: tokens.colors.accent,
-    fontSize: 10,
-    fontWeight: tokens.typography.weight.bold,
-  },
-  tabBar: {
-    flexDirection: 'row',
-    backgroundColor: tokens.colors.border,
-    borderRadius: tokens.radius.md,
-    padding: 3,
-    marginBottom: tokens.spacing.md,
-  },
-  tabButton: {
-    flex: 1,
-    paddingVertical: 7,
-    alignItems: 'center',
-    borderRadius: tokens.radius.sm,
-  },
-  tabButtonActive: {
-    backgroundColor: tokens.colors.background,
-    ...tokens.shadow.sm,
-  },
-  tabButtonText: {
-    fontSize: 11,
-    fontWeight: tokens.typography.weight.semibold,
-    color: tokens.colors.muted,
-  },
-  tabButtonTextActive: {
-    color: tokens.colors.accent,
-    fontWeight: tokens.typography.weight.bold,
-  },
-  taskList: {
-    gap: tokens.spacing.sm,
-  },
-  taskCard: {
-    backgroundColor: tokens.colors.background,
-    borderRadius: tokens.radius.lg,
-    padding: tokens.spacing.md,
-    borderWidth: 1,
-    borderColor: tokens.colors.border,
-  },
-  cardTop: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: tokens.spacing.xs,
-  },
-  categoryTitle: {
-    fontSize: tokens.typography.size.sm,
-    fontWeight: tokens.typography.weight.bold,
-    color: tokens.colors.text,
-  },
-  cardTime: {
-    fontSize: 10,
-    color: tokens.colors.muted,
-  },
-  pendingPill: {
-    backgroundColor: '#fef3c7',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: tokens.radius.full,
-  },
-  pendingPillText: {
-    fontSize: 9,
-    fontWeight: tokens.typography.weight.extrabold,
-    color: '#d97706',
-  },
-  descriptionText: {
-    fontSize: tokens.typography.size.xs,
-    color: tokens.colors.text,
-    marginBottom: tokens.spacing.sm,
-  },
-  locationText: {
-    fontSize: tokens.typography.size.xs,
-    color: tokens.colors.muted,
-    marginBottom: 2,
-  },
-  citizenText: {
-    fontSize: tokens.typography.size.xs,
-    color: tokens.colors.muted,
-    marginBottom: tokens.spacing.sm,
-  },
-  actionRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: tokens.spacing.xs,
-    marginTop: tokens.spacing.xs,
-  },
-  primaryActionBtn: {
-    flex: 1,
-    backgroundColor: tokens.colors.accent,
-    paddingVertical: 8,
-    borderRadius: tokens.radius.sm,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  primaryActionText: {
-    color: '#ffffff',
-    fontSize: tokens.typography.size.xs,
-    fontWeight: tokens.typography.weight.bold,
-  },
-  doneBtn: {
-    flex: 1,
-    backgroundColor: tokens.colors.accent,
-    paddingVertical: 8,
-    borderRadius: tokens.radius.sm,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  doneBtnText: {
-    color: '#ffffff',
-    fontSize: tokens.typography.size.xs,
-    fontWeight: tokens.typography.weight.bold,
-  },
-  secondaryActionBtn: {
-    backgroundColor: tokens.colors.surface,
-    borderWidth: 1,
-    borderColor: tokens.colors.border,
-    paddingVertical: 8,
-    paddingHorizontal: tokens.spacing.sm,
-    borderRadius: tokens.radius.sm,
-  },
-  secondaryActionText: {
-    fontSize: tokens.typography.size.xs,
-    fontWeight: tokens.typography.weight.semibold,
-    color: tokens.colors.text,
-  },
-  callBtn: {
-    backgroundColor: tokens.colors.surface,
-    borderWidth: 1,
-    borderColor: tokens.colors.border,
-    paddingVertical: 8,
-    paddingHorizontal: tokens.spacing.sm,
-    borderRadius: tokens.radius.sm,
-  },
-  callIcon: {
-    fontSize: tokens.typography.size.xs,
-  },
-  btnDisabled: {
-    opacity: 0.6,
-  },
-  geoCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: tokens.colors.background,
-    borderRadius: tokens.radius.lg,
-    padding: tokens.spacing.md,
-    borderWidth: 1,
-    borderColor: tokens.colors.border,
-  },
-  geoLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-    gap: tokens.spacing.sm,
-  },
-  geoNumber: {
-    fontSize: tokens.typography.size.sm,
-    fontWeight: tokens.typography.weight.extrabold,
-    color: tokens.colors.accent,
-    width: 24,
-  },
-  geoCategory: {
-    fontSize: tokens.typography.size.xs,
-    fontWeight: tokens.typography.weight.bold,
-    color: tokens.colors.text,
-  },
-  geoLocation: {
-    fontSize: 11,
-    color: tokens.colors.muted,
-    marginTop: 1,
-  },
-  geoNavBtn: {
-    backgroundColor: tokens.colors.surface,
-    borderWidth: 1,
-    borderColor: tokens.colors.border,
-    paddingVertical: 6,
-    paddingHorizontal: tokens.spacing.sm,
-    borderRadius: tokens.radius.sm,
-  },
-  geoNavText: {
-    fontSize: tokens.typography.size.xs,
-    fontWeight: tokens.typography.weight.semibold,
-    color: tokens.colors.accent,
-  },
-  completedCard: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: tokens.colors.background,
-    borderRadius: tokens.radius.lg,
-    padding: tokens.spacing.sm,
-    borderWidth: 1,
-    borderColor: tokens.colors.border,
-  },
-  completedLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-    gap: tokens.spacing.sm,
-  },
-  completedCheck: {
-    fontSize: 14,
-    color: tokens.colors.accent,
-    fontWeight: tokens.typography.weight.extrabold,
-  },
-  completedCategory: {
-    fontSize: tokens.typography.size.xs,
-    fontWeight: tokens.typography.weight.semibold,
-    color: tokens.colors.text,
-  },
-  completedLocation: {
-    fontSize: 10,
-    color: tokens.colors.muted,
-  },
-  completedTag: {
-    fontSize: 10,
-    color: tokens.colors.accent,
-    fontWeight: tokens.typography.weight.bold,
-  },
-  emptyBox: {
-    padding: tokens.spacing.xl,
-    alignItems: 'center',
-  },
-  emptyIcon: {
-    fontSize: 28,
-    marginBottom: tokens.spacing.xs,
-  },
-  emptyTitle: {
-    fontSize: tokens.typography.size.sm,
-    fontWeight: tokens.typography.weight.bold,
-    color: tokens.colors.text,
-  },
-  emptySub: {
-    fontSize: tokens.typography.size.xs,
-    color: tokens.colors.muted,
-    textAlign: 'center',
-    marginTop: 2,
-  },
-  modalOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(15, 23, 42, 0.75)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 16,
-    zIndex: 9999,
-    elevation: 9999,
-  },
-  modalCard: {
-    backgroundColor: tokens.colors.background,
-    borderRadius: 20,
-    width: '100%',
-    maxHeight: '92%',
-    display: 'flex',
-    flexDirection: 'column',
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.35,
-    shadowRadius: 24,
-    elevation: 12,
-    borderWidth: 1,
-    borderColor: tokens.colors.border,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: tokens.colors.border,
-  },
-  modalTitle: {
-    fontSize: tokens.typography.size.base,
-    fontWeight: tokens.typography.weight.bold,
-    color: tokens.colors.text,
-  },
-  modalCloseBtn: {
-    padding: 4,
-  },
-  modalCloseText: {
-    fontSize: tokens.typography.size.lg,
-    color: tokens.colors.muted,
-    fontWeight: 'bold',
-  },
-  modalScroll: {
-    flex: 1,
-    width: '100%',
-  },
-  modalScrollContent: {
-    padding: 16,
-    paddingBottom: 32,
-  },
-  compareRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 10,
-  },
-  compareCol: {
-    flex: 1,
-  },
-  compareLabel: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    marginBottom: 4,
-    color: tokens.colors.text,
-    textAlign: 'center',
-  },
-  compareImage: {
-    width: '100%',
-    height: 120,
-    borderRadius: tokens.radius.md,
-    backgroundColor: '#f1f5f9',
-  },
-  captureBtn: {
-    width: '100%',
-    height: 120,
-    borderRadius: tokens.radius.md,
-    backgroundColor: tokens.colors.surface,
-    borderWidth: 2,
-    borderColor: tokens.colors.border,
-    borderStyle: 'dashed',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  captureBtnText: {
-    fontSize: 12,
-    color: tokens.colors.muted,
-    fontWeight: 'bold',
-  },
-  verifyingBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 12,
-    backgroundColor: '#e0f2fe',
-    borderRadius: tokens.radius.md,
-  },
-  verifyingText: {
-    marginLeft: 8,
-    color: '#0284c7',
-    fontWeight: 'bold',
-  },
-  successBox: {
-    padding: 12,
-    backgroundColor: '#dcfce7',
-    borderRadius: tokens.radius.md,
-    alignItems: 'center',
-  },
-  successBoxText: {
-    color: '#166534',
-    fontWeight: 'bold',
-  },
-  errorBox: {
-    padding: 12,
-    backgroundColor: '#fee2e2',
-    borderRadius: tokens.radius.md,
-    alignItems: 'center',
-  },
-  errorBoxText: {
-    color: '#991b1b',
-    fontWeight: 'bold',
-  },
-  errorReasonText: {
-    color: '#991b1b',
-    fontSize: 12,
-    marginTop: 4,
-    textAlign: 'center',
-  },
-  retryBtn: {
-    marginTop: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 6,
-    backgroundColor: '#b91c1c',
-    borderRadius: tokens.radius.sm,
-  },
-  retryBtnText: {
-    color: '#ffffff',
-    fontSize: 11,
-    fontWeight: 'bold',
-  },
-  confirmDoneBtn: {
-    marginTop: 16,
-    backgroundColor: tokens.colors.accent,
-    padding: 14,
-    borderRadius: tokens.radius.md,
-    alignItems: 'center',
-  },
-  confirmDoneBtnText: {
-    color: '#ffffff',
-    fontWeight: 'bold',
-    fontSize: tokens.typography.size.sm,
-  },
-});
+const getStyles = (colors, isDark) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.surface,
+    },
+    topBar: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingHorizontal: tokens.spacing.md,
+      paddingVertical: tokens.spacing.sm,
+      backgroundColor: colors.headerBg || colors.background,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    topLeft: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    menuBtn: {
+      padding: tokens.spacing.xs,
+      marginRight: tokens.spacing.sm,
+      minHeight: 40,
+      minWidth: 40,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    menuIcon: {
+      fontSize: tokens.typography.size.lg,
+      color: colors.text,
+      fontWeight: tokens.typography.weight.bold,
+    },
+    screenTitle: {
+      fontSize: tokens.typography.size.base,
+      fontWeight: tokens.typography.weight.extrabold,
+      color: colors.accent,
+    },
+    topRight: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: tokens.spacing.xs,
+    },
+    themeToggleBtn: {
+      width: 34,
+      height: 34,
+      borderRadius: 17,
+      backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)',
+      borderWidth: 1,
+      borderColor: colors.border,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    themeToggleIcon: {
+      fontSize: 16,
+    },
+    refreshIconBtn: {
+      padding: tokens.spacing.xs,
+      minHeight: 36,
+      minWidth: 36,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    refreshIconText: {
+      fontSize: tokens.typography.size.sm,
+    },
+    backHomeBtn: {
+      paddingVertical: 6,
+      paddingHorizontal: tokens.spacing.sm,
+      borderRadius: tokens.radius.sm,
+      backgroundColor: colors.card,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    backHomeText: {
+      color: colors.text,
+      fontSize: tokens.typography.size.xs,
+      fontWeight: tokens.typography.weight.semibold,
+    },
+    scrollContent: {
+      padding: tokens.spacing.md,
+      paddingBottom: tokens.spacing.xxl,
+    },
+    workerHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: tokens.spacing.md,
+    },
+    workerName: {
+      fontSize: tokens.typography.size.base,
+      fontWeight: tokens.typography.weight.bold,
+      color: colors.text,
+    },
+    workerArea: {
+      fontSize: tokens.typography.size.xs,
+      color: colors.muted,
+      marginTop: 2,
+    },
+    dutyPill: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: colors.accent + '20',
+      paddingVertical: 4,
+      paddingHorizontal: tokens.spacing.sm,
+      borderRadius: tokens.radius.full,
+      borderWidth: 1,
+      borderColor: colors.accent + '40',
+    },
+    dutyDot: {
+      width: 6,
+      height: 6,
+      borderRadius: 3,
+      backgroundColor: colors.accent,
+      marginRight: 6,
+    },
+    dutyText: {
+      color: colors.accent,
+      fontSize: 10,
+      fontWeight: tokens.typography.weight.bold,
+    },
+    tabBar: {
+      flexDirection: 'row',
+      backgroundColor: colors.card,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: tokens.radius.md,
+      padding: 3,
+      marginBottom: tokens.spacing.md,
+    },
+    tabButton: {
+      flex: 1,
+      paddingVertical: 7,
+      alignItems: 'center',
+      borderRadius: tokens.radius.sm,
+    },
+    tabButtonActive: {
+      backgroundColor: colors.background,
+      ...tokens.shadow.sm,
+    },
+    tabButtonText: {
+      fontSize: 11,
+      fontWeight: tokens.typography.weight.semibold,
+      color: colors.muted,
+    },
+    tabButtonTextActive: {
+      color: colors.accent,
+      fontWeight: tokens.typography.weight.bold,
+    },
+    taskList: {
+      gap: tokens.spacing.sm,
+    },
+    taskCard: {
+      backgroundColor: colors.card,
+      borderRadius: tokens.radius.lg,
+      padding: tokens.spacing.md,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    cardTop: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: tokens.spacing.xs,
+    },
+    categoryTitle: {
+      fontSize: tokens.typography.size.sm,
+      fontWeight: tokens.typography.weight.bold,
+      color: colors.text,
+    },
+    cardTime: {
+      fontSize: 10,
+      color: colors.muted,
+    },
+    pendingPill: {
+      backgroundColor: isDark ? 'rgba(245, 158, 11, 0.2)' : '#fef3c7',
+      paddingHorizontal: 6,
+      paddingVertical: 2,
+      borderRadius: tokens.radius.full,
+    },
+    pendingPillText: {
+      fontSize: 9,
+      fontWeight: tokens.typography.weight.extrabold,
+      color: isDark ? '#fcd34d' : '#d97706',
+    },
+    descriptionText: {
+      fontSize: tokens.typography.size.xs,
+      color: colors.text,
+      marginBottom: tokens.spacing.sm,
+    },
+    locationText: {
+      fontSize: tokens.typography.size.xs,
+      color: colors.muted,
+      marginBottom: 2,
+    },
+    citizenText: {
+      fontSize: tokens.typography.size.xs,
+      color: colors.muted,
+      marginBottom: tokens.spacing.sm,
+    },
+    actionRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: tokens.spacing.xs,
+      marginTop: tokens.spacing.xs,
+    },
+    primaryActionBtn: {
+      flex: 1,
+      backgroundColor: colors.accent,
+      paddingVertical: 8,
+      borderRadius: tokens.radius.sm,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    primaryActionText: {
+      color: '#ffffff',
+      fontSize: tokens.typography.size.xs,
+      fontWeight: tokens.typography.weight.bold,
+    },
+    doneBtn: {
+      flex: 1,
+      backgroundColor: colors.accent,
+      paddingVertical: 8,
+      borderRadius: tokens.radius.sm,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    doneBtnText: {
+      color: '#ffffff',
+      fontSize: tokens.typography.size.xs,
+      fontWeight: tokens.typography.weight.bold,
+    },
+    secondaryActionBtn: {
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+      paddingVertical: 8,
+      paddingHorizontal: tokens.spacing.sm,
+      borderRadius: tokens.radius.sm,
+    },
+    secondaryActionText: {
+      fontSize: tokens.typography.size.xs,
+      fontWeight: tokens.typography.weight.semibold,
+      color: colors.text,
+    },
+    callBtn: {
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+      paddingVertical: 8,
+      paddingHorizontal: tokens.spacing.sm,
+      borderRadius: tokens.radius.sm,
+    },
+    callIcon: {
+      fontSize: tokens.typography.size.xs,
+    },
+    btnDisabled: {
+      opacity: 0.6,
+    },
+    geoCard: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      backgroundColor: colors.card,
+      borderRadius: tokens.radius.lg,
+      padding: tokens.spacing.md,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    geoLeft: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      flex: 1,
+      gap: tokens.spacing.sm,
+    },
+    geoNumber: {
+      fontSize: tokens.typography.size.sm,
+      fontWeight: tokens.typography.weight.extrabold,
+      color: colors.accent,
+      width: 24,
+    },
+    geoCategory: {
+      fontSize: tokens.typography.size.xs,
+      fontWeight: tokens.typography.weight.bold,
+      color: colors.text,
+    },
+    geoLocation: {
+      fontSize: 11,
+      color: colors.muted,
+      marginTop: 1,
+    },
+    geoNavBtn: {
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+      paddingVertical: 6,
+      paddingHorizontal: tokens.spacing.sm,
+      borderRadius: tokens.radius.sm,
+    },
+    geoNavText: {
+      fontSize: tokens.typography.size.xs,
+      fontWeight: tokens.typography.weight.semibold,
+      color: colors.accent,
+    },
+    completedCard: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      backgroundColor: colors.card,
+      borderRadius: tokens.radius.lg,
+      padding: tokens.spacing.sm,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    completedLeft: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      flex: 1,
+      gap: tokens.spacing.sm,
+    },
+    completedCheck: {
+      fontSize: 14,
+      color: colors.accent,
+      fontWeight: tokens.typography.weight.extrabold,
+    },
+    completedCategory: {
+      fontSize: tokens.typography.size.xs,
+      fontWeight: tokens.typography.weight.semibold,
+      color: colors.text,
+    },
+    completedLocation: {
+      fontSize: 10,
+      color: colors.muted,
+    },
+    completedTag: {
+      fontSize: 10,
+      color: colors.accent,
+      fontWeight: tokens.typography.weight.bold,
+    },
+    emptyBox: {
+      padding: tokens.spacing.xl,
+      alignItems: 'center',
+    },
+    emptyIcon: {
+      fontSize: 28,
+      marginBottom: tokens.spacing.xs,
+    },
+    emptyTitle: {
+      fontSize: tokens.typography.size.sm,
+      fontWeight: tokens.typography.weight.bold,
+      color: colors.text,
+    },
+    emptySub: {
+      fontSize: tokens.typography.size.xs,
+      color: colors.muted,
+      textAlign: 'center',
+      marginTop: 2,
+    },
+  });

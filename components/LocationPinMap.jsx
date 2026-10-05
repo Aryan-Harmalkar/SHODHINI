@@ -5,13 +5,16 @@
  *
  * Web uses LocationPinMap.web.jsx (react-native-maps has no web support).
  */
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
 import MapView, { Marker, Circle } from 'react-native-maps';
+import { useTheme } from '../lib/theme';
 
 const DELTA = 0.003; // ~300 m view, close enough to place the pin precisely
 
 export default function LocationPinMap({ coordinate, accuracy, onChange, height = 220 }) {
+  const { colors, isDark } = useTheme();
+  const styles = useMemo(() => getStyles(colors, isDark), [colors, isDark]);
   const mapRef = useRef(null);
 
   // Re-centre when a new GPS fix arrives (not when the user drags).
@@ -56,13 +59,13 @@ export default function LocationPinMap({ coordinate, accuracy, onChange, height 
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors, isDark) => StyleSheet.create({
   wrap: {
     width: '100%',
     borderRadius: 12,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: '#e2e8f0',
-    backgroundColor: '#f1f5f9',
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
   },
 });

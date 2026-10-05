@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   StyleSheet,
   Text,
@@ -24,9 +24,12 @@ import {
   updateComplaintStatus,
 } from '../db/database';
 import { supabase } from '../lib/supabase';
-import { tokens } from '../lib/theme';
+import { tokens, useTheme } from '../lib/theme';
 
 export default function HomeScreen({ user, onLogout }) {
+  const { colors, isDark, toggleTheme } = useTheme();
+  const styles = useMemo(() => getStyles(colors, isDark), [colors, isDark]);
+
   const [currentScreen, setCurrentScreen] = useState('home');
   const [sidebarVisible, setSidebarVisible] = useState(false);
   const [ecoPoints, setEcoPoints] = useState(0);
@@ -301,20 +304,31 @@ export default function HomeScreen({ user, onLogout }) {
             <Text style={styles.appName}>SHODHINI</Text>
           </View>
 
-          {!isCollector ? (
+          <View style={styles.topRight}>
             <TouchableOpacity
-              style={styles.topPointsPill}
-              onPress={() => handleNavigate('rewards')}
-              activeOpacity={0.8}
+              style={styles.themeToggleBtn}
+              onPress={toggleTheme}
+              activeOpacity={0.7}
+              accessibilityLabel="Toggle Day/Dark Theme"
             >
-              <Text style={styles.topPointsText}>🌱 {ecoPoints} pts</Text>
+              <Text style={styles.themeToggleIcon}>{isDark ? '☀️' : '🌙'}</Text>
             </TouchableOpacity>
-          ) : (
-            <View style={styles.topDutyPill}>
-              <View style={styles.dutyDot} />
-              <Text style={styles.topDutyText}>{user?.area || 'Ward 1'}</Text>
-            </View>
-          )}
+
+            {!isCollector ? (
+              <TouchableOpacity
+                style={styles.topPointsPill}
+                onPress={() => handleNavigate('rewards')}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.topPointsText}>🌱 {ecoPoints} pts</Text>
+              </TouchableOpacity>
+            ) : (
+              <View style={styles.topDutyPill}>
+                <View style={styles.dutyDot} />
+                <Text style={styles.topDutyText}>{user?.area || 'Ward 1'}</Text>
+              </View>
+            )}
+          </View>
         </View>
 
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
@@ -534,271 +548,295 @@ export default function HomeScreen({ user, onLogout }) {
   );
 }
 
-const styles = StyleSheet.create({
-  rootContainer: {
-    flex: 1,
-    position: 'relative',
-    width: '100%',
-    height: '100%',
-    overflow: 'hidden',
-  },
-  container: {
-    flex: 1,
-    backgroundColor: tokens.colors.surface,
-  },
-  topBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: tokens.spacing.md,
-    paddingVertical: tokens.spacing.sm,
-    backgroundColor: tokens.colors.background,
-    borderBottomWidth: 1,
-    borderBottomColor: tokens.colors.border,
-  },
-  topLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  hamburgerBtn: {
-    padding: tokens.spacing.xs,
-    marginRight: tokens.spacing.sm,
-    minHeight: 40,
-    minWidth: 40,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  hamburgerIcon: {
-    fontSize: tokens.typography.size.lg,
-    color: tokens.colors.text,
-    fontWeight: tokens.typography.weight.bold,
-  },
-  appName: {
-    fontSize: tokens.typography.size.base,
-    fontWeight: tokens.typography.weight.extrabold,
-    color: tokens.colors.accent,
-    letterSpacing: 0.5,
-  },
-  topPointsPill: {
-    backgroundColor: tokens.colors.accent + '15',
-    paddingVertical: 5,
-    paddingHorizontal: tokens.spacing.sm,
-    borderRadius: tokens.radius.full,
-    borderWidth: 1,
-    borderColor: tokens.colors.accent + '30',
-  },
-  topPointsText: {
-    color: tokens.colors.accent,
-    fontSize: tokens.typography.size.xs,
-    fontWeight: tokens.typography.weight.bold,
-  },
-  topDutyPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: tokens.colors.accent + '15',
-    paddingVertical: 4,
-    paddingHorizontal: tokens.spacing.sm,
-    borderRadius: tokens.radius.full,
-  },
-  dutyDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: tokens.colors.accent,
-    marginRight: 6,
-  },
-  topDutyText: {
-    color: tokens.colors.accent,
-    fontSize: tokens.typography.size.xs,
-    fontWeight: tokens.typography.weight.bold,
-  },
-  scrollContent: {
-    padding: tokens.spacing.md,
-    paddingBottom: tokens.spacing.xxl,
-  },
-  greetingHeader: {
-    marginBottom: tokens.spacing.md,
-  },
-  greetingTitle: {
-    fontSize: tokens.typography.size.lg,
-    fontWeight: tokens.typography.weight.bold,
-    color: tokens.colors.text,
-  },
-  greetingSub: {
-    fontSize: tokens.typography.size.xs,
-    color: tokens.colors.muted,
-    marginTop: 2,
-  },
-  heroReportBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    backgroundColor: tokens.colors.accent,
-    paddingVertical: tokens.spacing.md,
-    paddingHorizontal: tokens.spacing.md,
-    borderRadius: tokens.radius.lg,
-    marginBottom: tokens.spacing.lg,
-    ...tokens.shadow.sm,
-  },
-  heroLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: tokens.spacing.sm,
-    flex: 1,
-  },
-  heroIconBox: {
-    width: 40,
-    height: 40,
-    borderRadius: tokens.radius.md,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  heroIcon: {
-    fontSize: 20,
-  },
-  heroTitle: {
-    color: '#ffffff',
-    fontSize: tokens.typography.size.base,
-    fontWeight: tokens.typography.weight.bold,
-  },
-  heroSubtitle: {
-    color: 'rgba(255,255,255,0.85)',
-    fontSize: tokens.typography.size.xs,
-    marginTop: 1,
-  },
-  heroArrow: {
-    color: '#ffffff',
-    fontSize: tokens.typography.size.lg,
-    fontWeight: tokens.typography.weight.bold,
-    marginLeft: tokens.spacing.xs,
-  },
-  sectionTitle: {
-    fontSize: tokens.typography.size.sm,
-    fontWeight: tokens.typography.weight.bold,
-    color: tokens.colors.muted,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginBottom: tokens.spacing.sm,
-  },
-  gridContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: tokens.spacing.sm,
-  },
-  gridCard: {
-    width: '48%',
-    backgroundColor: tokens.colors.background,
-    borderRadius: tokens.radius.lg,
-    paddingVertical: tokens.spacing.md,
-    paddingHorizontal: tokens.spacing.sm,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: tokens.colors.border,
-    minHeight: 88,
-  },
-  gridCardIcon: {
-    fontSize: 26,
-    marginBottom: 6,
-  },
-  gridCardTitle: {
-    fontSize: tokens.typography.size.xs,
-    fontWeight: tokens.typography.weight.bold,
-    color: tokens.colors.text,
-    textAlign: 'center',
-  },
-  collectorFeedContainer: {
-    marginTop: tokens.spacing.xs,
-  },
-  collectorOpsStrip: {
-    flexDirection: 'row',
-    backgroundColor: tokens.colors.background,
-    borderRadius: tokens.radius.lg,
-    paddingVertical: tokens.spacing.sm,
-    borderWidth: 1,
-    borderColor: tokens.colors.border,
-    marginBottom: tokens.spacing.md,
-  },
-  opsChip: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  opsChipNumber: {
-    fontSize: tokens.typography.size.lg,
-    fontWeight: tokens.typography.weight.extrabold,
-    color: '#0284c7',
-  },
-  opsChipLabel: {
-    fontSize: 11,
-    color: tokens.colors.muted,
-    marginTop: 2,
-    fontWeight: tokens.typography.weight.medium,
-  },
-  opsChipDivider: {
-    width: 1,
-    backgroundColor: tokens.colors.border,
-  },
-  collectorFilterRow: {
-    flexDirection: 'row',
-    gap: tokens.spacing.xs,
-    marginBottom: tokens.spacing.md,
-  },
-  collectorPill: {
-    flex: 1,
-    backgroundColor: tokens.colors.background,
-    borderWidth: 1,
-    borderColor: tokens.colors.border,
-    borderRadius: tokens.radius.full,
-    paddingVertical: 6,
-    alignItems: 'center',
-  },
-  collectorPillActive: {
-    backgroundColor: tokens.colors.accent,
-    borderColor: tokens.colors.accent,
-  },
-  collectorPillText: {
-    fontSize: tokens.typography.size.xs,
-    color: tokens.colors.muted,
-    fontWeight: tokens.typography.weight.medium,
-  },
-  collectorPillTextActive: {
-    color: tokens.colors.background,
-    fontWeight: tokens.typography.weight.bold,
-  },
-  loadingBox: {
-    alignItems: 'center',
-    padding: tokens.spacing.lg,
-    backgroundColor: tokens.colors.background,
-    borderRadius: tokens.radius.lg,
-  },
-  loadingBoxText: {
-    marginTop: tokens.spacing.sm,
-    fontSize: tokens.typography.size.xs,
-    color: tokens.colors.muted,
-  },
-  emptyCollectorBox: {
-    alignItems: 'center',
-    padding: tokens.spacing.xl,
-    backgroundColor: tokens.colors.background,
-    borderRadius: tokens.radius.lg,
-    borderWidth: 1,
-    borderColor: tokens.colors.border,
-  },
-  emptyIcon: {
-    fontSize: 28,
-    marginBottom: tokens.spacing.xs,
-  },
-  emptyCollectorTitle: {
-    fontSize: tokens.typography.size.base,
-    fontWeight: tokens.typography.weight.bold,
-    color: tokens.colors.text,
-  },
-  emptyCollectorDesc: {
-    fontSize: tokens.typography.size.xs,
-    color: tokens.colors.muted,
-    textAlign: 'center',
-    marginTop: 2,
-  },
-});
+const getStyles = (colors, isDark) =>
+  StyleSheet.create({
+    rootContainer: {
+      flex: 1,
+      position: 'relative',
+      width: '100%',
+      height: '100%',
+      overflow: 'hidden',
+      backgroundColor: colors.surface,
+    },
+    container: {
+      flex: 1,
+      backgroundColor: colors.surface,
+    },
+    topBar: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingHorizontal: tokens.spacing.md,
+      paddingVertical: tokens.spacing.sm,
+      backgroundColor: colors.headerBg || colors.background,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    topLeft: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    topRight: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: tokens.spacing.xs,
+    },
+    themeToggleBtn: {
+      width: 34,
+      height: 34,
+      borderRadius: 17,
+      backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)',
+      borderWidth: 1,
+      borderColor: colors.border,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    themeToggleIcon: {
+      fontSize: 16,
+    },
+    hamburgerBtn: {
+      padding: tokens.spacing.xs,
+      marginRight: tokens.spacing.sm,
+      minHeight: 40,
+      minWidth: 40,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    hamburgerIcon: {
+      fontSize: tokens.typography.size.lg,
+      color: colors.text,
+      fontWeight: tokens.typography.weight.bold,
+    },
+    appName: {
+      fontSize: tokens.typography.size.base,
+      fontWeight: tokens.typography.weight.extrabold,
+      color: colors.accent,
+      letterSpacing: 0.5,
+    },
+    topPointsPill: {
+      backgroundColor: colors.accent + '20',
+      paddingVertical: 5,
+      paddingHorizontal: tokens.spacing.sm,
+      borderRadius: tokens.radius.full,
+      borderWidth: 1,
+      borderColor: colors.accent + '40',
+    },
+    topPointsText: {
+      color: colors.accent,
+      fontSize: tokens.typography.size.xs,
+      fontWeight: tokens.typography.weight.bold,
+    },
+    topDutyPill: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: colors.accent + '20',
+      paddingVertical: 4,
+      paddingHorizontal: tokens.spacing.sm,
+      borderRadius: tokens.radius.full,
+      borderWidth: 1,
+      borderColor: colors.accent + '35',
+    },
+    dutyDot: {
+      width: 6,
+      height: 6,
+      borderRadius: 3,
+      backgroundColor: colors.accent,
+      marginRight: 6,
+    },
+    topDutyText: {
+      color: colors.accent,
+      fontSize: tokens.typography.size.xs,
+      fontWeight: tokens.typography.weight.bold,
+    },
+    scrollContent: {
+      padding: tokens.spacing.md,
+      paddingBottom: tokens.spacing.xxl,
+    },
+    greetingHeader: {
+      marginBottom: tokens.spacing.md,
+    },
+    greetingTitle: {
+      fontSize: tokens.typography.size.lg,
+      fontWeight: tokens.typography.weight.bold,
+      color: colors.text,
+    },
+    greetingSub: {
+      fontSize: tokens.typography.size.xs,
+      color: colors.muted,
+      marginTop: 2,
+    },
+    heroReportBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      backgroundColor: colors.accent,
+      paddingVertical: tokens.spacing.md,
+      paddingHorizontal: tokens.spacing.md,
+      borderRadius: tokens.radius.lg,
+      marginBottom: tokens.spacing.lg,
+      ...tokens.shadow.sm,
+    },
+    heroLeft: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: tokens.spacing.sm,
+      flex: 1,
+    },
+    heroIconBox: {
+      width: 40,
+      height: 40,
+      borderRadius: tokens.radius.md,
+      backgroundColor: 'rgba(255,255,255,0.2)',
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    heroIcon: {
+      fontSize: 20,
+    },
+    heroTitle: {
+      color: '#ffffff',
+      fontSize: tokens.typography.size.base,
+      fontWeight: tokens.typography.weight.bold,
+    },
+    heroSubtitle: {
+      color: 'rgba(255,255,255,0.85)',
+      fontSize: tokens.typography.size.xs,
+      marginTop: 1,
+    },
+    heroArrow: {
+      color: '#ffffff',
+      fontSize: tokens.typography.size.lg,
+      fontWeight: tokens.typography.weight.bold,
+      marginLeft: tokens.spacing.xs,
+    },
+    sectionTitle: {
+      fontSize: tokens.typography.size.sm,
+      fontWeight: tokens.typography.weight.bold,
+      color: colors.muted,
+      textTransform: 'uppercase',
+      letterSpacing: 0.5,
+      marginBottom: tokens.spacing.sm,
+    },
+    gridContainer: {
+      flexDirection: 'row',
+      flexWrap: 'wrap',
+      gap: tokens.spacing.sm,
+    },
+    gridCard: {
+      width: '48%',
+      backgroundColor: colors.card,
+      borderRadius: tokens.radius.lg,
+      paddingVertical: tokens.spacing.md,
+      paddingHorizontal: tokens.spacing.sm,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 1,
+      borderColor: colors.border,
+      minHeight: 88,
+    },
+    gridCardIcon: {
+      fontSize: 26,
+      marginBottom: 6,
+    },
+    gridCardTitle: {
+      fontSize: tokens.typography.size.xs,
+      fontWeight: tokens.typography.weight.bold,
+      color: colors.text,
+      textAlign: 'center',
+    },
+    collectorFeedContainer: {
+      marginTop: tokens.spacing.xs,
+    },
+    collectorOpsStrip: {
+      flexDirection: 'row',
+      backgroundColor: colors.card,
+      borderRadius: tokens.radius.lg,
+      paddingVertical: tokens.spacing.sm,
+      borderWidth: 1,
+      borderColor: colors.border,
+      marginBottom: tokens.spacing.md,
+    },
+    opsChip: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    opsChipNumber: {
+      fontSize: tokens.typography.size.lg,
+      fontWeight: tokens.typography.weight.extrabold,
+      color: isDark ? '#38bdf8' : '#0284c7',
+    },
+    opsChipLabel: {
+      fontSize: 11,
+      color: colors.muted,
+      marginTop: 2,
+      fontWeight: tokens.typography.weight.medium,
+    },
+    opsChipDivider: {
+      width: 1,
+      backgroundColor: colors.border,
+    },
+    collectorFilterRow: {
+      flexDirection: 'row',
+      gap: tokens.spacing.xs,
+      marginBottom: tokens.spacing.md,
+    },
+    collectorPill: {
+      flex: 1,
+      backgroundColor: colors.card,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: tokens.radius.full,
+      paddingVertical: 6,
+      alignItems: 'center',
+    },
+    collectorPillActive: {
+      backgroundColor: colors.accent,
+      borderColor: colors.accent,
+    },
+    collectorPillText: {
+      fontSize: tokens.typography.size.xs,
+      color: colors.muted,
+      fontWeight: tokens.typography.weight.medium,
+    },
+    collectorPillTextActive: {
+      color: '#ffffff',
+      fontWeight: tokens.typography.weight.bold,
+    },
+    loadingBox: {
+      alignItems: 'center',
+      padding: tokens.spacing.lg,
+      backgroundColor: colors.card,
+      borderRadius: tokens.radius.lg,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    loadingBoxText: {
+      marginTop: tokens.spacing.sm,
+      fontSize: tokens.typography.size.xs,
+      color: colors.muted,
+    },
+    emptyCollectorBox: {
+      alignItems: 'center',
+      padding: tokens.spacing.xl,
+      backgroundColor: colors.card,
+      borderRadius: tokens.radius.lg,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    emptyIcon: {
+      fontSize: 28,
+      marginBottom: tokens.spacing.xs,
+    },
+    emptyCollectorTitle: {
+      fontSize: tokens.typography.size.base,
+      fontWeight: tokens.typography.weight.bold,
+      color: colors.text,
+    },
+    emptyCollectorDesc: {
+      fontSize: tokens.typography.size.xs,
+      color: colors.muted,
+      textAlign: 'center',
+      marginTop: 2,
+    },
+  });

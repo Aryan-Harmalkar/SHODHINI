@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   StyleSheet,
   Text,
@@ -7,7 +7,7 @@ import {
   ScrollView,
   Alert,
 } from 'react-native';
-import { tokens } from '../lib/theme';
+import { tokens, useTheme } from '../lib/theme';
 
 export default function RewardsScreen({
   user,
@@ -17,6 +17,9 @@ export default function RewardsScreen({
   onOpenSidebar,
   onNavigatePickup,
 }) {
+  const { colors, isDark, toggleTheme } = useTheme();
+  const styles = useMemo(() => getStyles(colors, isDark), [colors, isDark]);
+
   const [activeTab, setActiveTab] = useState(initialTab || 'redeem');
 
   useEffect(() => {
@@ -159,9 +162,19 @@ export default function RewardsScreen({
           <Text style={styles.screenTitle}>🎁 Rewards</Text>
         </View>
 
-        <TouchableOpacity style={styles.backHomeBtn} onPress={onBackToHome} activeOpacity={0.7}>
-          <Text style={styles.backHomeText}>Home</Text>
-        </TouchableOpacity>
+        <View style={styles.topRight}>
+          <TouchableOpacity
+            style={styles.themeToggleBtn}
+            onPress={toggleTheme}
+            activeOpacity={0.7}
+            accessibilityLabel={isDark ? "Switch to Day Mode" : "Switch to Night Mode"}
+          >
+            <Text style={styles.themeToggleIcon}>{isDark ? '☀️' : '🌙'}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.backHomeBtn} onPress={onBackToHome} activeOpacity={0.7}>
+            <Text style={styles.backHomeText}>Home</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
@@ -274,7 +287,7 @@ export default function RewardsScreen({
                     <Text style={styles.historyTitle}>{h.title}</Text>
                     <Text style={styles.historyDate}>{h.date}</Text>
                   </View>
-                  <Text style={[styles.historyPoints, { color: isCredit ? tokens.colors.accent : tokens.colors.danger }]}>
+                  <Text style={[styles.historyPoints, { color: isCredit ? colors.accent : colors.danger }]}>
                     {h.points}
                   </Text>
                 </View>
@@ -287,10 +300,10 @@ export default function RewardsScreen({
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors, isDark) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: tokens.colors.surface,
+    backgroundColor: colors.background,
   },
   topBar: {
     flexDirection: 'row',
@@ -298,13 +311,31 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: tokens.spacing.md,
     paddingVertical: tokens.spacing.sm,
-    backgroundColor: tokens.colors.background,
+    backgroundColor: colors.card,
     borderBottomWidth: 1,
-    borderBottomColor: tokens.colors.border,
+    borderBottomColor: colors.border,
   },
   topLeft: {
     flexDirection: 'row',
     alignItems: 'center',
+  },
+  topRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: tokens.spacing.sm,
+  },
+  themeToggleBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  themeToggleIcon: {
+    fontSize: 16,
   },
   menuBtn: {
     padding: tokens.spacing.xs,
@@ -316,24 +347,24 @@ const styles = StyleSheet.create({
   },
   menuIcon: {
     fontSize: tokens.typography.size.lg,
-    color: tokens.colors.text,
+    color: colors.text,
     fontWeight: tokens.typography.weight.bold,
   },
   screenTitle: {
     fontSize: tokens.typography.size.base,
     fontWeight: tokens.typography.weight.extrabold,
-    color: tokens.colors.accent,
+    color: colors.accent,
   },
   backHomeBtn: {
     paddingVertical: 6,
     paddingHorizontal: tokens.spacing.sm,
     borderRadius: tokens.radius.sm,
-    backgroundColor: tokens.colors.surface,
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: tokens.colors.border,
+    borderColor: colors.border,
   },
   backHomeText: {
-    color: tokens.colors.text,
+    color: colors.text,
     fontSize: tokens.typography.size.xs,
     fontWeight: tokens.typography.weight.semibold,
   },
@@ -345,37 +376,39 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: tokens.colors.background,
+    backgroundColor: colors.card,
     borderRadius: tokens.radius.lg,
     padding: tokens.spacing.md,
     marginBottom: tokens.spacing.md,
     borderWidth: 1,
-    borderColor: tokens.colors.border,
+    borderColor: colors.border,
   },
   balanceLabel: {
     fontSize: tokens.typography.size.xs,
-    color: tokens.colors.muted,
+    color: colors.muted,
   },
   balanceVal: {
     fontSize: tokens.typography.size.xl,
     fontWeight: tokens.typography.weight.extrabold,
-    color: tokens.colors.accent,
+    color: colors.accent,
     marginTop: 2,
   },
   earnMoreBtn: {
-    backgroundColor: tokens.colors.accent + '15',
+    backgroundColor: colors.accent + '20',
     paddingVertical: 6,
     paddingHorizontal: tokens.spacing.sm,
     borderRadius: tokens.radius.sm,
   },
   earnMoreText: {
-    color: tokens.colors.accent,
+    color: colors.accent,
     fontSize: tokens.typography.size.xs,
     fontWeight: tokens.typography.weight.bold,
   },
   tabRow: {
     flexDirection: 'row',
-    backgroundColor: tokens.colors.border,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
     borderRadius: tokens.radius.md,
     padding: 3,
     marginBottom: tokens.spacing.md,
@@ -387,16 +420,18 @@ const styles = StyleSheet.create({
     borderRadius: tokens.radius.sm,
   },
   activeTabBtn: {
-    backgroundColor: tokens.colors.background,
+    backgroundColor: colors.card,
+    borderWidth: isDark ? 1 : 0,
+    borderColor: colors.border,
     ...tokens.shadow.sm,
   },
   tabBtnText: {
     fontSize: tokens.typography.size.xs,
     fontWeight: tokens.typography.weight.semibold,
-    color: tokens.colors.muted,
+    color: colors.muted,
   },
   activeTabBtnText: {
-    color: tokens.colors.accent,
+    color: colors.accent,
     fontWeight: tokens.typography.weight.bold,
   },
   listContainer: {
@@ -405,11 +440,11 @@ const styles = StyleSheet.create({
   rewardCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: tokens.colors.background,
+    backgroundColor: colors.card,
     borderRadius: tokens.radius.lg,
     padding: tokens.spacing.md,
     borderWidth: 1,
-    borderColor: tokens.colors.border,
+    borderColor: colors.border,
   },
   rewardIcon: {
     fontSize: 24,
@@ -421,22 +456,22 @@ const styles = StyleSheet.create({
   rewardTitle: {
     fontSize: tokens.typography.size.sm,
     fontWeight: tokens.typography.weight.bold,
-    color: tokens.colors.text,
+    color: colors.text,
   },
   rewardCost: {
     fontSize: tokens.typography.size.xs,
-    color: tokens.colors.accent,
+    color: colors.accent,
     fontWeight: tokens.typography.weight.semibold,
     marginTop: 2,
   },
   redeemBtn: {
-    backgroundColor: tokens.colors.accent,
+    backgroundColor: colors.accent,
     paddingVertical: 6,
     paddingHorizontal: tokens.spacing.md,
     borderRadius: tokens.radius.sm,
   },
   redeemBtnDisabled: {
-    backgroundColor: tokens.colors.muted + '40',
+    backgroundColor: colors.muted + '40',
   },
   redeemBtnText: {
     color: '#ffffff',
@@ -446,11 +481,11 @@ const styles = StyleSheet.create({
   couponCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: tokens.colors.background,
+    backgroundColor: colors.card,
     borderRadius: tokens.radius.lg,
     padding: tokens.spacing.md,
     borderWidth: 1,
-    borderColor: tokens.colors.border,
+    borderColor: colors.border,
   },
   couponIcon: {
     fontSize: 24,
@@ -462,18 +497,18 @@ const styles = StyleSheet.create({
   couponTitle: {
     fontSize: tokens.typography.size.sm,
     fontWeight: tokens.typography.weight.bold,
-    color: tokens.colors.text,
+    color: colors.text,
   },
   couponCode: {
     fontSize: tokens.typography.size.xs,
-    color: tokens.colors.muted,
+    color: colors.muted,
     fontFamily: 'monospace',
     marginTop: 2,
   },
   copyBtn: {
-    backgroundColor: tokens.colors.surface,
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: tokens.colors.border,
+    borderColor: colors.border,
     paddingVertical: 6,
     paddingHorizontal: tokens.spacing.sm,
     borderRadius: tokens.radius.sm,
@@ -481,21 +516,21 @@ const styles = StyleSheet.create({
   copyBtnText: {
     fontSize: tokens.typography.size.xs,
     fontWeight: tokens.typography.weight.bold,
-    color: tokens.colors.accent,
+    color: colors.accent,
   },
   historyCard: {
-    backgroundColor: tokens.colors.background,
+    backgroundColor: colors.card,
     borderRadius: tokens.radius.lg,
     paddingHorizontal: tokens.spacing.md,
     borderWidth: 1,
-    borderColor: tokens.colors.border,
+    borderColor: colors.border,
   },
   historyRow: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: tokens.spacing.sm,
     borderBottomWidth: 1,
-    borderBottomColor: tokens.colors.surface,
+    borderBottomColor: colors.border,
   },
   historyIcon: {
     fontSize: 18,
@@ -507,11 +542,11 @@ const styles = StyleSheet.create({
   historyTitle: {
     fontSize: tokens.typography.size.xs,
     fontWeight: tokens.typography.weight.semibold,
-    color: tokens.colors.text,
+    color: colors.text,
   },
   historyDate: {
     fontSize: 10,
-    color: tokens.colors.muted,
+    color: colors.muted,
     marginTop: 1,
   },
   historyPoints: {

@@ -12,10 +12,12 @@ import HomeScreen from './screens/HomeScreen';
 import AuthScreen from './screens/AuthScreen';
 import { initDatabase, getCurrentUser, logoutUser, updateUserPushToken } from './db/database';
 import { registerForPushNotificationsAsync } from './lib/notifications';
+import { ThemeProvider, useTheme } from './lib/theme';
 
-export default function App() {
+function MainAppShell() {
   const [currentUser, setCurrentUser] = useState(null);
   const [initializing, setInitializing] = useState(true);
+  const { isDark, colors } = useTheme();
 
   useEffect(() => {
     async function setup() {
@@ -62,9 +64,9 @@ export default function App() {
 
   if (initializing) {
     return (
-      <View style={styles.centerContainer}>
+      <View style={[styles.centerContainer, { backgroundColor: colors.background }]}>
         <ActivityIndicator size="large" color="#2e7d32" />
-        <Text style={styles.loadingText}>Loading SHODHINI...</Text>
+        <Text style={[styles.loadingText, { color: colors.text }]}>Loading SHODHINI...</Text>
       </View>
     );
   }
@@ -72,10 +74,22 @@ export default function App() {
   const isWeb = Platform.OS === 'web';
 
   return (
-    <View style={isWeb ? styles.webOuterCanvas : styles.nativeContainer}>
-      <View style={isWeb ? styles.mobileFrame : styles.nativeContainer}>
-        <SafeAreaView style={styles.safeArea}>
-          <StatusBar style="dark" />
+    <View
+      style={
+        isWeb
+          ? [styles.webOuterCanvas, isDark && styles.webOuterCanvasDark]
+          : [styles.nativeContainer, { backgroundColor: colors.background }]
+      }
+    >
+      <View
+        style={
+          isWeb
+            ? [styles.mobileFrame, isDark && styles.mobileFrameDark]
+            : [styles.nativeContainer, { backgroundColor: colors.background }]
+        }
+      >
+        <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
+          <StatusBar style={isDark ? 'light' : 'dark'} />
           {currentUser ? (
             <HomeScreen user={currentUser} onLogout={handleLogout} />
           ) : (
@@ -87,6 +101,14 @@ export default function App() {
   );
 }
 
+export default function App() {
+  return (
+    <ThemeProvider>
+      <MainAppShell />
+    </ThemeProvider>
+  );
+}
+
 const styles = StyleSheet.create({
   nativeContainer: {
     flex: 1,
@@ -94,11 +116,14 @@ const styles = StyleSheet.create({
   },
   webOuterCanvas: {
     flex: 1,
-    backgroundColor: '#0f172a',
+    backgroundColor: '#f1f5f9',
     alignItems: 'center',
     justifyContent: 'center',
     minHeight: '100vh',
     paddingVertical: 16,
+  },
+  webOuterCanvasDark: {
+    backgroundColor: '#020617',
   },
   mobileFrame: {
     width: '100%',
@@ -110,12 +135,17 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     position: 'relative',
     borderWidth: 8,
-    borderColor: '#334155',
+    borderColor: '#cbd5e1',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 16 },
-    shadowOpacity: 0.35,
+    shadowOpacity: 0.15,
     shadowRadius: 24,
     elevation: 12,
+  },
+  mobileFrameDark: {
+    backgroundColor: '#090d16',
+    borderColor: '#1e293b',
+    shadowOpacity: 0.6,
   },
   safeArea: {
     flex: 1,

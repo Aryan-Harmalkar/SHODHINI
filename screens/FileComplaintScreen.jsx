@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   StyleSheet,
   Text,
@@ -14,7 +14,7 @@ import {
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { fileComplaint, getAreas, getCurrentUser, updateUserEcoPoints } from '../db/database';
-import { tokens } from '../lib/theme';
+import { tokens, useTheme } from '../lib/theme';
 import { analyzeWasteImageWithGemini } from '../lib/aiVision';
 import {
   IS_WEB,
@@ -29,6 +29,9 @@ import {
 import LocationPinMap from '../components/LocationPinMap';
 
 export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar }) {
+  const { colors, isDark, toggleTheme } = useTheme();
+  const styles = useMemo(() => getStyles(colors, isDark), [colors, isDark]);
+
   const [currentUser, setCurrentUser] = useState(user || null);
   const [areas, setAreas] = useState([]);
   const [selectedAreaId, setSelectedAreaId] = useState(null);
@@ -394,9 +397,19 @@ export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar 
           <Text style={styles.title}>File Complaint</Text>
         </View>
 
-        <TouchableOpacity style={styles.homeBtn} onPress={onBackToHome} activeOpacity={0.7}>
-          <Text style={styles.homeBtnText}>Home</Text>
-        </TouchableOpacity>
+        <View style={styles.topRight}>
+          <TouchableOpacity
+            style={styles.themeToggleBtn}
+            onPress={toggleTheme}
+            activeOpacity={0.7}
+            accessibilityLabel="Toggle Day/Dark Theme"
+          >
+            <Text style={styles.themeToggleIcon}>{isDark ? '☀️' : '🌙'}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.homeBtn} onPress={onBackToHome} activeOpacity={0.7}>
+            <Text style={styles.homeBtnText}>Home</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
@@ -595,6 +608,7 @@ export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar 
                       nativeID="manual-address-input"
                       style={[styles.textArea, { minHeight: 48 }, focusedInput === 'addr' && styles.inputFocused]}
                       placeholder="e.g. Near Shivaji Park gate 2, Dadar West, Mumbai"
+                      placeholderTextColor={colors.muted}
                       value={manualAddress}
                       onChangeText={setManualAddress}
                       onFocus={() => setFocusedInput('addr')}
@@ -768,6 +782,7 @@ export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar 
               <TextInput
                 style={[styles.textArea, focusedInput === 'desc' && styles.inputFocused]}
                 placeholder="Optional: Add landmarks, gate numbers, or leave blank to use AI summary..."
+                placeholderTextColor={colors.muted}
                 value={description}
                 onChangeText={setDescription}
                 onFocus={() => setFocusedInput('desc')}
@@ -887,91 +902,114 @@ export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar 
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: tokens.colors.surface,
-  },
-  topBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: tokens.spacing.md,
-    paddingVertical: tokens.spacing.md,
-    backgroundColor: tokens.colors.background,
-    borderBottomWidth: 1,
-    borderBottomColor: tokens.colors.border,
-  },
-  topLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  menuButton: {
-    padding: tokens.spacing.xs,
-    marginRight: tokens.spacing.sm,
-    minHeight: 44,
-    minWidth: 44,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  menuIcon: {
-    fontSize: tokens.typography.size.lg,
-    color: tokens.colors.text,
-    fontWeight: tokens.typography.weight.bold,
-  },
-  title: {
-    fontSize: tokens.typography.size.base,
-    fontWeight: tokens.typography.weight.bold,
-    color: tokens.colors.text,
-  },
-  homeBtn: {
-    backgroundColor: tokens.colors.surface,
-    paddingVertical: tokens.spacing.sm,
-    paddingHorizontal: tokens.spacing.md,
-    borderRadius: tokens.radius.sm,
-    minHeight: 44,
-    justifyContent: 'center',
-  },
-  homeBtnText: {
-    color: tokens.colors.accent,
-    fontSize: tokens.typography.size.sm,
-    fontWeight: tokens.typography.weight.bold,
-  },
-  scrollContent: {
-    padding: tokens.spacing.md,
-    paddingBottom: tokens.spacing.xxl,
-    alignItems: 'center',
-  },
+const getStyles = (colors, isDark) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.surface,
+    },
+    topBar: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingHorizontal: tokens.spacing.md,
+      paddingVertical: tokens.spacing.md,
+      backgroundColor: colors.headerBg || colors.background,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    topLeft: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    topRight: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: tokens.spacing.xs,
+    },
+    themeToggleBtn: {
+      width: 34,
+      height: 34,
+      borderRadius: 17,
+      backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)',
+      borderWidth: 1,
+      borderColor: colors.border,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    themeToggleIcon: {
+      fontSize: 16,
+    },
+    menuButton: {
+      padding: tokens.spacing.xs,
+      marginRight: tokens.spacing.sm,
+      minHeight: 44,
+      minWidth: 44,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    menuIcon: {
+      fontSize: tokens.typography.size.lg,
+      color: colors.text,
+      fontWeight: tokens.typography.weight.bold,
+    },
+    title: {
+      fontSize: tokens.typography.size.base,
+      fontWeight: tokens.typography.weight.bold,
+      color: colors.text,
+    },
+    homeBtn: {
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+      paddingVertical: tokens.spacing.sm,
+      paddingHorizontal: tokens.spacing.md,
+      borderRadius: tokens.radius.sm,
+      minHeight: 44,
+      justifyContent: 'center',
+    },
+    homeBtnText: {
+      color: colors.accent,
+      fontSize: tokens.typography.size.sm,
+      fontWeight: tokens.typography.weight.bold,
+    },
+    scrollContent: {
+      padding: tokens.spacing.md,
+      paddingBottom: tokens.spacing.xxl,
+      alignItems: 'center',
+    },
   formCard: {
     width: '100%',
     maxWidth: 600,
-    backgroundColor: tokens.colors.background,
+    backgroundColor: colors.card,
     borderRadius: tokens.radius.xl,
     padding: tokens.spacing.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
     ...tokens.shadow.sm,
   },
   formHeader: {
     fontSize: tokens.typography.size.lg,
     fontWeight: tokens.typography.weight.bold,
-    color: tokens.colors.text,
+    color: colors.text,
     marginBottom: 4,
   },
   formSubtitle: {
     fontSize: tokens.typography.size.xs,
-    color: tokens.colors.muted,
+    color: colors.muted,
     lineHeight: 18,
     marginBottom: tokens.spacing.md,
   },
   errorBox: {
-    backgroundColor: '#fef2f2',
+    backgroundColor: isDark ? 'rgba(239, 68, 68, 0.15)' : '#fef2f2',
     borderWidth: 1,
-    borderColor: tokens.colors.danger,
+    borderColor: colors.danger,
     borderRadius: tokens.radius.md,
     padding: tokens.spacing.sm,
     marginBottom: tokens.spacing.md,
   },
   errorText: {
-    color: tokens.colors.danger,
+    color: colors.danger,
     fontSize: tokens.typography.size.xs,
     fontWeight: tokens.typography.weight.semibold,
   },
@@ -979,7 +1017,7 @@ const styles = StyleSheet.create({
     marginBottom: tokens.spacing.md,
     paddingBottom: tokens.spacing.sm,
     borderBottomWidth: 1,
-    borderBottomColor: tokens.colors.border,
+    borderBottomColor: colors.border,
   },
   sectionHeaderRow: {
     flexDirection: 'row',
@@ -990,7 +1028,7 @@ const styles = StyleSheet.create({
     width: 22,
     height: 22,
     borderRadius: 11,
-    backgroundColor: tokens.colors.accent,
+    backgroundColor: colors.accent,
     color: '#ffffff',
     textAlign: 'center',
     lineHeight: 22,
@@ -1001,13 +1039,13 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: tokens.typography.size.sm,
     fontWeight: tokens.typography.weight.bold,
-    color: tokens.colors.text,
+    color: colors.text,
   },
   cameraPlaceholderBox: {
-    backgroundColor: tokens.colors.surface,
+    backgroundColor: colors.surface,
     borderWidth: 1.5,
     borderStyle: 'dashed',
-    borderColor: tokens.colors.border,
+    borderColor: colors.border,
     borderRadius: tokens.radius.lg,
     padding: tokens.spacing.lg,
     alignItems: 'center',
@@ -1119,8 +1157,8 @@ const styles = StyleSheet.create({
     padding: tokens.spacing.md,
     borderRadius: tokens.radius.lg,
     borderWidth: 1,
-    borderColor: tokens.colors.border,
-    backgroundColor: tokens.colors.surface,
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
   },
   locHeaderRow: {
     flexDirection: 'row',
@@ -1132,7 +1170,7 @@ const styles = StyleSheet.create({
   locTitle: {
     fontSize: tokens.typography.size.sm,
     fontWeight: tokens.typography.weight.bold,
-    color: tokens.colors.text,
+    color: colors.text,
   },
   accuracyPill: {
     paddingVertical: 4,
@@ -1140,19 +1178,19 @@ const styles = StyleSheet.create({
     borderRadius: tokens.radius.full,
   },
   accuracyPillGood: {
-    backgroundColor: '#dcfce7',
+    backgroundColor: isDark ? 'rgba(34, 197, 94, 0.2)' : '#dcfce7',
   },
   accuracyPillBad: {
-    backgroundColor: '#fef3c7',
+    backgroundColor: isDark ? 'rgba(245, 158, 11, 0.2)' : '#fef3c7',
   },
   accuracyPillText: {
     fontSize: 12,
     fontWeight: tokens.typography.weight.bold,
-    color: tokens.colors.text,
+    color: colors.text,
   },
   locBodyText: {
     fontSize: tokens.typography.size.xs,
-    color: tokens.colors.muted,
+    color: colors.muted,
     lineHeight: 18,
   },
   locSearchingRow: {
@@ -1162,14 +1200,14 @@ const styles = StyleSheet.create({
   },
   locCoordsText: {
     fontSize: 11,
-    color: tokens.colors.text,
+    color: colors.text,
     marginTop: 4,
     marginBottom: 4,
   },
   pinConfirmedBadge: {
     marginTop: 8,
     alignSelf: 'flex-start',
-    backgroundColor: '#dcfce7',
+    backgroundColor: isDark ? 'rgba(34, 197, 94, 0.2)' : '#dcfce7',
     paddingVertical: 6,
     paddingHorizontal: 12,
     borderRadius: tokens.radius.full,
@@ -1177,26 +1215,26 @@ const styles = StyleSheet.create({
   pinConfirmedText: {
     fontSize: 12,
     fontWeight: tokens.typography.weight.bold,
-    color: '#15803d',
+    color: colors.accent,
   },
   recalibrateBtn: {
     alignSelf: 'flex-start',
     minHeight: 40,
     justifyContent: 'center',
-    backgroundColor: tokens.colors.background,
+    backgroundColor: colors.card,
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: tokens.radius.md,
     borderWidth: 1,
-    borderColor: tokens.colors.border,
+    borderColor: colors.border,
   },
   recalibrateBtnText: {
     fontSize: 12,
-    color: tokens.colors.accent,
+    color: colors.accent,
     fontWeight: tokens.typography.weight.semibold,
   },
   coarseNoticeBox: {
-    backgroundColor: '#fffbeb',
+    backgroundColor: isDark ? 'rgba(245, 158, 11, 0.15)' : '#fffbeb',
     borderRadius: tokens.radius.sm,
     padding: 8,
     marginTop: 8,
@@ -1205,7 +1243,7 @@ const styles = StyleSheet.create({
   },
   coarseNoticeText: {
     fontSize: 12,
-    color: '#92400e',
+    color: isDark ? '#fcd34d' : '#92400e',
     lineHeight: 16,
   },
   locationNotice: {
@@ -1216,7 +1254,7 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   aiScanningBox: {
-    backgroundColor: tokens.colors.surface,
+    backgroundColor: colors.surface,
     borderRadius: tokens.radius.md,
     padding: tokens.spacing.lg,
     alignItems: 'center',
@@ -1224,12 +1262,12 @@ const styles = StyleSheet.create({
   aiScanningTitle: {
     fontSize: tokens.typography.size.sm,
     fontWeight: tokens.typography.weight.bold,
-    color: tokens.colors.text,
+    color: colors.text,
     marginTop: tokens.spacing.sm,
   },
   aiScanningSubtitle: {
     fontSize: tokens.typography.size.xs,
-    color: tokens.colors.muted,
+    color: colors.muted,
     textAlign: 'center',
     marginTop: 4,
     lineHeight: 16,
@@ -1244,16 +1282,16 @@ const styles = StyleSheet.create({
     marginBottom: tokens.spacing.sm,
   },
   aiVerifiedCard: {
-    backgroundColor: '#f0fdf4',
-    borderColor: '#22c55e',
+    backgroundColor: isDark ? 'rgba(34, 197, 94, 0.15)' : '#f0fdf4',
+    borderColor: colors.accent,
   },
   aiLowCard: {
-    backgroundColor: '#fffbeb',
-    borderColor: '#f59e0b',
+    backgroundColor: isDark ? 'rgba(245, 158, 11, 0.15)' : '#fffbeb',
+    borderColor: isDark ? '#fbbf24' : '#f59e0b',
   },
   aiRejectCard: {
-    backgroundColor: '#fef2f2',
-    borderColor: '#ef4444',
+    backgroundColor: isDark ? 'rgba(239, 68, 68, 0.15)' : '#fef2f2',
+    borderColor: colors.danger,
   },
   aiCardTop: {
     flexDirection: 'row',
@@ -1269,13 +1307,13 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: tokens.typography.weight.bold,
     letterSpacing: 0.5,
-    color: tokens.colors.muted,
+    color: colors.muted,
     marginBottom: 2,
   },
   aiClassificationTitle: {
     fontSize: tokens.typography.size.sm,
     fontWeight: tokens.typography.weight.bold,
-    color: tokens.colors.text,
+    color: colors.text,
   },
   confidencePill: {
     paddingVertical: 3,
@@ -1283,45 +1321,45 @@ const styles = StyleSheet.create({
     borderRadius: tokens.radius.full,
   },
   confidencePillGreen: {
-    backgroundColor: '#dcfce7',
+    backgroundColor: isDark ? 'rgba(34, 197, 94, 0.2)' : '#dcfce7',
   },
   confidencePillAmber: {
-    backgroundColor: '#fef3c7',
+    backgroundColor: isDark ? 'rgba(245, 158, 11, 0.2)' : '#fef3c7',
   },
   confidencePillRed: {
-    backgroundColor: '#fee2e2',
+    backgroundColor: isDark ? 'rgba(239, 68, 68, 0.2)' : '#fee2e2',
   },
   confidencePillText: {
     fontSize: 10,
     fontWeight: tokens.typography.weight.bold,
-    color: tokens.colors.text,
+    color: colors.text,
   },
   rejectionNoticeBox: {
-    backgroundColor: '#fee2e2',
+    backgroundColor: isDark ? 'rgba(239, 68, 68, 0.15)' : '#fee2e2',
     borderRadius: tokens.radius.sm,
     padding: tokens.spacing.sm,
     marginTop: tokens.spacing.xs,
   },
   rejectionNoticeText: {
     fontSize: 11,
-    color: '#b91c1c',
+    color: colors.danger,
     lineHeight: 16,
   },
   adminReviewNoticeBox: {
-    backgroundColor: '#fef3c7',
+    backgroundColor: isDark ? 'rgba(245, 158, 11, 0.15)' : '#fef3c7',
     borderRadius: tokens.radius.sm,
     padding: tokens.spacing.sm,
     marginTop: tokens.spacing.xs,
   },
   adminReviewNoticeTitle: {
     fontSize: 11,
-    fontWeight: tokens.typography.weight.bold,
-    color: '#92400e',
+    fontWeight: 'bold',
+    color: isDark ? '#fcd34d' : '#92400e',
     marginBottom: 2,
   },
   adminReviewNoticeText: {
     fontSize: 10,
-    color: '#78350f',
+    color: isDark ? '#fde68a' : '#78350f',
     lineHeight: 15,
   },
   aiSpecsGrid: {
@@ -1330,32 +1368,32 @@ const styles = StyleSheet.create({
     marginTop: tokens.spacing.xs,
     paddingTop: tokens.spacing.xs,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(0,0,0,0.06)',
+    borderTopColor: colors.border,
   },
   specItem: {
     flex: 1,
-    backgroundColor: 'rgba(255,255,255,0.7)',
+    backgroundColor: colors.surface,
     borderRadius: tokens.radius.sm,
     padding: 6,
   },
   specLabel: {
     fontSize: 10,
-    color: tokens.colors.muted,
+    color: colors.muted,
     marginBottom: 1,
   },
   specValue: {
     fontSize: 11,
     fontWeight: tokens.typography.weight.bold,
-    color: tokens.colors.text,
+    color: colors.text,
   },
   specBiohazard: {
-    color: '#b91c1c',
+    color: colors.danger,
   },
   specHazard: {
-    color: '#c2410c',
+    color: isDark ? '#fb923c' : '#c2410c',
   },
   warningStrip: {
-    backgroundColor: '#fff7ed',
+    backgroundColor: isDark ? 'rgba(249, 115, 22, 0.15)' : '#fff7ed',
     borderRadius: tokens.radius.sm,
     padding: 6,
     marginTop: 6,
@@ -1364,19 +1402,19 @@ const styles = StyleSheet.create({
   },
   warningStripText: {
     fontSize: 10,
-    color: '#9a3412',
+    color: isDark ? '#fdba74' : '#9a3412',
     lineHeight: 14,
   },
   toolsContainer: {
     marginTop: 8,
     paddingTop: 6,
     borderTopWidth: 1,
-    borderTopColor: 'rgba(0,0,0,0.06)',
+    borderTopColor: colors.border,
   },
   toolsTitle: {
     fontSize: 10,
     fontWeight: tokens.typography.weight.bold,
-    color: tokens.colors.muted,
+    color: colors.muted,
     marginBottom: 4,
   },
   toolsChipsRow: {
@@ -1385,7 +1423,7 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   toolChip: {
-    backgroundColor: 'rgba(0,0,0,0.05)',
+    backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)',
     paddingVertical: 3,
     paddingHorizontal: 8,
     borderRadius: tokens.radius.full,
@@ -1393,15 +1431,15 @@ const styles = StyleSheet.create({
   toolChipText: {
     fontSize: 10,
     fontWeight: tokens.typography.weight.medium,
-    color: tokens.colors.text,
+    color: colors.text,
   },
   areaSelectBtn: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: tokens.colors.background,
+    backgroundColor: colors.card,
     borderWidth: 1,
-    borderColor: tokens.colors.border,
+    borderColor: colors.border,
     borderRadius: tokens.radius.md,
     paddingHorizontal: tokens.spacing.md,
     paddingVertical: 10,
@@ -1409,57 +1447,57 @@ const styles = StyleSheet.create({
   },
   areaSelectBtnText: {
     fontSize: tokens.typography.size.sm,
-    color: tokens.colors.text,
+    color: colors.text,
     fontWeight: tokens.typography.weight.medium,
   },
   areaSelectBtnArrow: {
     fontSize: 10,
-    color: tokens.colors.muted,
+    color: colors.muted,
     fontWeight: tokens.typography.weight.bold,
   },
   textArea: {
-    backgroundColor: tokens.colors.background,
+    backgroundColor: colors.inputBg || colors.card,
     borderWidth: 1,
-    borderColor: tokens.colors.border,
+    borderColor: colors.border,
     borderRadius: tokens.radius.md,
     paddingHorizontal: tokens.spacing.md,
     paddingVertical: tokens.spacing.sm,
     fontSize: tokens.typography.size.sm,
-    color: tokens.colors.text,
+    color: colors.text,
     minHeight: 80,
   },
   inputFocused: {
-    borderColor: tokens.colors.borderFocus,
+    borderColor: colors.borderFocus || colors.accent,
     borderWidth: 2,
   },
   fieldHint: {
     fontSize: 10,
-    color: tokens.colors.muted,
+    color: colors.muted,
     marginTop: 4,
   },
   blockedSubmitBox: {
-    backgroundColor: '#fef2f2',
+    backgroundColor: isDark ? 'rgba(239, 68, 68, 0.15)' : '#fef2f2',
     borderRadius: tokens.radius.md,
     padding: tokens.spacing.md,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#fca5a5',
+    borderColor: isDark ? '#ef4444' : '#fca5a5',
   },
   blockedSubmitTitle: {
     fontSize: tokens.typography.size.sm,
     fontWeight: tokens.typography.weight.bold,
-    color: '#b91c1c',
+    color: isDark ? '#f87171' : '#b91c1c',
     marginBottom: 4,
   },
   blockedSubmitText: {
     fontSize: tokens.typography.size.xs,
-    color: '#7f1d1d',
+    color: isDark ? '#fca5a5' : '#7f1d1d',
     textAlign: 'center',
     lineHeight: 16,
     marginBottom: tokens.spacing.md,
   },
   submitBtn: {
-    backgroundColor: tokens.colors.accent,
+    backgroundColor: colors.accent,
     borderRadius: tokens.radius.md,
     paddingVertical: tokens.spacing.md,
     alignItems: 'center',
@@ -1482,10 +1520,12 @@ const styles = StyleSheet.create({
   successCard: {
     width: '100%',
     maxWidth: 600,
-    backgroundColor: tokens.colors.background,
+    backgroundColor: colors.card,
     borderRadius: tokens.radius.xl,
     padding: tokens.spacing.xxl,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.border,
     ...tokens.shadow.md,
   },
   successIcon: {
@@ -1495,25 +1535,25 @@ const styles = StyleSheet.create({
   successTitle: {
     fontSize: tokens.typography.size.base,
     fontWeight: tokens.typography.weight.bold,
-    color: tokens.colors.text,
+    color: colors.text,
     marginBottom: tokens.spacing.xs,
     textAlign: 'center',
   },
   successDesc: {
     fontSize: tokens.typography.size.xs,
-    color: tokens.colors.muted,
+    color: colors.muted,
     textAlign: 'center',
     lineHeight: 18,
     marginBottom: tokens.spacing.md,
   },
   successAddressText: {
     fontSize: 11,
-    color: tokens.colors.accent,
+    color: colors.accent,
     fontWeight: tokens.typography.weight.semibold,
     marginBottom: tokens.spacing.sm,
   },
   successBadge: {
-    backgroundColor: tokens.colors.surface,
+    backgroundColor: colors.surface,
     paddingVertical: 6,
     paddingHorizontal: 12,
     borderRadius: tokens.radius.full,
@@ -1521,19 +1561,21 @@ const styles = StyleSheet.create({
   successBadgeText: {
     fontSize: 11,
     fontWeight: tokens.typography.weight.bold,
-    color: tokens.colors.text,
+    color: colors.text,
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.4)',
+    backgroundColor: isDark ? 'rgba(0, 0, 0, 0.7)' : 'rgba(15, 23, 42, 0.4)',
     justifyContent: 'flex-end',
   },
   modalCard: {
-    backgroundColor: tokens.colors.background,
+    backgroundColor: colors.card,
     borderTopLeftRadius: tokens.radius.xl,
     borderTopRightRadius: tokens.radius.xl,
     maxHeight: '60%',
     padding: tokens.spacing.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -1542,12 +1584,12 @@ const styles = StyleSheet.create({
     marginBottom: tokens.spacing.md,
     paddingBottom: tokens.spacing.sm,
     borderBottomWidth: 1,
-    borderBottomColor: tokens.colors.border,
+    borderBottomColor: colors.border,
   },
   modalTitle: {
     fontSize: tokens.typography.size.base,
     fontWeight: tokens.typography.weight.bold,
-    color: tokens.colors.text,
+    color: colors.text,
   },
   modalCloseBtn: {
     padding: tokens.spacing.sm,
@@ -1558,7 +1600,7 @@ const styles = StyleSheet.create({
   },
   modalCloseText: {
     fontSize: tokens.typography.size.lg,
-    color: tokens.colors.muted,
+    color: colors.muted,
   },
   modalList: {
     marginBottom: tokens.spacing.sm,
@@ -1571,24 +1613,24 @@ const styles = StyleSheet.create({
     paddingHorizontal: tokens.spacing.md,
     borderRadius: tokens.radius.md,
     marginBottom: tokens.spacing.xs,
-    backgroundColor: tokens.colors.surface,
+    backgroundColor: colors.surface,
     minHeight: 48,
   },
   areaOptionSelected: {
-    backgroundColor: tokens.colors.background,
-    borderColor: tokens.colors.accent,
+    backgroundColor: colors.card,
+    borderColor: colors.accent,
     borderWidth: 1,
   },
   areaOptionText: {
     fontSize: tokens.typography.size.base,
-    color: tokens.colors.text,
+    color: colors.text,
   },
   areaOptionTextSelected: {
-    color: tokens.colors.accent,
+    color: colors.accent,
     fontWeight: tokens.typography.weight.bold,
   },
   areaCheck: {
-    color: tokens.colors.accent,
+    color: colors.accent,
     fontWeight: tokens.typography.weight.bold,
     fontSize: tokens.typography.size.base,
   },

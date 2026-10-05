@@ -4,8 +4,9 @@
  * and let the user nudge the pin with arrow buttons (≈10 m per tap) to the
  * exact spot. Metro automatically picks this file on web.
  */
-import React from 'react';
+import React, { useMemo } from 'react';
 import { StyleSheet, View, Text, TouchableOpacity } from 'react-native';
+import { useTheme } from '../lib/theme';
 
 const STEP_M = 10;
 const M_PER_DEG_LAT = 111320;
@@ -17,6 +18,9 @@ function nudge(coord, dNorthM, dEastM) {
 }
 
 export default function LocationPinMap({ coordinate, onChange, height = 220 }) {
+  const { colors, isDark } = useTheme();
+  const styles = useMemo(() => getStyles(colors, isDark), [colors, isDark]);
+
   if (!coordinate) return null;
   const { latitude: lat, longitude: lng } = coordinate;
   const d = 0.003;
@@ -57,14 +61,14 @@ export default function LocationPinMap({ coordinate, onChange, height = 220 }) {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors, isDark) => StyleSheet.create({
   wrap: {
     width: '100%',
     borderRadius: 12,
     overflow: 'hidden',
     borderWidth: 1,
-    borderColor: '#e2e8f0',
-    backgroundColor: '#f1f5f9',
+    borderColor: colors.border,
+    backgroundColor: colors.surface,
   },
   padRow: {
     flexDirection: 'row',
@@ -75,7 +79,7 @@ const styles = StyleSheet.create({
   },
   padHint: {
     fontSize: 12,
-    color: '#64748b',
+    color: colors.muted,
     marginRight: 4,
   },
   padBtn: {
@@ -83,12 +87,12 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#16a34a',
-    backgroundColor: '#f0fdf4',
+    borderColor: colors.accent,
+    backgroundColor: isDark ? 'rgba(34, 197, 94, 0.15)' : '#f0fdf4',
   },
   padBtnText: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#15803d',
+    color: colors.accent,
   },
 });

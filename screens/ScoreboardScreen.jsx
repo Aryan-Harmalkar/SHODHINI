@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   StyleSheet,
   Text,
@@ -8,7 +8,7 @@ import {
   ActivityIndicator,
   RefreshControl,
 } from 'react-native';
-import { tokens } from '../lib/theme';
+import { tokens, useTheme } from '../lib/theme';
 import {
   getCitizenLeaderboard,
   getWardLeaderboard,
@@ -22,6 +22,9 @@ export default function ScoreboardScreen({
   onOpenSidebar,
   isCollector = false,
 }) {
+  const { colors, isDark, toggleTheme } = useTheme();
+  const styles = useMemo(() => getStyles(colors, isDark), [colors, isDark]);
+
   const isWorker = user?.role === 'worker' || isCollector;
   const userWardName = user?.area || (user?.area_id ? `Ward ${user.area_id}` : 'Ward 1');
 
@@ -90,15 +93,25 @@ export default function ScoreboardScreen({
           <Text style={styles.screenTitle}>🏆 Scoreboard</Text>
         </View>
 
-        <TouchableOpacity style={styles.backHomeBtn} onPress={onBackToHome} activeOpacity={0.7}>
-          <Text style={styles.backHomeText}>Home</Text>
-        </TouchableOpacity>
+        <View style={styles.topRight}>
+          <TouchableOpacity
+            style={styles.themeToggleBtn}
+            onPress={toggleTheme}
+            activeOpacity={0.7}
+            accessibilityLabel={isDark ? "Switch to Day Mode" : "Switch to Night Mode"}
+          >
+            <Text style={styles.themeToggleIcon}>{isDark ? '☀️' : '🌙'}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.backHomeBtn} onPress={onBackToHome} activeOpacity={0.7}>
+            <Text style={styles.backHomeText}>Home</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
-        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={tokens.colors.accent} />}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accent} />}
       >
         {/* Sleek Minimal Standing Card */}
         {isWorker ? (
@@ -148,7 +161,7 @@ export default function ScoreboardScreen({
 
         {loading ? (
           <View style={styles.loadingBox}>
-            <ActivityIndicator size="small" color={tokens.colors.accent} />
+            <ActivityIndicator size="small" color={colors.accent} />
           </View>
         ) : (
           <View style={styles.listCard}>
@@ -183,7 +196,7 @@ export default function ScoreboardScreen({
                       </View>
 
                       <View style={styles.metricCol}>
-                        <Text style={[styles.metricVal, { color: ward.score >= 80 ? tokens.colors.accent : '#d97706' }]}>
+                        <Text style={[styles.metricVal, { color: ward.score >= 80 ? colors.accent : '#d97706' }]}>
                           {ward.score}%
                         </Text>
                       </View>
@@ -239,10 +252,10 @@ export default function ScoreboardScreen({
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors, isDark) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: tokens.colors.surface,
+    backgroundColor: colors.background,
   },
   topBar: {
     flexDirection: 'row',
@@ -250,13 +263,31 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: tokens.spacing.md,
     paddingVertical: tokens.spacing.sm,
-    backgroundColor: tokens.colors.background,
+    backgroundColor: colors.card,
     borderBottomWidth: 1,
-    borderBottomColor: tokens.colors.border,
+    borderBottomColor: colors.border,
   },
   topLeft: {
     flexDirection: 'row',
     alignItems: 'center',
+  },
+  topRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: tokens.spacing.sm,
+  },
+  themeToggleBtn: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  themeToggleIcon: {
+    fontSize: 16,
   },
   menuBtn: {
     padding: tokens.spacing.xs,
@@ -268,24 +299,24 @@ const styles = StyleSheet.create({
   },
   menuIcon: {
     fontSize: tokens.typography.size.lg,
-    color: tokens.colors.text,
+    color: colors.text,
     fontWeight: tokens.typography.weight.bold,
   },
   screenTitle: {
     fontSize: tokens.typography.size.base,
     fontWeight: tokens.typography.weight.extrabold,
-    color: tokens.colors.accent,
+    color: colors.accent,
   },
   backHomeBtn: {
     paddingVertical: 6,
     paddingHorizontal: tokens.spacing.sm,
     borderRadius: tokens.radius.sm,
-    backgroundColor: tokens.colors.surface,
+    backgroundColor: colors.surface,
     borderWidth: 1,
-    borderColor: tokens.colors.border,
+    borderColor: colors.border,
   },
   backHomeText: {
-    color: tokens.colors.text,
+    color: colors.text,
     fontSize: tokens.typography.size.xs,
     fontWeight: tokens.typography.weight.semibold,
   },
@@ -297,50 +328,52 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: tokens.colors.background,
+    backgroundColor: colors.card,
     borderRadius: tokens.radius.lg,
     padding: tokens.spacing.md,
     marginBottom: tokens.spacing.md,
     borderWidth: 1,
-    borderColor: tokens.colors.border,
+    borderColor: colors.border,
   },
   standingName: {
     fontSize: tokens.typography.size.base,
     fontWeight: tokens.typography.weight.bold,
-    color: tokens.colors.text,
+    color: colors.text,
   },
   standingSub: {
     fontSize: tokens.typography.size.xs,
-    color: tokens.colors.muted,
+    color: colors.muted,
     marginTop: 2,
   },
   ecoPill: {
-    backgroundColor: tokens.colors.accent + '15',
+    backgroundColor: colors.accent + '20',
     paddingVertical: 5,
     paddingHorizontal: tokens.spacing.sm,
     borderRadius: tokens.radius.full,
     borderWidth: 1,
-    borderColor: tokens.colors.accent + '30',
+    borderColor: colors.accent + '40',
   },
   ecoPillText: {
-    color: tokens.colors.accent,
+    color: colors.accent,
     fontWeight: tokens.typography.weight.bold,
     fontSize: tokens.typography.size.xs,
   },
   workerDutyPill: {
-    backgroundColor: tokens.colors.accent + '15',
+    backgroundColor: colors.accent + '20',
     paddingVertical: 5,
     paddingHorizontal: tokens.spacing.sm,
     borderRadius: tokens.radius.full,
   },
   workerDutyText: {
-    color: tokens.colors.accent,
+    color: colors.accent,
     fontSize: tokens.typography.size.xs,
     fontWeight: tokens.typography.weight.bold,
   },
   tabRow: {
     flexDirection: 'row',
-    backgroundColor: tokens.colors.border,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
     borderRadius: tokens.radius.md,
     padding: 3,
     marginBottom: tokens.spacing.md,
@@ -352,16 +385,18 @@ const styles = StyleSheet.create({
     borderRadius: tokens.radius.sm,
   },
   activeTabBtn: {
-    backgroundColor: tokens.colors.background,
+    backgroundColor: colors.card,
+    borderWidth: isDark ? 1 : 0,
+    borderColor: colors.border,
     ...tokens.shadow.sm,
   },
   tabBtnText: {
     fontSize: tokens.typography.size.xs,
     fontWeight: tokens.typography.weight.semibold,
-    color: tokens.colors.muted,
+    color: colors.muted,
   },
   activeTabBtnText: {
-    color: tokens.colors.accent,
+    color: colors.accent,
     fontWeight: tokens.typography.weight.bold,
   },
   loadingBox: {
@@ -369,21 +404,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   listCard: {
-    backgroundColor: tokens.colors.background,
+    backgroundColor: colors.card,
     borderRadius: tokens.radius.lg,
     paddingHorizontal: tokens.spacing.md,
     borderWidth: 1,
-    borderColor: tokens.colors.border,
+    borderColor: colors.border,
   },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingVertical: tokens.spacing.sm,
     borderBottomWidth: 1,
-    borderBottomColor: tokens.colors.surface,
+    borderBottomColor: colors.border,
   },
   currentUserRow: {
-    backgroundColor: tokens.colors.accent + '08',
+    backgroundColor: colors.accent + (isDark ? '15' : '08'),
     marginHorizontal: -tokens.spacing.md,
     paddingHorizontal: tokens.spacing.md,
   },
@@ -396,7 +431,7 @@ const styles = StyleSheet.create({
   rankNum: {
     fontSize: tokens.typography.size.sm,
     fontWeight: tokens.typography.weight.bold,
-    color: tokens.colors.muted,
+    color: colors.muted,
   },
   infoCol: {
     flex: 1,
@@ -404,15 +439,15 @@ const styles = StyleSheet.create({
   itemName: {
     fontSize: tokens.typography.size.sm,
     fontWeight: tokens.typography.weight.semibold,
-    color: tokens.colors.text,
+    color: colors.text,
   },
   currentUserName: {
-    color: tokens.colors.accent,
+    color: colors.accent,
     fontWeight: tokens.typography.weight.bold,
   },
   itemSub: {
     fontSize: 11,
-    color: tokens.colors.muted,
+    color: colors.muted,
     marginTop: 1,
   },
   metricCol: {
@@ -421,7 +456,7 @@ const styles = StyleSheet.create({
   metricVal: {
     fontSize: tokens.typography.size.sm,
     fontWeight: tokens.typography.weight.bold,
-    color: tokens.colors.accent,
+    color: colors.accent,
   },
   emptyBox: {
     padding: tokens.spacing.xl,
@@ -429,6 +464,6 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: tokens.typography.size.xs,
-    color: tokens.colors.muted,
+    color: colors.muted,
   },
 });

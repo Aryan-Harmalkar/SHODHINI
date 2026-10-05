@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   StyleSheet,
   Text,
@@ -8,7 +8,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { getUserComplaints, getUserEcoPoints } from '../db/database';
-import { tokens } from '../lib/theme';
+import { tokens, useTheme } from '../lib/theme';
 
 export default function MyComplaintsScreen({
   user,
@@ -16,6 +16,9 @@ export default function MyComplaintsScreen({
   onOpenSidebar,
   onGoToReport,
 }) {
+  const { colors, isDark, toggleTheme } = useTheme();
+  const styles = useMemo(() => getStyles(colors, isDark), [colors, isDark]);
+
   const [complaints, setComplaints] = useState([]);
   const [loading, setLoading] = useState(true);
   const [ecoPoints, setEcoPoints] = useState(0);
@@ -60,9 +63,19 @@ export default function MyComplaintsScreen({
           <Text style={styles.screenTitle}>My Reports</Text>
         </View>
 
-        <TouchableOpacity style={styles.backHomeBtn} onPress={onBackToHome} activeOpacity={0.7}>
-          <Text style={styles.backHomeText}>Home</Text>
-        </TouchableOpacity>
+        <View style={styles.topRight}>
+          <TouchableOpacity
+            style={styles.themeToggleBtn}
+            onPress={toggleTheme}
+            activeOpacity={0.7}
+            accessibilityLabel="Toggle Day/Dark Theme"
+          >
+            <Text style={styles.themeToggleIcon}>{isDark ? '☀️' : '🌙'}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.backHomeBtn} onPress={onBackToHome} activeOpacity={0.7}>
+            <Text style={styles.backHomeText}>Home</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
@@ -231,305 +244,334 @@ export default function MyComplaintsScreen({
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: tokens.colors.surface,
-  },
-  topBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: tokens.spacing.md,
-    paddingVertical: tokens.spacing.md,
-    backgroundColor: tokens.colors.background,
-    borderBottomWidth: 1,
-    borderBottomColor: tokens.colors.border,
-  },
-  topLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  menuBtn: {
-    padding: tokens.spacing.xs,
-    marginRight: tokens.spacing.sm,
-    minHeight: 44,
-    minWidth: 44,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  menuIcon: {
-    fontSize: tokens.typography.size.lg,
-    color: tokens.colors.text,
-    fontWeight: tokens.typography.weight.bold,
-  },
-  screenTitle: {
-    fontSize: tokens.typography.size.base,
-    fontWeight: tokens.typography.weight.bold,
-    color: tokens.colors.text,
-  },
-  backHomeBtn: {
-    backgroundColor: tokens.colors.surface,
-    paddingVertical: tokens.spacing.sm,
-    paddingHorizontal: tokens.spacing.md,
-    borderRadius: tokens.radius.sm,
-    minHeight: 44,
-    justifyContent: 'center',
-  },
-  backHomeText: {
-    color: tokens.colors.accent,
-    fontSize: tokens.typography.size.sm,
-    fontWeight: tokens.typography.weight.bold,
-  },
-  scrollContent: {
-    padding: tokens.spacing.md,
-    paddingBottom: tokens.spacing.xxl,
-  },
-  summaryCard: {
-    backgroundColor: tokens.colors.background,
-    borderRadius: tokens.radius.xl,
-    padding: tokens.spacing.lg,
-    marginBottom: tokens.spacing.md,
-    ...tokens.shadow.sm,
-  },
-  ecoRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  ecoLabel: {
-    fontSize: tokens.typography.size.sm,
-    fontWeight: tokens.typography.weight.semibold,
-    color: tokens.colors.accent,
-  },
-  ecoPointsText: {
-    fontSize: tokens.typography.size.xxl,
-    fontWeight: tokens.typography.weight.extrabold,
-    color: tokens.colors.text,
-    marginTop: 2,
-  },
-  ecoBadge: {
-    backgroundColor: tokens.colors.accent + '20',
-    paddingVertical: tokens.spacing.xs,
-    paddingHorizontal: tokens.spacing.sm,
-    borderRadius: tokens.radius.full,
-    borderWidth: 1,
-    borderColor: tokens.colors.accent + '30',
-  },
-  ecoBadgeText: {
-    color: tokens.colors.accent,
-    fontSize: tokens.typography.size.xs,
-    fontWeight: tokens.typography.weight.bold,
-  },
-  statsDivider: {
-    height: 1,
-    backgroundColor: tokens.colors.border,
-    marginVertical: tokens.spacing.md,
-  },
-  statsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-  },
-  statBox: {
-    alignItems: 'center',
-  },
-  statNum: {
-    fontSize: tokens.typography.size.lg,
-    fontWeight: tokens.typography.weight.bold,
-    color: tokens.colors.text,
-  },
-  statLabel: {
-    fontSize: tokens.typography.size.xs,
-    color: tokens.colors.muted,
-    marginTop: 2,
-  },
-  filterRow: {
-    flexDirection: 'row',
-    marginBottom: tokens.spacing.md,
-    backgroundColor: tokens.colors.border,
-    borderRadius: tokens.radius.md,
-    padding: 4,
-  },
-  filterPill: {
-    flex: 1,
-    paddingVertical: tokens.spacing.sm,
-    alignItems: 'center',
-    borderRadius: tokens.radius.sm,
-    minHeight: 44,
-    justifyContent: 'center',
-  },
-  activeFilterPill: {
-    backgroundColor: tokens.colors.background,
-    ...tokens.shadow.sm,
-  },
-  filterPillText: {
-    fontSize: tokens.typography.size.sm,
-    color: tokens.colors.muted,
-    fontWeight: tokens.typography.weight.semibold,
-  },
-  activeFilterPillText: {
-    color: tokens.colors.text,
-    fontWeight: tokens.typography.weight.bold,
-  },
-  centerContainer: {
-    padding: tokens.spacing.xxl,
-    alignItems: 'center',
-  },
-  loadingText: {
-    marginTop: tokens.spacing.sm,
-    color: tokens.colors.muted,
-    fontSize: tokens.typography.size.sm,
-  },
-  emptyCard: {
-    backgroundColor: tokens.colors.background,
-    borderRadius: tokens.radius.xl,
-    padding: tokens.spacing.xxl,
-    alignItems: 'center',
-    ...tokens.shadow.sm,
-  },
-  emptyIcon: {
-    fontSize: tokens.typography.size.xxl,
-    marginBottom: tokens.spacing.sm,
-  },
-  emptyTitle: {
-    fontSize: tokens.typography.size.base,
-    fontWeight: tokens.typography.weight.bold,
-    color: tokens.colors.text,
-    marginBottom: tokens.spacing.sm,
-  },
-  emptyDesc: {
-    fontSize: tokens.typography.size.sm,
-    color: tokens.colors.muted,
-    textAlign: 'center',
-    lineHeight: 20,
-    marginBottom: tokens.spacing.lg,
-  },
-  fileBtn: {
-    backgroundColor: tokens.colors.accent,
-    paddingVertical: tokens.spacing.md,
-    paddingHorizontal: tokens.spacing.lg,
-    borderRadius: tokens.radius.md,
-    minHeight: 48,
-    justifyContent: 'center',
-  },
-  fileBtnText: {
-    color: tokens.colors.background,
-    fontWeight: tokens.typography.weight.bold,
-    fontSize: tokens.typography.size.sm,
-  },
-  complaintCard: {
-    backgroundColor: tokens.colors.background,
-    borderRadius: tokens.radius.lg,
-    padding: tokens.spacing.md,
-    marginBottom: tokens.spacing.sm,
-    ...tokens.shadow.sm,
-  },
-  complaintHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: tokens.spacing.sm,
-  },
-  categoryTitle: {
-    fontSize: tokens.typography.size.base,
-    fontWeight: tokens.typography.weight.bold,
-    color: tokens.colors.text,
-  },
-  statusPill: {
-    paddingVertical: tokens.spacing.xs,
-    paddingHorizontal: tokens.spacing.sm,
-    borderRadius: tokens.radius.full,
-  },
-  statusDone: {
-    backgroundColor: tokens.colors.accent + '20',
-  },
-  statusDoneText: {
-    color: tokens.colors.accent,
-    fontWeight: tokens.typography.weight.bold,
-    fontSize: tokens.typography.size.xs,
-  },
-  statusInProgress: {
-    backgroundColor: '#fff3e0',
-  },
-  statusInProgressText: {
-    color: '#e65100',
-    fontWeight: tokens.typography.weight.bold,
-    fontSize: tokens.typography.size.xs,
-  },
-  statusSubmitted: {
-    backgroundColor: '#e3f2fd',
-  },
-  statusSubmittedText: {
-    color: '#1565c0',
-    fontWeight: tokens.typography.weight.bold,
-    fontSize: tokens.typography.size.xs,
-  },
-  statusAdminReview: {
-    backgroundColor: '#fef3c7',
-  },
-  statusAdminReviewText: {
-    color: '#92400e',
-    fontWeight: tokens.typography.weight.bold,
-    fontSize: tokens.typography.size.xs,
-  },
-  adminNoticeStrip: {
-    backgroundColor: '#fffbeb',
-    borderRadius: tokens.radius.sm,
-    padding: 6,
-    marginBottom: tokens.spacing.xs,
-    borderLeftWidth: 3,
-    borderLeftColor: '#f59e0b',
-  },
-  adminNoticeStripText: {
-    fontSize: 10,
-    color: '#78350f',
-    lineHeight: 14,
-  },
-  complaintDesc: {
-    fontSize: tokens.typography.size.sm,
-    color: tokens.colors.text,
-    marginBottom: tokens.spacing.sm,
-    lineHeight: 20,
-  },
-  metaRow: {
-    flexDirection: 'row',
-    marginBottom: 4,
-  },
-  metaLabel: {
-    fontSize: tokens.typography.size.xs,
-    color: tokens.colors.muted,
-    width: 60,
-    fontWeight: tokens.typography.weight.medium,
-  },
-  metaValue: {
-    fontSize: tokens.typography.size.xs,
-    color: tokens.colors.text,
-    fontWeight: tokens.typography.weight.semibold,
-    flex: 1,
-  },
-  rewardRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: tokens.spacing.sm,
-    paddingTop: tokens.spacing.sm,
-    borderTopWidth: 1,
-    borderTopColor: tokens.colors.border,
-  },
-  rewardLabel: {
-    fontSize: tokens.typography.size.xs,
-    color: tokens.colors.muted,
-    fontWeight: tokens.typography.weight.semibold,
-    marginRight: tokens.spacing.xs,
-  },
-  rewardValue: {
-    fontSize: tokens.typography.size.xs,
-    fontWeight: tokens.typography.weight.bold,
-  },
-  pointsEarned: {
-    color: tokens.colors.accent,
-  },
-  pointsPending: {
-    color: tokens.colors.muted,
-    fontStyle: 'italic',
-  },
-});
+const getStyles = (colors, isDark) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.surface,
+    },
+    topBar: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingHorizontal: tokens.spacing.md,
+      paddingVertical: tokens.spacing.md,
+      backgroundColor: colors.headerBg || colors.background,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    topLeft: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    topRight: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: tokens.spacing.xs,
+    },
+    themeToggleBtn: {
+      width: 34,
+      height: 34,
+      borderRadius: 17,
+      backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.04)',
+      borderWidth: 1,
+      borderColor: colors.border,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    themeToggleIcon: {
+      fontSize: 16,
+    },
+    menuBtn: {
+      padding: tokens.spacing.xs,
+      marginRight: tokens.spacing.sm,
+      minHeight: 44,
+      minWidth: 44,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    menuIcon: {
+      fontSize: tokens.typography.size.lg,
+      color: colors.text,
+      fontWeight: tokens.typography.weight.bold,
+    },
+    screenTitle: {
+      fontSize: tokens.typography.size.base,
+      fontWeight: tokens.typography.weight.bold,
+      color: colors.text,
+    },
+    backHomeBtn: {
+      backgroundColor: colors.card,
+      borderWidth: 1,
+      borderColor: colors.border,
+      paddingVertical: tokens.spacing.sm,
+      paddingHorizontal: tokens.spacing.md,
+      borderRadius: tokens.radius.sm,
+      minHeight: 44,
+      justifyContent: 'center',
+    },
+    backHomeText: {
+      color: colors.accent,
+      fontSize: tokens.typography.size.sm,
+      fontWeight: tokens.typography.weight.bold,
+    },
+    scrollContent: {
+      padding: tokens.spacing.md,
+      paddingBottom: tokens.spacing.xxl,
+    },
+    summaryCard: {
+      backgroundColor: colors.card,
+      borderRadius: tokens.radius.xl,
+      padding: tokens.spacing.lg,
+      marginBottom: tokens.spacing.md,
+      borderWidth: 1,
+      borderColor: colors.border,
+      ...tokens.shadow.sm,
+    },
+    ecoRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+    },
+    ecoLabel: {
+      fontSize: tokens.typography.size.sm,
+      fontWeight: tokens.typography.weight.semibold,
+      color: colors.accent,
+    },
+    ecoPointsText: {
+      fontSize: tokens.typography.size.xxl,
+      fontWeight: tokens.typography.weight.extrabold,
+      color: colors.text,
+      marginTop: 2,
+    },
+    ecoBadge: {
+      backgroundColor: colors.accent + '20',
+      paddingVertical: tokens.spacing.xs,
+      paddingHorizontal: tokens.spacing.sm,
+      borderRadius: tokens.radius.full,
+      borderWidth: 1,
+      borderColor: colors.accent + '35',
+    },
+    ecoBadgeText: {
+      color: colors.accent,
+      fontSize: tokens.typography.size.xs,
+      fontWeight: tokens.typography.weight.bold,
+    },
+    statsDivider: {
+      height: 1,
+      backgroundColor: colors.border,
+      marginVertical: tokens.spacing.md,
+    },
+    statsRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-around',
+    },
+    statBox: {
+      alignItems: 'center',
+    },
+    statNum: {
+      fontSize: tokens.typography.size.lg,
+      fontWeight: tokens.typography.weight.bold,
+      color: colors.text,
+    },
+    statLabel: {
+      fontSize: tokens.typography.size.xs,
+      color: colors.muted,
+      marginTop: 2,
+    },
+    filterRow: {
+      flexDirection: 'row',
+      marginBottom: tokens.spacing.md,
+      backgroundColor: colors.card,
+      borderWidth: 1,
+      borderColor: colors.border,
+      borderRadius: tokens.radius.md,
+      padding: 4,
+    },
+    filterPill: {
+      flex: 1,
+      paddingVertical: tokens.spacing.sm,
+      alignItems: 'center',
+      borderRadius: tokens.radius.sm,
+      minHeight: 44,
+      justifyContent: 'center',
+    },
+    activeFilterPill: {
+      backgroundColor: colors.background,
+      ...tokens.shadow.sm,
+    },
+    filterPillText: {
+      fontSize: tokens.typography.size.sm,
+      color: colors.muted,
+      fontWeight: tokens.typography.weight.semibold,
+    },
+    activeFilterPillText: {
+      color: colors.text,
+      fontWeight: tokens.typography.weight.bold,
+    },
+    centerContainer: {
+      padding: tokens.spacing.xxl,
+      alignItems: 'center',
+    },
+    loadingText: {
+      marginTop: tokens.spacing.sm,
+      color: colors.muted,
+      fontSize: tokens.typography.size.sm,
+    },
+    emptyCard: {
+      backgroundColor: colors.card,
+      borderRadius: tokens.radius.xl,
+      padding: tokens.spacing.xxl,
+      alignItems: 'center',
+      borderWidth: 1,
+      borderColor: colors.border,
+      ...tokens.shadow.sm,
+    },
+    emptyIcon: {
+      fontSize: tokens.typography.size.xxl,
+      marginBottom: tokens.spacing.sm,
+    },
+    emptyTitle: {
+      fontSize: tokens.typography.size.base,
+      fontWeight: tokens.typography.weight.bold,
+      color: colors.text,
+      marginBottom: tokens.spacing.sm,
+    },
+    emptyDesc: {
+      fontSize: tokens.typography.size.sm,
+      color: colors.muted,
+      textAlign: 'center',
+      lineHeight: 20,
+      marginBottom: tokens.spacing.lg,
+    },
+    fileBtn: {
+      backgroundColor: colors.accent,
+      paddingVertical: tokens.spacing.md,
+      paddingHorizontal: tokens.spacing.lg,
+      borderRadius: tokens.radius.md,
+      minHeight: 48,
+      justifyContent: 'center',
+    },
+    fileBtnText: {
+      color: '#ffffff',
+      fontWeight: tokens.typography.weight.bold,
+      fontSize: tokens.typography.size.sm,
+    },
+    complaintCard: {
+      backgroundColor: colors.card,
+      borderRadius: tokens.radius.lg,
+      padding: tokens.spacing.md,
+      marginBottom: tokens.spacing.sm,
+      borderWidth: 1,
+      borderColor: colors.border,
+      ...tokens.shadow.sm,
+    },
+    complaintHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: tokens.spacing.sm,
+    },
+    categoryTitle: {
+      fontSize: tokens.typography.size.base,
+      fontWeight: tokens.typography.weight.bold,
+      color: colors.text,
+    },
+    statusPill: {
+      paddingVertical: tokens.spacing.xs,
+      paddingHorizontal: tokens.spacing.sm,
+      borderRadius: tokens.radius.full,
+    },
+    statusDone: {
+      backgroundColor: isDark ? 'rgba(34, 197, 94, 0.2)' : colors.accent + '20',
+    },
+    statusDoneText: {
+      color: colors.accent,
+      fontWeight: tokens.typography.weight.bold,
+      fontSize: tokens.typography.size.xs,
+    },
+    statusInProgress: {
+      backgroundColor: isDark ? 'rgba(245, 158, 11, 0.2)' : '#fff3e0',
+    },
+    statusInProgressText: {
+      color: isDark ? '#fbbf24' : '#e65100',
+      fontWeight: tokens.typography.weight.bold,
+      fontSize: tokens.typography.size.xs,
+    },
+    statusSubmitted: {
+      backgroundColor: isDark ? 'rgba(14, 165, 233, 0.2)' : '#e3f2fd',
+    },
+    statusSubmittedText: {
+      color: isDark ? '#38bdf8' : '#1565c0',
+      fontWeight: tokens.typography.weight.bold,
+      fontSize: tokens.typography.size.xs,
+    },
+    statusAdminReview: {
+      backgroundColor: isDark ? 'rgba(245, 158, 11, 0.2)' : '#fef3c7',
+    },
+    statusAdminReviewText: {
+      color: isDark ? '#fcd34d' : '#92400e',
+      fontWeight: tokens.typography.weight.bold,
+      fontSize: tokens.typography.size.xs,
+    },
+    adminNoticeStrip: {
+      backgroundColor: isDark ? 'rgba(245, 158, 11, 0.15)' : '#fffbeb',
+      borderRadius: tokens.radius.sm,
+      padding: 6,
+      marginBottom: tokens.spacing.xs,
+      borderLeftWidth: 3,
+      borderLeftColor: '#f59e0b',
+    },
+    adminNoticeStripText: {
+      fontSize: 10,
+      color: isDark ? '#fcd34d' : '#78350f',
+      lineHeight: 14,
+    },
+    complaintDesc: {
+      fontSize: tokens.typography.size.sm,
+      color: colors.text,
+      marginBottom: tokens.spacing.sm,
+      lineHeight: 20,
+    },
+    metaRow: {
+      flexDirection: 'row',
+      marginBottom: 4,
+    },
+    metaLabel: {
+      fontSize: tokens.typography.size.xs,
+      color: colors.muted,
+      width: 60,
+      fontWeight: tokens.typography.weight.medium,
+    },
+    metaValue: {
+      fontSize: tokens.typography.size.xs,
+      color: colors.text,
+      fontWeight: tokens.typography.weight.semibold,
+      flex: 1,
+    },
+    rewardRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginTop: tokens.spacing.sm,
+      paddingTop: tokens.spacing.sm,
+      borderTopWidth: 1,
+      borderTopColor: colors.border,
+    },
+    rewardLabel: {
+      fontSize: tokens.typography.size.xs,
+      color: colors.muted,
+      fontWeight: tokens.typography.weight.semibold,
+      marginRight: tokens.spacing.xs,
+    },
+    rewardValue: {
+      fontSize: tokens.typography.size.xs,
+      fontWeight: tokens.typography.weight.bold,
+    },
+    pointsEarned: {
+      color: colors.accent,
+    },
+    pointsPending: {
+      color: colors.muted,
+      fontStyle: 'italic',
+    },
+  });

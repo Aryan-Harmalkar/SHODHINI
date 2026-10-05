@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   StyleSheet,
   Text,
@@ -11,7 +11,7 @@ import {
   Image,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import { tokens } from '../lib/theme';
+import { tokens, useTheme } from '../lib/theme';
 import { verifyCleanupWithGemini } from '../lib/aiVision';
 import { getComplaintDetails } from '../db/database';
 import { ensureForegroundPermission, watchPreciseLocation } from '../lib/locationHelper';
@@ -60,6 +60,9 @@ export default function CleanupVerifyModal({
   onClose,
   onConfirmDone,
 }) {
+  const { colors, isDark } = useTheme();
+  const styles = useMemo(() => getStyles(colors, isDark), [colors, isDark]);
+
   const [citizenDetails, setCitizenDetails] = useState(null);
   const [beforeImageBase64, setBeforeImageBase64] = useState(null);
   const [afterImageUri, setAfterImageUri] = useState(null);
@@ -406,223 +409,224 @@ export default function CleanupVerifyModal({
   );
 }
 
-const styles = StyleSheet.create({
-  modalOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(15, 23, 42, 0.75)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 16,
-    zIndex: 9999,
-    elevation: 9999,
-  },
-  modalCard: {
-    backgroundColor: tokens.colors.background,
-    borderRadius: 20,
-    width: '100%',
-    maxHeight: '92%',
-    display: 'flex',
-    flexDirection: 'column',
-    overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 12 },
-    shadowOpacity: 0.35,
-    shadowRadius: 24,
-    elevation: 12,
-    borderWidth: 1,
-    borderColor: tokens.colors.border,
-  },
-  modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: tokens.colors.border,
-  },
-  modalTitle: {
-    fontSize: tokens.typography.size.base,
-    fontWeight: tokens.typography.weight.bold,
-    color: tokens.colors.text,
-  },
-  modalCloseBtn: {
-    padding: 4,
-  },
-  modalCloseText: {
-    fontSize: tokens.typography.size.lg,
-    color: tokens.colors.muted,
-    fontWeight: 'bold',
-  },
-  modalScroll: {
-    flex: 1,
-    width: '100%',
-  },
-  modalScrollContent: {
-    padding: 16,
-    paddingBottom: 32,
-  },
-  reportPanel: {
-    backgroundColor: '#f0f9ff',
-    borderWidth: 1,
-    borderColor: '#bae6fd',
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 14,
-  },
-  reportPanelTitle: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    color: '#0369a1',
-    marginBottom: 6,
-  },
-  reportRow: {
-    fontSize: 12,
-    color: tokens.colors.text,
-    marginBottom: 3,
-  },
-  reportNavBtn: {
-    marginTop: 8,
-    backgroundColor: '#0284c7',
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: tokens.radius.sm,
-    alignSelf: 'flex-start',
-  },
-  reportNavText: {
-    color: '#ffffff',
-    fontSize: 11,
-    fontWeight: 'bold',
-  },
-  compareRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: 10,
-  },
-  compareCol: {
-    flex: 1,
-  },
-  compareLabel: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    marginBottom: 4,
-    color: tokens.colors.text,
-    textAlign: 'center',
-  },
-  compareImage: {
-    width: '100%',
-    height: 120,
-    borderRadius: tokens.radius.md,
-    backgroundColor: '#f1f5f9',
-  },
-  captureBtn: {
-    width: '100%',
-    height: 120,
-    borderRadius: tokens.radius.md,
-    backgroundColor: tokens.colors.surface,
-    borderWidth: 2,
-    borderColor: tokens.colors.border,
-    borderStyle: 'dashed',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  captureBtnText: {
-    fontSize: 12,
-    color: tokens.colors.muted,
-    fontWeight: 'bold',
-  },
-  gpsBox: {
-    marginTop: 12,
-    padding: 10,
-    borderRadius: tokens.radius.md,
-    backgroundColor: '#f8fafc',
-    borderWidth: 1,
-    borderColor: tokens.colors.border,
-  },
-  gpsBoxOk: {
-    backgroundColor: '#f0fdf4',
-    borderColor: '#bbf7d0',
-  },
-  gpsBoxBad: {
-    backgroundColor: '#fef2f2',
-    borderColor: '#fecaca',
-  },
-  gpsTitle: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    color: tokens.colors.text,
-  },
-  gpsSub: {
-    fontSize: 11,
-    color: tokens.colors.muted,
-    marginTop: 2,
-  },
-  verifyingBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 12,
-    backgroundColor: '#e0f2fe',
-    borderRadius: tokens.radius.md,
-  },
-  verifyingText: {
-    marginLeft: 8,
-    color: '#0284c7',
-    fontWeight: 'bold',
-  },
-  successBox: {
-    padding: 12,
-    backgroundColor: '#dcfce7',
-    borderRadius: tokens.radius.md,
-    alignItems: 'center',
-  },
-  successBoxText: {
-    color: '#166534',
-    fontWeight: 'bold',
-  },
-  errorBox: {
-    padding: 12,
-    backgroundColor: '#fee2e2',
-    borderRadius: tokens.radius.md,
-    alignItems: 'center',
-  },
-  errorBoxText: {
-    color: '#991b1b',
-    fontWeight: 'bold',
-  },
-  errorReasonText: {
-    color: '#991b1b',
-    fontSize: 12,
-    marginTop: 4,
-    textAlign: 'center',
-  },
-  retryBtn: {
-    marginTop: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 6,
-    backgroundColor: '#b91c1c',
-    borderRadius: tokens.radius.sm,
-  },
-  retryBtnText: {
-    color: '#ffffff',
-    fontSize: 11,
-    fontWeight: 'bold',
-  },
-  confirmDoneBtn: {
-    marginTop: 16,
-    backgroundColor: tokens.colors.accent,
-    padding: 14,
-    borderRadius: tokens.radius.md,
-    alignItems: 'center',
-  },
-  confirmDoneBtnText: {
-    color: '#ffffff',
-    fontWeight: 'bold',
-    fontSize: tokens.typography.size.sm,
-  },
-});
+const getStyles = (colors, isDark) =>
+  StyleSheet.create({
+    modalOverlay: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: 'rgba(15, 23, 42, 0.75)',
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: 16,
+      zIndex: 9999,
+      elevation: 9999,
+    },
+    modalCard: {
+      backgroundColor: colors.card,
+      borderRadius: 20,
+      width: '100%',
+      maxHeight: '92%',
+      display: 'flex',
+      flexDirection: 'column',
+      overflow: 'hidden',
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 12 },
+      shadowOpacity: 0.35,
+      shadowRadius: 24,
+      elevation: 12,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    modalHeader: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingHorizontal: 16,
+      paddingTop: 16,
+      paddingBottom: 12,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    modalTitle: {
+      fontSize: tokens.typography.size.base,
+      fontWeight: tokens.typography.weight.bold,
+      color: colors.text,
+    },
+    modalCloseBtn: {
+      padding: 4,
+    },
+    modalCloseText: {
+      fontSize: tokens.typography.size.lg,
+      color: colors.muted,
+      fontWeight: 'bold',
+    },
+    modalScroll: {
+      flex: 1,
+      width: '100%',
+    },
+    modalScrollContent: {
+      padding: 16,
+      paddingBottom: 32,
+    },
+    reportPanel: {
+      backgroundColor: isDark ? 'rgba(14, 165, 233, 0.12)' : '#f0f9ff',
+      borderWidth: 1,
+      borderColor: isDark ? 'rgba(14, 165, 233, 0.3)' : '#bae6fd',
+      borderRadius: 12,
+      padding: 12,
+      marginBottom: 14,
+    },
+    reportPanelTitle: {
+      fontSize: 12,
+      fontWeight: 'bold',
+      color: isDark ? '#38bdf8' : '#0369a1',
+      marginBottom: 6,
+    },
+    reportRow: {
+      fontSize: 12,
+      color: colors.text,
+      marginBottom: 3,
+    },
+    reportNavBtn: {
+      marginTop: 8,
+      backgroundColor: isDark ? '#0284c7' : '#0284c7',
+      paddingVertical: 6,
+      paddingHorizontal: 12,
+      borderRadius: tokens.radius.sm,
+      alignSelf: 'flex-start',
+    },
+    reportNavText: {
+      color: '#ffffff',
+      fontSize: 11,
+      fontWeight: 'bold',
+    },
+    compareRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      gap: 10,
+    },
+    compareCol: {
+      flex: 1,
+    },
+    compareLabel: {
+      fontSize: 12,
+      fontWeight: 'bold',
+      marginBottom: 4,
+      color: colors.text,
+      textAlign: 'center',
+    },
+    compareImage: {
+      width: '100%',
+      height: 120,
+      borderRadius: tokens.radius.md,
+      backgroundColor: colors.surface,
+    },
+    captureBtn: {
+      width: '100%',
+      height: 120,
+      borderRadius: tokens.radius.md,
+      backgroundColor: colors.surface,
+      borderWidth: 2,
+      borderColor: colors.border,
+      borderStyle: 'dashed',
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    captureBtnText: {
+      fontSize: 12,
+      color: colors.muted,
+      fontWeight: 'bold',
+    },
+    gpsBox: {
+      marginTop: 12,
+      padding: 10,
+      borderRadius: tokens.radius.md,
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+    },
+    gpsBoxOk: {
+      backgroundColor: isDark ? 'rgba(34, 197, 94, 0.15)' : '#f0fdf4',
+      borderColor: isDark ? 'rgba(34, 197, 94, 0.4)' : '#bbf7d0',
+    },
+    gpsBoxBad: {
+      backgroundColor: isDark ? 'rgba(239, 68, 68, 0.15)' : '#fef2f2',
+      borderColor: isDark ? 'rgba(239, 68, 68, 0.4)' : '#fecaca',
+    },
+    gpsTitle: {
+      fontSize: 12,
+      fontWeight: 'bold',
+      color: colors.text,
+    },
+    gpsSub: {
+      fontSize: 11,
+      color: colors.muted,
+      marginTop: 2,
+    },
+    verifyingBox: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: 12,
+      backgroundColor: isDark ? 'rgba(14, 165, 233, 0.2)' : '#e0f2fe',
+      borderRadius: tokens.radius.md,
+    },
+    verifyingText: {
+      marginLeft: 8,
+      color: isDark ? '#38bdf8' : '#0284c7',
+      fontWeight: 'bold',
+    },
+    successBox: {
+      padding: 12,
+      backgroundColor: isDark ? 'rgba(34, 197, 94, 0.2)' : '#dcfce7',
+      borderRadius: tokens.radius.md,
+      alignItems: 'center',
+    },
+    successBoxText: {
+      color: isDark ? '#4ade80' : '#166534',
+      fontWeight: 'bold',
+    },
+    errorBox: {
+      padding: 12,
+      backgroundColor: isDark ? 'rgba(239, 68, 68, 0.2)' : '#fee2e2',
+      borderRadius: tokens.radius.md,
+      alignItems: 'center',
+    },
+    errorBoxText: {
+      color: isDark ? '#f87171' : '#991b1b',
+      fontWeight: 'bold',
+    },
+    errorReasonText: {
+      color: isDark ? '#fca5a5' : '#991b1b',
+      fontSize: 12,
+      marginTop: 4,
+      textAlign: 'center',
+    },
+    retryBtn: {
+      marginTop: 8,
+      paddingHorizontal: 16,
+      paddingVertical: 6,
+      backgroundColor: '#b91c1c',
+      borderRadius: tokens.radius.sm,
+    },
+    retryBtnText: {
+      color: '#ffffff',
+      fontSize: 11,
+      fontWeight: 'bold',
+    },
+    confirmDoneBtn: {
+      marginTop: 16,
+      backgroundColor: colors.accent,
+      padding: 14,
+      borderRadius: tokens.radius.md,
+      alignItems: 'center',
+    },
+    confirmDoneBtnText: {
+      color: '#ffffff',
+      fontWeight: 'bold',
+      fontSize: tokens.typography.size.sm,
+    },
+  });

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   StyleSheet,
   Text,
@@ -8,9 +8,12 @@ import {
   TextInput,
   Alert,
 } from 'react-native';
-import { tokens } from '../lib/theme';
+import { tokens, useTheme } from '../lib/theme';
 
 export default function RecycleScreen({ user, onBackToHome, onOpenSidebar }) {
+  const { colors, isDark, toggleTheme } = useTheme();
+  const styles = useMemo(() => getStyles(colors, isDark), [colors, isDark]);
+
   const [address, setAddress] = useState('');
   const [selectedItems, setSelectedItems] = useState([]);
   const [note, setNote] = useState('');
@@ -64,9 +67,19 @@ export default function RecycleScreen({ user, onBackToHome, onOpenSidebar }) {
           <Text style={styles.screenTitle}>Recycle Scrap</Text>
         </View>
 
-        <TouchableOpacity style={styles.backHomeBtn} onPress={onBackToHome} activeOpacity={0.7}>
-          <Text style={styles.backHomeText}>Home</Text>
-        </TouchableOpacity>
+        <View style={styles.topRight}>
+          <TouchableOpacity
+            style={styles.themeToggleBtn}
+            onPress={toggleTheme}
+            activeOpacity={0.7}
+            accessibilityLabel={isDark ? "Switch to Day Mode" : "Switch to Night Mode"}
+          >
+            <Text style={styles.themeToggleIcon}>{isDark ? '☀️' : '🌙'}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.backHomeBtn} onPress={onBackToHome} activeOpacity={0.7}>
+            <Text style={styles.backHomeText}>Home</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
@@ -120,6 +133,7 @@ export default function RecycleScreen({ user, onBackToHome, onOpenSidebar }) {
             <TextInput
               style={styles.input}
               placeholder="e.g. Flat 302, Green Valley Apts"
+              placeholderTextColor={colors.muted}
               value={address}
               onChangeText={setAddress}
             />
@@ -130,6 +144,7 @@ export default function RecycleScreen({ user, onBackToHome, onOpenSidebar }) {
             <TextInput
               style={[styles.input, { minHeight: 70 }]}
               placeholder="e.g. 2 old laptops and a bag of plastic bottles..."
+              placeholderTextColor={colors.muted}
               multiline
               value={note}
               onChangeText={setNote}
@@ -146,10 +161,10 @@ export default function RecycleScreen({ user, onBackToHome, onOpenSidebar }) {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors, isDark) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: tokens.colors.surface,
+    backgroundColor: colors.background,
   },
   topBar: {
     flexDirection: 'row',
@@ -157,13 +172,31 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: tokens.spacing.md,
     paddingVertical: tokens.spacing.md,
-    backgroundColor: tokens.colors.background,
+    backgroundColor: colors.card,
     borderBottomWidth: 1,
-    borderBottomColor: tokens.colors.border,
+    borderBottomColor: colors.border,
   },
   topLeft: {
     flexDirection: 'row',
     alignItems: 'center',
+  },
+  topRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: tokens.spacing.sm,
+  },
+  themeToggleBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  themeToggleIcon: {
+    fontSize: 16,
   },
   menuBtn: {
     padding: tokens.spacing.xs,
@@ -175,24 +208,26 @@ const styles = StyleSheet.create({
   },
   menuIcon: {
     fontSize: tokens.typography.size.lg,
-    color: tokens.colors.text,
+    color: colors.text,
     fontWeight: tokens.typography.weight.bold,
   },
   screenTitle: {
     fontSize: tokens.typography.size.base,
     fontWeight: tokens.typography.weight.bold,
-    color: tokens.colors.text,
+    color: colors.text,
   },
   backHomeBtn: {
-    backgroundColor: tokens.colors.surface,
+    backgroundColor: colors.surface,
     paddingVertical: tokens.spacing.sm,
     paddingHorizontal: tokens.spacing.md,
     borderRadius: tokens.radius.sm,
+    borderWidth: 1,
+    borderColor: colors.border,
     minHeight: 44,
     justifyContent: 'center',
   },
   backHomeText: {
-    color: tokens.colors.accent,
+    color: colors.accent,
     fontSize: tokens.typography.size.sm,
     fontWeight: tokens.typography.weight.bold,
   },
@@ -201,17 +236,17 @@ const styles = StyleSheet.create({
     paddingBottom: tokens.spacing.xxl,
   },
   heroBanner: {
-    backgroundColor: tokens.colors.background,
+    backgroundColor: colors.card,
     borderRadius: tokens.radius.xl,
     padding: tokens.spacing.lg,
     marginBottom: tokens.spacing.md,
     borderWidth: 2,
-    borderColor: tokens.colors.accent + '30',
+    borderColor: colors.accent + '30',
     ...tokens.shadow.sm,
   },
   ecoBadge: {
     alignSelf: 'flex-start',
-    backgroundColor: tokens.colors.accent + '20',
+    backgroundColor: colors.accent + '20',
     paddingVertical: tokens.spacing.xs,
     paddingHorizontal: tokens.spacing.md,
     borderRadius: tokens.radius.full,
@@ -220,33 +255,35 @@ const styles = StyleSheet.create({
   ecoBadgeText: {
     fontSize: tokens.typography.size.xs,
     fontWeight: tokens.typography.weight.extrabold,
-    color: tokens.colors.accent,
+    color: colors.accent,
   },
   heroTitle: {
     fontSize: tokens.typography.size.lg,
     fontWeight: tokens.typography.weight.extrabold,
-    color: tokens.colors.text,
+    color: colors.text,
     marginBottom: tokens.spacing.xs,
   },
   heroDesc: {
     fontSize: tokens.typography.size.sm,
-    color: tokens.colors.muted,
+    color: colors.muted,
     lineHeight: 20,
   },
   formCard: {
-    backgroundColor: tokens.colors.background,
+    backgroundColor: colors.card,
     borderRadius: tokens.radius.xl,
     padding: tokens.spacing.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
     ...tokens.shadow.sm,
   },
   formTitle: {
     fontSize: tokens.typography.size.base,
     fontWeight: tokens.typography.weight.bold,
-    color: tokens.colors.text,
+    color: colors.text,
   },
   formSubtitle: {
     fontSize: tokens.typography.size.xs,
-    color: tokens.colors.muted,
+    color: colors.muted,
     marginBottom: tokens.spacing.md,
   },
   itemsList: {
@@ -258,16 +295,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: tokens.spacing.md,
     paddingHorizontal: tokens.spacing.md,
-    backgroundColor: tokens.colors.surface,
+    backgroundColor: colors.surface,
     borderRadius: tokens.radius.md,
     marginBottom: tokens.spacing.xs,
     borderWidth: 1,
-    borderColor: tokens.colors.border,
+    borderColor: colors.border,
     minHeight: 48,
   },
   activeItemRow: {
-    backgroundColor: tokens.colors.accent + '10',
-    borderColor: tokens.colors.accent,
+    backgroundColor: colors.accent + (isDark ? '20' : '10'),
+    borderColor: colors.accent,
   },
   itemLeft: {
     flexDirection: 'row',
@@ -278,31 +315,32 @@ const styles = StyleSheet.create({
     height: 22,
     borderRadius: 6,
     borderWidth: 2,
-    borderColor: tokens.colors.borderFocus,
+    borderColor: colors.border,
     marginRight: tokens.spacing.sm,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: colors.inputBg,
   },
   checkboxActive: {
-    backgroundColor: tokens.colors.accent,
-    borderColor: tokens.colors.accent,
+    backgroundColor: colors.accent,
+    borderColor: colors.accent,
   },
   checkMark: {
-    color: tokens.colors.background,
+    color: '#ffffff',
     fontSize: 14,
     fontWeight: tokens.typography.weight.extrabold,
   },
   itemLabel: {
     fontSize: tokens.typography.size.sm,
-    color: tokens.colors.text,
+    color: colors.text,
     fontWeight: tokens.typography.weight.semibold,
   },
   itemLabelActive: {
-    color: tokens.colors.accent,
+    color: colors.accent,
     fontWeight: tokens.typography.weight.bold,
   },
   ptsBadge: {
-    backgroundColor: tokens.colors.accent + '20',
+    backgroundColor: colors.accent + '20',
     paddingVertical: 2,
     paddingHorizontal: tokens.spacing.xs,
     borderRadius: tokens.radius.sm,
@@ -310,15 +348,15 @@ const styles = StyleSheet.create({
   ptsBadgeText: {
     fontSize: tokens.typography.size.xs,
     fontWeight: tokens.typography.weight.extrabold,
-    color: tokens.colors.accent,
+    color: colors.accent,
   },
   estPointsBox: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: tokens.colors.background,
-    borderWidth: 2,
-    borderColor: tokens.colors.borderFocus,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.accent,
     borderRadius: tokens.radius.md,
     padding: tokens.spacing.md,
     marginBottom: tokens.spacing.lg,
@@ -326,12 +364,12 @@ const styles = StyleSheet.create({
   estPointsLabel: {
     fontSize: tokens.typography.size.sm,
     fontWeight: tokens.typography.weight.bold,
-    color: tokens.colors.text,
+    color: colors.text,
   },
   estPointsValue: {
     fontSize: tokens.typography.size.base,
     fontWeight: tokens.typography.weight.extrabold,
-    color: tokens.colors.accent,
+    color: colors.accent,
   },
   inputGroup: {
     marginBottom: tokens.spacing.md,
@@ -339,22 +377,22 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontSize: tokens.typography.size.sm,
     fontWeight: tokens.typography.weight.semibold,
-    color: tokens.colors.text,
+    color: colors.text,
     marginBottom: tokens.spacing.sm,
   },
   input: {
-    backgroundColor: tokens.colors.background,
+    backgroundColor: colors.inputBg,
     borderWidth: 1,
-    borderColor: tokens.colors.border,
+    borderColor: colors.inputBorder,
     borderRadius: tokens.radius.md,
     paddingHorizontal: tokens.spacing.md,
     paddingVertical: tokens.spacing.sm,
     fontSize: tokens.typography.size.sm,
-    color: tokens.colors.text,
+    color: colors.text,
     minHeight: 48,
   },
   submitBtn: {
-    backgroundColor: tokens.colors.accent,
+    backgroundColor: colors.accent,
     paddingVertical: tokens.spacing.md,
     borderRadius: tokens.radius.md,
     alignItems: 'center',
@@ -363,7 +401,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   submitBtnText: {
-    color: tokens.colors.background,
+    color: '#ffffff',
     fontSize: tokens.typography.size.sm,
     fontWeight: tokens.typography.weight.bold,
   },

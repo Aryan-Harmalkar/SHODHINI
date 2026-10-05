@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   StyleSheet,
   Text,
@@ -8,9 +8,12 @@ import {
   TextInput,
   Alert,
 } from 'react-native';
-import { tokens } from '../lib/theme';
+import { tokens, useTheme } from '../lib/theme';
 
 export default function WastePickupScreen({ user, onBackToHome, onOpenSidebar }) {
+  const { colors, isDark, toggleTheme } = useTheme();
+  const styles = useMemo(() => getStyles(colors, isDark), [colors, isDark]);
+
   const [selectedPlan, setSelectedPlan] = useState('standard');
   const [address, setAddress] = useState('');
   const [wasteType, setWasteType] = useState('household');
@@ -39,9 +42,19 @@ export default function WastePickupScreen({ user, onBackToHome, onOpenSidebar })
           <Text style={styles.screenTitle}>Waste Pickup</Text>
         </View>
 
-        <TouchableOpacity style={styles.backHomeBtn} onPress={onBackToHome} activeOpacity={0.7}>
-          <Text style={styles.backHomeText}>Home</Text>
-        </TouchableOpacity>
+        <View style={styles.topRight}>
+          <TouchableOpacity
+            style={styles.themeToggleBtn}
+            onPress={toggleTheme}
+            activeOpacity={0.7}
+            accessibilityLabel={isDark ? "Switch to Day Mode" : "Switch to Night Mode"}
+          >
+            <Text style={styles.themeToggleIcon}>{isDark ? '☀️' : '🌙'}</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.backHomeBtn} onPress={onBackToHome} activeOpacity={0.7}>
+            <Text style={styles.backHomeText}>Home</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
@@ -90,6 +103,7 @@ export default function WastePickupScreen({ user, onBackToHome, onOpenSidebar })
             <TextInput
               style={styles.input}
               placeholder="e.g. Flat 302, Green Valley Apts, Main Road"
+              placeholderTextColor={colors.muted}
               value={address}
               onChangeText={setAddress}
             />
@@ -144,6 +158,7 @@ export default function WastePickupScreen({ user, onBackToHome, onOpenSidebar })
             <TextInput
               style={[styles.input, { minHeight: 70 }]}
               placeholder="Any specific instructions for the collection worker..."
+              placeholderTextColor={colors.muted}
               multiline
               value={note}
               onChangeText={setNote}
@@ -166,10 +181,10 @@ export default function WastePickupScreen({ user, onBackToHome, onOpenSidebar })
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors, isDark) => StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: tokens.colors.surface,
+    backgroundColor: colors.background,
   },
   topBar: {
     flexDirection: 'row',
@@ -177,13 +192,31 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: tokens.spacing.md,
     paddingVertical: tokens.spacing.md,
-    backgroundColor: tokens.colors.background,
+    backgroundColor: colors.card,
     borderBottomWidth: 1,
-    borderBottomColor: tokens.colors.border,
+    borderBottomColor: colors.border,
   },
   topLeft: {
     flexDirection: 'row',
     alignItems: 'center',
+  },
+  topRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: tokens.spacing.sm,
+  },
+  themeToggleBtn: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  themeToggleIcon: {
+    fontSize: 16,
   },
   menuBtn: {
     padding: tokens.spacing.xs,
@@ -195,24 +228,26 @@ const styles = StyleSheet.create({
   },
   menuIcon: {
     fontSize: tokens.typography.size.lg,
-    color: tokens.colors.text,
+    color: colors.text,
     fontWeight: tokens.typography.weight.bold,
   },
   screenTitle: {
     fontSize: tokens.typography.size.base,
     fontWeight: tokens.typography.weight.bold,
-    color: tokens.colors.text,
+    color: colors.text,
   },
   backHomeBtn: {
-    backgroundColor: tokens.colors.surface,
+    backgroundColor: colors.surface,
     paddingVertical: tokens.spacing.sm,
     paddingHorizontal: tokens.spacing.md,
     borderRadius: tokens.radius.sm,
+    borderWidth: 1,
+    borderColor: colors.border,
     minHeight: 44,
     justifyContent: 'center',
   },
   backHomeText: {
-    color: tokens.colors.accent,
+    color: colors.accent,
     fontSize: tokens.typography.size.sm,
     fontWeight: tokens.typography.weight.bold,
   },
@@ -221,7 +256,7 @@ const styles = StyleSheet.create({
     paddingBottom: tokens.spacing.xxl,
   },
   heroBanner: {
-    backgroundColor: tokens.colors.accent,
+    backgroundColor: colors.accent,
     borderRadius: tokens.radius.xl,
     padding: tokens.spacing.lg,
     marginBottom: tokens.spacing.md,
@@ -242,19 +277,19 @@ const styles = StyleSheet.create({
   heroTitle: {
     fontSize: tokens.typography.size.lg,
     fontWeight: tokens.typography.weight.extrabold,
-    color: tokens.colors.background,
+    color: '#ffffff',
     marginBottom: tokens.spacing.xs,
   },
   heroDesc: {
     fontSize: tokens.typography.size.sm,
-    color: tokens.colors.background,
+    color: '#ffffff',
     opacity: 0.9,
     lineHeight: 20,
   },
   sectionLabel: {
     fontSize: tokens.typography.size.sm,
     fontWeight: tokens.typography.weight.bold,
-    color: tokens.colors.text,
+    color: colors.text,
     marginBottom: tokens.spacing.sm,
   },
   plansContainer: {
@@ -264,15 +299,15 @@ const styles = StyleSheet.create({
   },
   planCard: {
     flex: 1,
-    backgroundColor: tokens.colors.background,
+    backgroundColor: colors.card,
     borderRadius: tokens.radius.md,
     padding: tokens.spacing.md,
     borderWidth: 2,
-    borderColor: tokens.colors.border,
+    borderColor: colors.border,
   },
   activePlanCard: {
-    borderColor: tokens.colors.accent,
-    backgroundColor: tokens.colors.accent + '10',
+    borderColor: colors.accent,
+    backgroundColor: colors.accent + (isDark ? '20' : '10'),
   },
   planHeader: {
     flexDirection: 'row',
@@ -283,28 +318,30 @@ const styles = StyleSheet.create({
   planName: {
     fontSize: tokens.typography.size.sm,
     fontWeight: tokens.typography.weight.bold,
-    color: tokens.colors.text,
+    color: colors.text,
   },
   planPrice: {
     fontSize: tokens.typography.size.lg,
     fontWeight: tokens.typography.weight.extrabold,
-    color: tokens.colors.accent,
+    color: colors.accent,
   },
   planDetails: {
     fontSize: tokens.typography.size.xs,
-    color: tokens.colors.muted,
+    color: colors.muted,
     lineHeight: 18,
   },
   formCard: {
-    backgroundColor: tokens.colors.background,
+    backgroundColor: colors.card,
     borderRadius: tokens.radius.xl,
     padding: tokens.spacing.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
     ...tokens.shadow.sm,
   },
   formTitle: {
     fontSize: tokens.typography.size.base,
     fontWeight: tokens.typography.weight.bold,
-    color: tokens.colors.text,
+    color: colors.text,
     marginBottom: tokens.spacing.md,
   },
   inputGroup: {
@@ -313,18 +350,18 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontSize: tokens.typography.size.sm,
     fontWeight: tokens.typography.weight.semibold,
-    color: tokens.colors.text,
+    color: colors.text,
     marginBottom: tokens.spacing.sm,
   },
   input: {
-    backgroundColor: tokens.colors.background,
+    backgroundColor: colors.inputBg,
     borderWidth: 1,
-    borderColor: tokens.colors.border,
+    borderColor: colors.inputBorder,
     borderRadius: tokens.radius.md,
     paddingHorizontal: tokens.spacing.md,
     paddingVertical: tokens.spacing.sm,
     fontSize: tokens.typography.size.sm,
-    color: tokens.colors.text,
+    color: colors.text,
     minHeight: 48,
   },
   pillRow: {
@@ -333,7 +370,9 @@ const styles = StyleSheet.create({
     gap: tokens.spacing.sm,
   },
   pill: {
-    backgroundColor: tokens.colors.surface,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
     paddingVertical: tokens.spacing.sm,
     paddingHorizontal: tokens.spacing.md,
     borderRadius: tokens.radius.sm,
@@ -341,31 +380,32 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   activePill: {
-    backgroundColor: tokens.colors.accent,
+    backgroundColor: colors.accent,
+    borderColor: colors.accent,
   },
   pillText: {
     fontSize: tokens.typography.size.sm,
-    color: tokens.colors.text,
+    color: colors.text,
     fontWeight: tokens.typography.weight.semibold,
   },
   activePillText: {
-    color: tokens.colors.background,
+    color: '#ffffff',
   },
   noticeBox: {
-    backgroundColor: '#fff8e1',
+    backgroundColor: isDark ? 'rgba(245, 158, 11, 0.15)' : '#fff8e1',
     borderWidth: 1,
-    borderColor: '#ffe082',
+    borderColor: isDark ? 'rgba(245, 158, 11, 0.3)' : '#ffe082',
     borderRadius: tokens.radius.md,
     padding: tokens.spacing.sm,
     marginBottom: tokens.spacing.md,
   },
   noticeText: {
     fontSize: tokens.typography.size.xs,
-    color: '#795548',
+    color: isDark ? '#fbbf24' : '#795548',
     lineHeight: 20,
   },
   submitBtn: {
-    backgroundColor: tokens.colors.accent,
+    backgroundColor: colors.accent,
     paddingVertical: tokens.spacing.md,
     borderRadius: tokens.radius.md,
     alignItems: 'center',
@@ -373,7 +413,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   submitBtnText: {
-    color: tokens.colors.background,
+    color: '#ffffff',
     fontSize: tokens.typography.size.sm,
     fontWeight: tokens.typography.weight.bold,
   },

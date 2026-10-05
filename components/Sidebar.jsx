@@ -7,7 +7,7 @@ import {
   ScrollView,
   Animated,
 } from 'react-native';
-import { tokens } from '../lib/theme';
+import { tokens, useTheme } from '../lib/theme';
 
 export default function Sidebar({
   visible,
@@ -22,6 +22,7 @@ export default function Sidebar({
   const isWorker = isCollector || user?.role === 'worker';
   const slideAnim = useRef(new Animated.Value(-290)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
+  const { isDark, colors, toggleTheme } = useTheme();
 
   useEffect(() => {
     if (visible) {
@@ -57,12 +58,20 @@ export default function Sidebar({
       </Animated.View>
 
       {/* Drawer Content — Strictly contained inside the mobile frame */}
-      <Animated.View style={[styles.drawer, { transform: [{ translateX: slideAnim }] }]}>
+      <Animated.View
+        style={[
+          styles.drawer,
+          {
+            backgroundColor: colors.surface,
+            transform: [{ translateX: slideAnim }],
+          },
+        ]}
+      >
         {/* Minimal Drawer Header */}
-        <View style={styles.drawerHeader}>
+        <View style={[styles.drawerHeader, { borderBottomColor: colors.border }]}>
           <View style={styles.userInfo}>
-            <Text style={styles.userName}>{user?.name || 'User'}</Text>
-            <Text style={styles.userRole}>
+            <Text style={[styles.userName, { color: colors.text }]}>{user?.name || 'User'}</Text>
+            <Text style={[styles.userRole, { color: colors.muted }]}>
               {isWorker ? 'Sanitation Worker' : 'Citizen'} • {user?.area || (user?.area_id ? `Ward ${user.area_id}` : 'Ward 1')}
             </Text>
           </View>
@@ -71,7 +80,7 @@ export default function Sidebar({
             onPress={onClose}
             activeOpacity={0.7}
           >
-            <Text style={styles.closeIcon}>✕</Text>
+            <Text style={[styles.closeIcon, { color: colors.muted }]}>✕</Text>
           </TouchableOpacity>
         </View>
 
@@ -277,8 +286,40 @@ export default function Sidebar({
           )}
         </ScrollView>
 
+        {/* Theme Mode Toggle Row */}
+        <View style={[styles.themeRow, { borderTopColor: colors.border }]}>
+          <Text style={[styles.themeLabel, { color: colors.text }]}>
+            {isDark ? '🌙 Dark Mode' : '☀️ Day Mode'}
+          </Text>
+          <TouchableOpacity
+            style={[
+              styles.themeToggleBtn,
+              { backgroundColor: isDark ? '#1e293b' : '#e2e8f0', borderColor: colors.border },
+            ]}
+            onPress={toggleTheme}
+            activeOpacity={0.8}
+          >
+            <View
+              style={[
+                styles.themeTogglePill,
+                !isDark && styles.themeTogglePillActiveLight,
+              ]}
+            >
+              <Text style={styles.themePillIcon}>☀️</Text>
+            </View>
+            <View
+              style={[
+                styles.themeTogglePill,
+                isDark && styles.themeTogglePillActiveDark,
+              ]}
+            >
+              <Text style={styles.themePillIcon}>🌙</Text>
+            </View>
+          </TouchableOpacity>
+        </View>
+
         {/* Minimal Drawer Footer */}
-        <View style={styles.drawerFooter}>
+        <View style={[styles.drawerFooter, { borderTopColor: colors.border }]}>
           <TouchableOpacity style={styles.logoutBtn} onPress={() => { onClose(); onLogout(); }} activeOpacity={0.7}>
             <Text style={styles.logoutText}>🚪 Log Out</Text>
           </TouchableOpacity>
@@ -444,6 +485,51 @@ const styles = StyleSheet.create({
     paddingTop: tokens.spacing.sm,
     borderTopWidth: 1,
     borderTopColor: tokens.colors.border,
+  },
+  themeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 12,
+    borderTopWidth: 1,
+    marginTop: tokens.spacing.xs,
+  },
+  themeLabel: {
+    fontSize: tokens.typography.size.sm,
+    fontWeight: tokens.typography.weight.bold,
+  },
+  themeToggleBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 3,
+    borderRadius: tokens.radius.full,
+    borderWidth: 1,
+  },
+  themeTogglePill: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: tokens.radius.full,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  themeTogglePillActiveLight: {
+    backgroundColor: '#ffffff',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.15,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  themeTogglePillActiveDark: {
+    backgroundColor: '#0f172a',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.35,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  themePillIcon: {
+    fontSize: 12,
   },
   logoutBtn: {
     flexDirection: 'row',

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   StyleSheet,
   Text,
@@ -12,9 +12,12 @@ import {
   Modal,
 } from 'react-native';
 import { signUpUser, loginUser, getAreas } from '../db/database';
-import { tokens } from '../lib/theme';
+import { tokens, useTheme } from '../lib/theme';
 
 export default function AuthScreen({ onAuthSuccess }) {
+  const { colors, isDark, toggleTheme } = useTheme();
+  const styles = useMemo(() => getStyles(colors, isDark), [colors, isDark]);
+
   // Roles: 'citizen' or 'worker'
   const [role, setRole] = useState('citizen');
   // Mode: 'login' or 'signup'
@@ -142,6 +145,7 @@ export default function AuthScreen({ onAuthSuccess }) {
           onChangeText={onChangeText}
           onFocus={() => setFocusedInput(fieldKey)}
           onBlur={() => setFocusedInput(null)}
+          placeholderTextColor={colors.muted}
           {...props}
         />
       </View>
@@ -155,7 +159,18 @@ export default function AuthScreen({ onAuthSuccess }) {
     >
       <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
         <View style={styles.header}>
-          <Text style={styles.brandTitle}>SHODHINI</Text>
+          <View style={styles.headerTopRow}>
+            <View style={{ width: 44 }} />
+            <Text style={styles.brandTitle}>SHODHINI</Text>
+            <TouchableOpacity 
+              style={styles.themeToggleBtn} 
+              onPress={toggleTheme}
+              accessibilityLabel={isDark ? "Switch to Day Mode" : "Switch to Night Mode"}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.themeToggleIcon}>{isDark ? '☀️' : '🌙'}</Text>
+            </TouchableOpacity>
+          </View>
           <Text style={styles.brandSubtitle}>Waste Management System</Text>
         </View>
 
@@ -214,7 +229,7 @@ export default function AuthScreen({ onAuthSuccess }) {
               {renderInput('Full Name', name, setName, 'name', {
                 autoCapitalize: 'words',
                 placeholder: 'Enter your full name',
-                placeholderTextColor: tokens.colors.muted,
+                placeholderTextColor: colors.muted,
               })}
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>
@@ -249,7 +264,7 @@ export default function AuthScreen({ onAuthSuccess }) {
                 onFocus={() => setFocusedInput('phone')}
                 onBlur={() => setFocusedInput(null)}
                 placeholder="10-digit mobile number"
-                placeholderTextColor={tokens.colors.muted}
+                placeholderTextColor={colors.muted}
                 keyboardType="phone-pad"
                 maxLength={10}
               />
@@ -260,7 +275,7 @@ export default function AuthScreen({ onAuthSuccess }) {
           {renderInput('Password', password, setPassword, 'password', {
             secureTextEntry: true,
             placeholder: mode === 'login' ? 'Enter your password' : 'Create password (min 6 chars)',
-            placeholderTextColor: tokens.colors.muted,
+            placeholderTextColor: colors.muted,
           })}
 
           <TouchableOpacity
@@ -270,7 +285,7 @@ export default function AuthScreen({ onAuthSuccess }) {
             activeOpacity={0.7}
           >
             {loading ? (
-              <ActivityIndicator color={tokens.colors.background} />
+              <ActivityIndicator color="#ffffff" />
             ) : (
               <Text style={styles.submitButtonText}>
                 {mode === 'login' ? 'Log In with Phone' : 'Sign Up with Phone'}
@@ -340,10 +355,10 @@ export default function AuthScreen({ onAuthSuccess }) {
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors, isDark) => StyleSheet.create({
   keyboardContainer: {
     flex: 1,
-    backgroundColor: tokens.colors.surface,
+    backgroundColor: colors.background,
   },
   scrollContainer: {
     paddingHorizontal: tokens.spacing.lg,
@@ -353,23 +368,44 @@ const styles = StyleSheet.create({
   header: {
     alignItems: 'center',
     marginBottom: tokens.spacing.lg,
+    width: '100%',
+  },
+  headerTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '100%',
+    maxWidth: 400,
+  },
+  themeToggleBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  themeToggleIcon: {
+    fontSize: 20,
   },
   brandTitle: {
     fontSize: tokens.typography.size.xxl,
     fontWeight: tokens.typography.weight.extrabold,
-    color: tokens.colors.accent,
+    color: colors.accent,
     letterSpacing: 1,
   },
   brandSubtitle: {
     fontSize: tokens.typography.size.sm,
-    color: tokens.colors.muted,
+    color: colors.muted,
     marginTop: tokens.spacing.xs,
   },
   sectionLabel: {
     alignSelf: 'flex-start',
     fontSize: tokens.typography.size.xs,
     fontWeight: tokens.typography.weight.semibold,
-    color: tokens.colors.muted,
+    color: colors.muted,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     marginBottom: tokens.spacing.sm,
@@ -377,7 +413,10 @@ const styles = StyleSheet.create({
   roleSelector: {
     flexDirection: 'row',
     width: '100%',
-    backgroundColor: tokens.colors.border,
+    maxWidth: 400,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
     borderRadius: tokens.radius.md,
     padding: tokens.spacing.xs,
     marginBottom: tokens.spacing.md,
@@ -391,22 +430,25 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   activeRoleTab: {
-    backgroundColor: tokens.colors.background,
+    backgroundColor: colors.card,
+    borderWidth: isDark ? 1 : 0,
+    borderColor: colors.border,
     ...tokens.shadow.sm,
   },
   roleTabText: {
     fontSize: tokens.typography.size.sm,
     fontWeight: tokens.typography.weight.semibold,
-    color: tokens.colors.muted,
+    color: colors.muted,
   },
   activeRoleTabText: {
-    color: tokens.colors.text,
+    color: colors.text,
   },
   modeSelector: {
     flexDirection: 'row',
     width: '100%',
+    maxWidth: 400,
     borderBottomWidth: 2,
-    borderColor: tokens.colors.border,
+    borderColor: colors.border,
     marginBottom: tokens.spacing.lg,
   },
   modeTab: {
@@ -418,20 +460,22 @@ const styles = StyleSheet.create({
     minHeight: 44,
   },
   activeModeTab: {
-    borderBottomColor: tokens.colors.accent,
+    borderBottomColor: colors.accent,
   },
   modeTabText: {
     fontSize: tokens.typography.size.base,
     fontWeight: tokens.typography.weight.semibold,
-    color: tokens.colors.muted,
+    color: colors.muted,
   },
   activeModeTabText: {
-    color: tokens.colors.accent,
+    color: colors.accent,
   },
   card: {
     width: '100%',
     maxWidth: 400,
-    backgroundColor: tokens.colors.background,
+    backgroundColor: colors.card,
+    borderWidth: 1,
+    borderColor: colors.border,
     borderRadius: tokens.radius.xl,
     padding: tokens.spacing.lg,
     ...tokens.shadow.md,
@@ -439,19 +483,19 @@ const styles = StyleSheet.create({
   cardHeader: {
     fontSize: tokens.typography.size.lg,
     fontWeight: tokens.typography.weight.bold,
-    color: tokens.colors.text,
+    color: colors.text,
     marginBottom: tokens.spacing.md,
   },
   errorBox: {
-    backgroundColor: '#fef2f2', // light red
+    backgroundColor: isDark ? 'rgba(239, 68, 68, 0.15)' : '#fef2f2',
     borderWidth: 1,
-    borderColor: tokens.colors.danger,
+    borderColor: colors.danger,
     borderRadius: tokens.radius.md,
     padding: tokens.spacing.sm,
     marginBottom: tokens.spacing.sm,
   },
   errorText: {
-    color: tokens.colors.danger,
+    color: colors.danger,
     fontSize: tokens.typography.size.sm,
   },
   inputGroup: {
@@ -460,40 +504,40 @@ const styles = StyleSheet.create({
   label: {
     fontSize: tokens.typography.size.sm,
     fontWeight: tokens.typography.weight.medium,
-    color: tokens.colors.text,
+    color: colors.text,
     marginBottom: tokens.spacing.xs,
   },
   input: {
-    backgroundColor: tokens.colors.background,
+    backgroundColor: colors.inputBg,
     borderWidth: 1,
-    borderColor: tokens.colors.border,
+    borderColor: colors.inputBorder,
     borderRadius: tokens.radius.md,
     paddingHorizontal: tokens.spacing.md,
     paddingVertical: tokens.spacing.sm,
     fontSize: tokens.typography.size.base,
-    color: tokens.colors.text,
+    color: colors.text,
     minHeight: 44,
   },
   inputFocused: {
-    borderColor: tokens.colors.borderFocus,
+    borderColor: colors.accent,
     borderWidth: 2,
   },
   phoneInputRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: tokens.colors.background,
+    backgroundColor: colors.inputBg,
     borderWidth: 1,
-    borderColor: tokens.colors.border,
+    borderColor: colors.inputBorder,
     borderRadius: tokens.radius.md,
     overflow: 'hidden',
     minHeight: 44,
   },
   phonePrefixBadge: {
-    backgroundColor: tokens.colors.surface,
+    backgroundColor: colors.surface,
     paddingHorizontal: tokens.spacing.md,
     paddingVertical: tokens.spacing.sm,
     borderRightWidth: 1,
-    borderRightColor: tokens.colors.border,
+    borderRightColor: colors.inputBorder,
     justifyContent: 'center',
     alignItems: 'center',
     minHeight: 44,
@@ -501,23 +545,23 @@ const styles = StyleSheet.create({
   phonePrefixText: {
     fontSize: tokens.typography.size.sm,
     fontWeight: tokens.typography.weight.bold,
-    color: tokens.colors.text,
+    color: colors.text,
   },
   phoneInputFlex: {
     flex: 1,
     paddingHorizontal: tokens.spacing.md,
     paddingVertical: tokens.spacing.sm,
     fontSize: tokens.typography.size.base,
-    color: tokens.colors.text,
+    color: colors.text,
     minHeight: 44,
   },
   areaPickerBtn: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: tokens.colors.background,
+    backgroundColor: colors.inputBg,
     borderWidth: 1,
-    borderColor: tokens.colors.border,
+    borderColor: colors.inputBorder,
     borderRadius: tokens.radius.md,
     paddingHorizontal: tokens.spacing.md,
     paddingVertical: tokens.spacing.sm,
@@ -528,14 +572,14 @@ const styles = StyleSheet.create({
   },
   areaPickerText: {
     fontSize: tokens.typography.size.base,
-    color: tokens.colors.text,
+    color: colors.text,
   },
   areaPickerArrow: {
     fontSize: tokens.typography.size.xs,
-    color: tokens.colors.muted,
+    color: colors.muted,
   },
   submitButton: {
-    backgroundColor: tokens.colors.accent,
+    backgroundColor: colors.accent,
     borderRadius: tokens.radius.md,
     paddingVertical: tokens.spacing.md,
     alignItems: 'center',
@@ -547,7 +591,7 @@ const styles = StyleSheet.create({
     opacity: 0.5,
   },
   submitButtonText: {
-    color: tokens.colors.background,
+    color: '#ffffff',
     fontSize: tokens.typography.size.base,
     fontWeight: tokens.typography.weight.bold,
   },
@@ -558,21 +602,23 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   switchModeText: {
-    color: tokens.colors.accent,
+    color: colors.accent,
     fontSize: tokens.typography.size.sm,
     fontWeight: tokens.typography.weight.semibold,
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.4)',
+    backgroundColor: colors.modalOverlay,
     justifyContent: 'flex-end',
   },
   modalCard: {
-    backgroundColor: tokens.colors.background,
+    backgroundColor: colors.card,
     borderTopLeftRadius: tokens.radius.xl,
     borderTopRightRadius: tokens.radius.xl,
     maxHeight: '60%',
     padding: tokens.spacing.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   modalHeader: {
     flexDirection: 'row',
@@ -581,12 +627,12 @@ const styles = StyleSheet.create({
     marginBottom: tokens.spacing.md,
     paddingBottom: tokens.spacing.sm,
     borderBottomWidth: 1,
-    borderBottomColor: tokens.colors.border,
+    borderBottomColor: colors.border,
   },
   modalTitle: {
     fontSize: tokens.typography.size.base,
     fontWeight: tokens.typography.weight.bold,
-    color: tokens.colors.text,
+    color: colors.text,
   },
   modalCloseBtn: {
     padding: tokens.spacing.sm,
@@ -597,7 +643,7 @@ const styles = StyleSheet.create({
   },
   modalCloseText: {
     fontSize: tokens.typography.size.lg,
-    color: tokens.colors.muted,
+    color: colors.muted,
   },
   modalList: {
     marginBottom: tokens.spacing.sm,
@@ -610,24 +656,24 @@ const styles = StyleSheet.create({
     paddingHorizontal: tokens.spacing.md,
     borderRadius: tokens.radius.md,
     marginBottom: tokens.spacing.xs,
-    backgroundColor: tokens.colors.surface,
+    backgroundColor: colors.surface,
     minHeight: 48,
   },
   areaOptionSelected: {
-    backgroundColor: tokens.colors.background,
-    borderColor: tokens.colors.accent,
+    backgroundColor: isDark ? colors.card : colors.background,
+    borderColor: colors.accent,
     borderWidth: 1,
   },
   areaOptionText: {
     fontSize: tokens.typography.size.base,
-    color: tokens.colors.text,
+    color: colors.text,
   },
   areaOptionTextSelected: {
-    color: tokens.colors.accent,
+    color: colors.accent,
     fontWeight: tokens.typography.weight.bold,
   },
   areaCheck: {
-    color: tokens.colors.accent,
+    color: colors.accent,
     fontWeight: tokens.typography.weight.bold,
     fontSize: tokens.typography.size.base,
   },
