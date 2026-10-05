@@ -7,8 +7,40 @@ export async function initDatabase() {
   return true;
 }
 
+export const ASSAGAO_VILLAGE = 'Assagao';
+
+export const ASSAGAO_WARDS = [
+  { id: 1, name: 'Assagao - Ward 1 (Munang Waddo)', shortName: 'Ward 1 (Munang Waddo)', village: 'Assagao' },
+  { id: 2, name: 'Assagao - Ward 2 (Bouta Waddo)', shortName: 'Ward 2 (Bouta Waddo)', village: 'Assagao' },
+  { id: 3, name: 'Assagao - Ward 3 (Socol Waddo)', shortName: 'Ward 3 (Socol Waddo)', village: 'Assagao' },
+  { id: 4, name: 'Assagao - Ward 4 (Badem)', shortName: 'Ward 4 (Badem)', village: 'Assagao' },
+  { id: 5, name: 'Assagao - Ward 5 (Monforte Vaddo)', shortName: 'Ward 5 (Monforte Vaddo)', village: 'Assagao' },
+  { id: 6, name: 'Assagao - Ward 6 (Mazal Waddo)', shortName: 'Ward 6 (Mazal Waddo)', village: 'Assagao' },
+  { id: 7, name: 'Assagao - Ward 7 (Igrej Waddo)', shortName: 'Ward 7 (Igrej Waddo)', village: 'Assagao' },
+];
+
+export const ASSAGAO_WARD_MAP = ASSAGAO_WARDS.reduce((acc, curr) => {
+  acc[curr.id] = curr.name;
+  return acc;
+}, {});
+
+export function formatWardName(areaId, fallback = null) {
+  const numId = Number(areaId);
+  if (numId && ASSAGAO_WARD_MAP[numId]) {
+    return ASSAGAO_WARD_MAP[numId];
+  }
+  if (typeof fallback === 'string' && fallback.trim()) {
+    const match = fallback.match(/Ward\s*(\d+)/i);
+    if (match && ASSAGAO_WARD_MAP[match[1]]) {
+      return ASSAGAO_WARD_MAP[match[1]];
+    }
+    return fallback;
+  }
+  return 'Assagao - Ward 1 (Munang Waddo)';
+}
+
 /**
- * Get all available areas for assignment & selection
+ * Get all available areas for assignment & selection (Assagao Village - 7 Wards)
  */
 export async function getAreas() {
   try {
@@ -18,24 +50,21 @@ export async function getAreas() {
       .order('id', { ascending: true });
 
     if (error || !data || data.length === 0) {
-      return [
-        { id: 1, name: 'Ward 1' },
-        { id: 2, name: 'Ward 2' },
-        { id: 3, name: 'Ward 3' },
-        { id: 4, name: 'Ward 4' },
-        { id: 5, name: 'Ward 5' },
-        { id: 6, name: 'Ward 6' },
-        { id: 7, name: 'Ward 7' },
-        { id: 8, name: 'Ward 8' },
-        { id: 9, name: 'Ward 9' },
-        { id: 10, name: 'Ward 10' },
-      ];
+      return ASSAGAO_WARDS.map((w) => ({ id: w.id, name: w.name }));
     }
 
-    return data;
+    const filtered = data.filter((a) => a.id <= 7);
+    if (filtered.length === 0) {
+      return ASSAGAO_WARDS.map((w) => ({ id: w.id, name: w.name }));
+    }
+
+    return filtered.map((a) => ({
+      id: a.id,
+      name: formatWardName(a.id, a.name),
+    }));
   } catch (err) {
     console.warn('Error in getAreas:', err);
-    return [];
+    return ASSAGAO_WARDS.map((w) => ({ id: w.id, name: w.name }));
   }
 }
 
@@ -84,8 +113,8 @@ export async function getCurrentUser() {
         name: defaultName,
         phone: defaultPhone,
         identifier: defaultPhone,
-        area_id: defaultAreaId,
-        area: defaultAreaId ? `Ward ${defaultAreaId}` : '',
+        area_id: defaultAreaId || 1,
+        area: formatWardName(defaultAreaId),
         eco_points: 0,
       };
     }
@@ -96,8 +125,8 @@ export async function getCurrentUser() {
       name: profile.name,
       phone: profile.phone,
       identifier: profile.phone,
-      area_id: profile.area_id,
-      area: profile.areas?.name || (profile.area_id ? `Ward ${profile.area_id}` : ''),
+      area_id: profile.area_id || 1,
+      area: formatWardName(profile.area_id, profile.areas?.name),
       eco_points: profile.eco_points || 0,
       expo_push_token: profile.expo_push_token,
     };
@@ -382,12 +411,10 @@ export async function getUserComplaints(userId) {
     return (data || []).map((c) => ({
       ...c,
       location:
-        c.areas?.name ||
+        formatWardName(c.area_id, c.areas?.name) +
         (c.latitude && c.longitude
-          ? `Lat: ${c.latitude.toFixed(4)}, Lng: ${c.longitude.toFixed(4)}`
-          : c.area_id
-          ? `Ward ${c.area_id}`
-          : 'Local Area'),
+          ? ` | ${c.latitude.toFixed(4)}° N, ${c.longitude.toFixed(4)}° E`
+          : ''),
     }));
   } catch (e) {
     console.error('Error in getUserComplaints:', e);
@@ -473,7 +500,7 @@ export async function getCitizenLeaderboard() {
       id: p.id,
       rank: idx + 1,
       name: p.name || 'Citizen',
-      ward: p.areas?.name || (p.area_id ? `Ward ${p.area_id}` : 'Ward 1'),
+      ward: formatWardName(p.area_id, p.areas?.name),
       points: Number(p.eco_points || 0),
     }));
   } catch (e) {
@@ -483,31 +510,12 @@ export async function getCitizenLeaderboard() {
 }
 
 /**
- * Fetch real ward cleanliness rankings from active & resolved complaints
+ * Fetch real ward cleanliness rankings from active & resolved complaints (Assagao Village - 7 Wards)
  */
 export async function getWardLeaderboard() {
   try {
-    // 1. Fetch all wards
-    const { data: areasData } = await supabase
-      .from('areas')
-      .select('id, name')
-      .order('id', { ascending: true });
-
-    const areasList =
-      areasData && areasData.length > 0
-        ? areasData
-        : [
-            { id: 1, name: 'Ward 1' },
-            { id: 2, name: 'Ward 2' },
-            { id: 3, name: 'Ward 3' },
-            { id: 4, name: 'Ward 4' },
-            { id: 5, name: 'Ward 5' },
-            { id: 6, name: 'Ward 6' },
-            { id: 7, name: 'Ward 7' },
-            { id: 8, name: 'Ward 8' },
-            { id: 9, name: 'Ward 9' },
-            { id: 10, name: 'Ward 10' },
-          ];
+    // 1. Fetch all Assagao wards
+    const areasList = await getAreas();
 
     // 2. Fetch all complaints to compute actual cleanups
     const { data: complaintsData, error: cErr } = await supabase
@@ -626,10 +634,10 @@ export async function getAreaComplaints(areaId) {
     return (data || []).map((c) => ({
       ...c,
       location:
-        c.areas?.name ||
+        formatWardName(c.area_id, c.areas?.name) +
         (c.latitude && c.longitude
-          ? `Lat: ${c.latitude.toFixed(4)}, Lng: ${c.longitude.toFixed(4)}`
-          : `Ward ${c.area_id}`),
+          ? ` | ${c.latitude.toFixed(4)}° N, ${c.longitude.toFixed(4)}° E`
+          : ''),
       citizenName: c.profiles?.name || 'Citizen',
       citizenPhone: c.profiles?.phone || '',
     }));

@@ -77,7 +77,7 @@ export default function Sidebar({
             <View style={styles.userInfo}>
               <Text style={styles.userName}>{user?.name || 'User'}</Text>
               <Text style={styles.userRole}>
-                {isWorker ? 'Sanitation Worker' : 'Citizen'} • {user?.area || (user?.area_id ? `Ward ${user.area_id}` : 'Ward 1')}
+                {isWorker ? 'Sanitation Worker' : 'Citizen'} • {user?.area || 'Assagao - Ward 1'}
               </Text>
             </View>
           </View>
@@ -94,7 +94,7 @@ export default function Sidebar({
         {isWorker ? (
           <View style={styles.workerStatusStrip}>
             <View style={styles.dutyDot} />
-            <Text style={styles.workerStatusText}>Active Duty • {user?.area || 'Ward 1'}</Text>
+            <Text style={styles.workerStatusText}>Active Duty • {user?.area || 'Assagao - Ward 1'}</Text>
           </View>
         ) : (
           <TouchableOpacity

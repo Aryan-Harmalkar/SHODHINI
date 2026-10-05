@@ -496,7 +496,7 @@ export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar 
                     </Text>
 
                     <View style={styles.geotagMetaRow}>
-                      <Text style={styles.geotagWard}>🏛️ {selectedAreaName || 'Ward 1'}</Text>
+                      <Text style={styles.geotagWard}>🏛️ {selectedAreaName || 'Assagao - Ward 1 (Munang Waddo)'}</Text>
                       <Text style={styles.geotagAccuracy}>
                         {gpsFix?.accuracy ? `🎯 ±${gpsFix.accuracy}m` : pinCoords ? '📌 Pinned' : '⏳ Locating…'}
                       </Text>
@@ -874,7 +874,7 @@ export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar 
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Select Ward / Area</Text>
+              <Text style={styles.modalTitle}>Select Assagao Ward (7 Wards)</Text>
               <TouchableOpacity
                 onPress={() => setAreaModalVisible(false)}
                 style={styles.modalCloseBtn}

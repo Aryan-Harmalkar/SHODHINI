@@ -331,7 +331,7 @@ export default function HomeScreen({ user, onLogout }) {
             ) : (
               <View style={styles.topDutyPill}>
                 <View style={styles.dutyDot} />
-                <Text style={styles.topDutyText}>{user?.area || 'Ward 1'}</Text>
+                <Text style={styles.topDutyText}>{user?.area || 'Assagao - Ward 1'}</Text>
               </View>
             )}
           </View>
@@ -342,7 +342,7 @@ export default function HomeScreen({ user, onLogout }) {
           <View style={styles.greetingHeader}>
             <Text style={styles.greetingTitle}>Welcome, {user?.name || 'User'}</Text>
             <Text style={styles.greetingSub}>
-              📍 {user?.area || 'Ward 1'} • {isCollector ? 'Garbage Collector' : 'Citizen Resident'}
+              📍 {user?.area || 'Assagao - Ward 1'} • {isCollector ? 'Garbage Collector' : 'Citizen Resident'}
             </Text>
           </View>
 
@@ -499,7 +499,7 @@ export default function HomeScreen({ user, onLogout }) {
                   <Text style={styles.emptyIcon}>🎉</Text>
                   <Text style={styles.emptyCollectorTitle}>No Complaints Pending</Text>
                   <Text style={styles.emptyCollectorDesc}>
-                    {user?.area || 'Ward'} currently has no active waste hotspots.
+                    {user?.area || 'Assagao Village'} currently has no active waste hotspots.
                   </Text>
                 </View>
               ) : (

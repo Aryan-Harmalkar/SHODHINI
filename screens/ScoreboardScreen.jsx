@@ -13,6 +13,7 @@ import {
   getCitizenLeaderboard,
   getWardLeaderboard,
   getCollectorCleanupStats,
+  formatWardName,
 } from '../db/database';
 
 export default function ScoreboardScreen({
@@ -26,7 +27,7 @@ export default function ScoreboardScreen({
   const styles = useMemo(() => getStyles(colors, isDark), [colors, isDark]);
 
   const isWorker = user?.role === 'worker' || isCollector;
-  const userWardName = user?.area || (user?.area_id ? `Ward ${user.area_id}` : 'Ward 1');
+  const userWardName = user?.area || (user?.area_id ? formatWardName(user.area_id) : 'Assagao - Ward 1');
 
   const [tab, setTab] = useState(isWorker ? 'wards' : 'citizens');
   const [citizens, setCitizens] = useState([]);
@@ -144,7 +145,7 @@ export default function ScoreboardScreen({
             activeOpacity={0.7}
           >
             <Text style={[styles.tabBtnText, tab === 'wards' && styles.activeTabBtnText]}>
-              🏙️ Wards
+              🏙️ Assagao Wards
             </Text>
           </TouchableOpacity>
 

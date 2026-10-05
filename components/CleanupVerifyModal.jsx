@@ -46,7 +46,7 @@ function handleOpenMaps(lat, lng, address) {
       Alert.alert('Map Error', 'Could not open map navigation.');
     });
   } else {
-    const query = encodeURIComponent(`${address || 'Ward 1'}, City`);
+    const query = encodeURIComponent(`${address || 'Assagao'}, Goa`);
     const url = `https://www.google.com/maps/search/?api=1&query=${query}`;
     Linking.openURL(url).catch(() => {
       Alert.alert('Map Error', 'Could not open map navigation.');

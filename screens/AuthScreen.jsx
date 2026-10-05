@@ -179,7 +179,7 @@ export default function AuthScreen({ onAuthSuccess }) {
               <Text style={styles.themeToggleIcon}>{isDark ? '☀️' : '🌙'}</Text>
             </TouchableOpacity>
           </View>
-          <Text style={styles.brandSubtitle}>Waste Management System</Text>
+          <Text style={styles.brandSubtitle}>Village Panchayat Assagao • Clean Waste Management</Text>
         </View>
 
         <Text style={styles.sectionLabel}>Select Your Role</Text>
@@ -241,7 +241,7 @@ export default function AuthScreen({ onAuthSuccess }) {
               })}
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>
-                  {role === 'worker' ? 'Operating / Work Area' : 'Your Area / Ward'}
+                  {role === 'worker' ? 'Assigned Ward in Assagao' : 'Residential Ward in Assagao'}
                 </Text>
                 <TouchableOpacity
                   style={[styles.areaPickerBtn, areasLoading && styles.areaPickerBtnDisabled]}
@@ -250,7 +250,7 @@ export default function AuthScreen({ onAuthSuccess }) {
                   activeOpacity={0.7}
                 >
                   <Text style={styles.areaPickerText}>
-                    {areasLoading ? 'Loading areas...' : `📍 ${selectedAreaName || 'Select Ward / Area'}`}
+                    {areasLoading ? 'Loading wards...' : `📍 ${selectedAreaName || 'Select Assagao Ward'}`}
                   </Text>
                   <Text style={styles.areaPickerArrow}>▼</Text>
                 </TouchableOpacity>
@@ -324,7 +324,7 @@ export default function AuthScreen({ onAuthSuccess }) {
         <View style={styles.modalOverlay}>
           <View style={styles.modalCard}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Select Area</Text>
+              <Text style={styles.modalTitle}>Select Assagao Ward (7 Wards)</Text>
               <TouchableOpacity
                 onPress={() => setAreaModalVisible(false)}
                 style={styles.modalCloseBtn}

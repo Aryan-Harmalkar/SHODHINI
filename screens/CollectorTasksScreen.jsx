@@ -80,7 +80,7 @@ export default function CollectorTasksScreen({
         Alert.alert('Map Error', 'Could not open map navigation.');
       });
     } else {
-      const query = encodeURIComponent(`${address || 'Ward 1'}, City`);
+      const query = encodeURIComponent(`${address || 'Assagao'}, Goa`);
       const url = `https://www.google.com/maps/search/?api=1&query=${query}`;
       Linking.openURL(url).catch(() => {
         Alert.alert('Map Error', 'Could not open map navigation.');
@@ -134,7 +134,7 @@ export default function CollectorTasksScreen({
         <View style={styles.workerHeader}>
           <View>
             <Text style={styles.workerName}>👷 {user?.name || 'Sanitation Team'}</Text>
-            <Text style={styles.workerArea}>📍 {user?.area || 'Ward 1'}</Text>
+            <Text style={styles.workerArea}>📍 {user?.area || 'Assagao - Ward 1'}</Text>
           </View>
           <View style={styles.dutyPill}>
             <View style={styles.dutyDot} />
