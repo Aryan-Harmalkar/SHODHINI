@@ -130,46 +130,13 @@ export default function Sidebar({
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={[styles.menuItem, currentScreen === 'collector_tasks_available' && styles.activeMenuItem]}
+                style={[styles.menuItem, currentScreen === 'collector_tasks' && styles.activeMenuItem]}
                 onPress={() => { onNavigate('collector_tasks_available'); onClose(); }}
                 activeOpacity={0.7}
               >
-                <Text style={styles.menuIcon}>🔔</Text>
-                <Text style={[styles.menuText, currentScreen === 'collector_tasks_available' && styles.activeMenuText]}>
-                  Tasks Available
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[styles.menuItem, currentScreen === 'collector_tasks_pending' && styles.activeMenuItem]}
-                onPress={() => { onNavigate('collector_tasks_pending'); onClose(); }}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.menuIcon}>⏳</Text>
-                <Text style={[styles.menuText, currentScreen === 'collector_tasks_pending' && styles.activeMenuText]}>
-                  Pending Tasks
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[styles.menuItem, currentScreen === 'collector_track_location' && styles.activeMenuItem]}
-                onPress={() => { onNavigate('collector_track_location'); onClose(); }}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.menuIcon}>📍</Text>
-                <Text style={[styles.menuText, currentScreen === 'collector_track_location' && styles.activeMenuText]}>
-                  Track Location
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[styles.menuItem, currentScreen === 'collector_tasks_completed' && styles.activeMenuItem]}
-                onPress={() => { onNavigate('collector_tasks_completed'); onClose(); }}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.menuIcon}>✅</Text>
-                <Text style={[styles.menuText, currentScreen === 'collector_tasks_completed' && styles.activeMenuText]}>
-                  Completed Tasks
+                <Text style={styles.menuIcon}>🗑️</Text>
+                <Text style={[styles.menuText, currentScreen === 'collector_tasks' && styles.activeMenuText]}>
+                  Public Waste Tasks
                 </Text>
               </TouchableOpacity>
 
