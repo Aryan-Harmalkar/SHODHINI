@@ -542,7 +542,7 @@ export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar 
                 )}
 
                 {locStatus === 'checking' && (
-                  <ActivityIndicator size="small" color={tokens.colors.accent} />
+                  <ActivityIndicator size="small" color={colors.accent} />
                 )}
 
                 {locStatus === 'explain' && (
@@ -563,7 +563,7 @@ export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar 
 
                 {locStatus === 'searching' && (
                   <View style={styles.locSearchingRow}>
-                    <ActivityIndicator size="small" color={tokens.colors.accent} />
+                    <ActivityIndicator size="small" color={colors.accent} />
                     <Text style={styles.locBodyText}>
                       {'  '}Getting a precise GPS fix (need ≤ {REQUIRED_ACCURACY_M} m)…
                     </Text>
@@ -622,7 +622,7 @@ export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar 
                       activeOpacity={0.7}
                     >
                       {geocodingAddress ? (
-                        <ActivityIndicator size="small" color={tokens.colors.accent} />
+                        <ActivityIndicator size="small" color={colors.accent} />
                       ) : (
                         <Text style={styles.recalibrateBtnText}>🔎 Find this address on map</Text>
                       )}
@@ -673,7 +673,7 @@ export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar 
                     activeOpacity={0.7}
                   >
                     {locStatus === 'searching' ? (
-                      <ActivityIndicator size="small" color={tokens.colors.accent} />
+                      <ActivityIndicator size="small" color={colors.accent} />
                     ) : (
                       <Text style={styles.recalibrateBtnText}>🔄 Refresh location</Text>
                     )}
@@ -692,7 +692,7 @@ export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar 
 
                 {analyzingAi ? (
                   <View style={styles.aiScanningBox}>
-                    <ActivityIndicator size="large" color={tokens.colors.accent} />
+                    <ActivityIndicator size="large" color={colors.accent} />
                     <Text style={styles.aiScanningTitle}>AI Vision Analyzing...</Text>
                     <Text style={styles.aiScanningSubtitle}>
                       Classifying waste type, estimating contamination rating, and predicting cleanup time...
@@ -1057,19 +1057,19 @@ const getStyles = (colors, isDark) =>
   cameraPromptTitle: {
     fontSize: tokens.typography.size.sm,
     fontWeight: tokens.typography.weight.bold,
-    color: tokens.colors.text,
+    color: colors.text,
     marginBottom: 4,
   },
   cameraPromptDesc: {
     fontSize: tokens.typography.size.xs,
-    color: tokens.colors.muted,
+    color: colors.muted,
     textAlign: 'center',
     lineHeight: 16,
     marginBottom: tokens.spacing.md,
     maxWidth: 320,
   },
   captureBtn: {
-    backgroundColor: tokens.colors.accent,
+    backgroundColor: colors.accent,
     paddingVertical: 10,
     paddingHorizontal: tokens.spacing.lg,
     borderRadius: tokens.radius.md,

@@ -250,8 +250,8 @@ export default function CleanupVerifyModal({
         >
           {isFetchingDetails ? (
             <View style={{ padding: 24, alignItems: 'center' }}>
-              <ActivityIndicator color={tokens.colors.accent} />
-              <Text style={{ marginTop: 10, color: tokens.colors.muted }}>Loading report details...</Text>
+              <ActivityIndicator color={colors.accent} />
+              <Text style={{ marginTop: 10, color: colors.muted }}>Loading report details...</Text>
             </View>
           ) : (
             <>
@@ -317,7 +317,7 @@ export default function CleanupVerifyModal({
               </View>
 
               {locMessage !== '' && (
-                <Text style={{ textAlign: 'center', marginTop: 10, color: tokens.colors.muted, fontSize: 12 }}>
+                <Text style={{ textAlign: 'center', marginTop: 10, color: colors.muted, fontSize: 12 }}>
                   {locMessage}
                 </Text>
               )}

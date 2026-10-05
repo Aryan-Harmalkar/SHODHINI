@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useMemo } from 'react';
 import {
   StyleSheet,
   Text,
@@ -23,6 +23,7 @@ export default function Sidebar({
   const slideAnim = useRef(new Animated.Value(-290)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const { isDark, colors, toggleTheme } = useTheme();
+  const styles = useMemo(() => getStyles(colors, isDark), [colors, isDark]);
 
   useEffect(() => {
     if (visible) {
@@ -61,17 +62,14 @@ export default function Sidebar({
       <Animated.View
         style={[
           styles.drawer,
-          {
-            backgroundColor: colors.surface,
-            transform: [{ translateX: slideAnim }],
-          },
+          { transform: [{ translateX: slideAnim }] },
         ]}
       >
         {/* Minimal Drawer Header */}
-        <View style={[styles.drawerHeader, { borderBottomColor: colors.border }]}>
+        <View style={styles.drawerHeader}>
           <View style={styles.userInfo}>
-            <Text style={[styles.userName, { color: colors.text }]}>{user?.name || 'User'}</Text>
-            <Text style={[styles.userRole, { color: colors.muted }]}>
+            <Text style={styles.userName}>{user?.name || 'User'}</Text>
+            <Text style={styles.userRole}>
               {isWorker ? 'Sanitation Worker' : 'Citizen'} • {user?.area || (user?.area_id ? `Ward ${user.area_id}` : 'Ward 1')}
             </Text>
           </View>
@@ -80,7 +78,7 @@ export default function Sidebar({
             onPress={onClose}
             activeOpacity={0.7}
           >
-            <Text style={[styles.closeIcon, { color: colors.muted }]}>✕</Text>
+            <Text style={styles.closeIcon}>✕</Text>
           </TouchableOpacity>
         </View>
 
@@ -287,17 +285,15 @@ export default function Sidebar({
         </ScrollView>
 
         {/* Theme Mode Toggle Row */}
-        <View style={[styles.themeRow, { borderTopColor: colors.border }]}>
-          <Text style={[styles.themeLabel, { color: colors.text }]}>
+        <View style={styles.themeRow}>
+          <Text style={styles.themeLabel}>
             {isDark ? '🌙 Dark Mode' : '☀️ Day Mode'}
           </Text>
           <TouchableOpacity
-            style={[
-              styles.themeToggleBtn,
-              { backgroundColor: isDark ? '#1e293b' : '#e2e8f0', borderColor: colors.border },
-            ]}
+            style={styles.themeToggleBtn}
             onPress={toggleTheme}
             activeOpacity={0.8}
+            accessibilityLabel={isDark ? "Switch to Day Mode" : "Switch to Dark Mode"}
           >
             <View
               style={[
@@ -319,7 +315,7 @@ export default function Sidebar({
         </View>
 
         {/* Minimal Drawer Footer */}
-        <View style={[styles.drawerFooter, { borderTopColor: colors.border }]}>
+        <View style={styles.drawerFooter}>
           <TouchableOpacity style={styles.logoutBtn} onPress={() => { onClose(); onLogout(); }} activeOpacity={0.7}>
             <Text style={styles.logoutText}>🚪 Log Out</Text>
           </TouchableOpacity>
@@ -329,7 +325,7 @@ export default function Sidebar({
   );
 }
 
-const styles = StyleSheet.create({
+const getStyles = (colors, isDark) => StyleSheet.create({
   overlay: {
     position: 'absolute',
     top: 0,
@@ -350,11 +346,13 @@ const styles = StyleSheet.create({
   drawer: {
     width: '78%',
     maxWidth: 290,
-    backgroundColor: tokens.colors.background,
+    backgroundColor: colors.surface,
     height: '100%',
     paddingTop: 16,
     paddingHorizontal: tokens.spacing.md,
     paddingBottom: tokens.spacing.lg,
+    borderRightWidth: 1,
+    borderRightColor: colors.border,
     ...tokens.shadow.md,
     zIndex: 10000,
   },
@@ -364,7 +362,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingBottom: tokens.spacing.sm,
     borderBottomWidth: 1,
-    borderBottomColor: tokens.colors.border,
+    borderBottomColor: colors.border,
     marginBottom: tokens.spacing.sm,
   },
   userInfo: {
@@ -373,11 +371,11 @@ const styles = StyleSheet.create({
   userName: {
     fontSize: tokens.typography.size.base,
     fontWeight: tokens.typography.weight.bold,
-    color: tokens.colors.text,
+    color: colors.text,
   },
   userRole: {
     fontSize: tokens.typography.size.xs,
-    color: tokens.colors.muted,
+    color: colors.muted,
     marginTop: 1,
   },
   closeBtn: {
@@ -389,12 +387,12 @@ const styles = StyleSheet.create({
   },
   closeIcon: {
     fontSize: tokens.typography.size.base,
-    color: tokens.colors.muted,
+    color: colors.muted,
   },
   workerStatusStrip: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: tokens.colors.accent + '10',
+    backgroundColor: colors.accent + '20',
     paddingVertical: 6,
     paddingHorizontal: tokens.spacing.sm,
     borderRadius: tokens.radius.sm,
@@ -404,19 +402,19 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: tokens.colors.accent,
+    backgroundColor: colors.accent,
     marginRight: 6,
   },
   workerStatusText: {
     fontSize: tokens.typography.size.xs,
     fontWeight: tokens.typography.weight.bold,
-    color: tokens.colors.accent,
+    color: colors.accent,
   },
   ecoPointsStrip: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: tokens.colors.accent + '10',
+    backgroundColor: colors.accent + '20',
     paddingVertical: 6,
     paddingHorizontal: tokens.spacing.sm,
     borderRadius: tokens.radius.sm,
@@ -425,11 +423,11 @@ const styles = StyleSheet.create({
   ecoPointsText: {
     fontSize: tokens.typography.size.xs,
     fontWeight: tokens.typography.weight.bold,
-    color: tokens.colors.accent,
+    color: colors.accent,
   },
   ecoPointsArrow: {
     fontSize: tokens.typography.size.xs,
-    color: tokens.colors.accent,
+    color: colors.accent,
     fontWeight: tokens.typography.weight.semibold,
   },
   menuList: {
@@ -444,7 +442,7 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   activeMenuItem: {
-    backgroundColor: tokens.colors.accent + '15',
+    backgroundColor: colors.accent + (isDark ? '25' : '15'),
   },
   menuIcon: {
     fontSize: 18,
@@ -455,10 +453,10 @@ const styles = StyleSheet.create({
   menuText: {
     fontSize: tokens.typography.size.sm,
     fontWeight: tokens.typography.weight.medium,
-    color: tokens.colors.text,
+    color: colors.text,
   },
   activeMenuText: {
-    color: tokens.colors.accent,
+    color: colors.accent,
     fontWeight: tokens.typography.weight.bold,
   },
   subMenuList: {
@@ -473,18 +471,18 @@ const styles = StyleSheet.create({
   },
   subMenuDot: {
     fontSize: tokens.typography.size.base,
-    color: tokens.colors.muted,
+    color: colors.muted,
     marginRight: tokens.spacing.xs,
   },
   subMenuText: {
     fontSize: tokens.typography.size.xs,
-    color: tokens.colors.muted,
+    color: colors.muted,
     fontWeight: tokens.typography.weight.medium,
   },
   drawerFooter: {
     paddingTop: tokens.spacing.sm,
     borderTopWidth: 1,
-    borderTopColor: tokens.colors.border,
+    borderTopColor: colors.border,
   },
   themeRow: {
     flexDirection: 'row',
@@ -492,11 +490,13 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: 12,
     borderTopWidth: 1,
+    borderTopColor: colors.border,
     marginTop: tokens.spacing.xs,
   },
   themeLabel: {
     fontSize: tokens.typography.size.sm,
     fontWeight: tokens.typography.weight.bold,
+    color: colors.text,
   },
   themeToggleBtn: {
     flexDirection: 'row',
@@ -504,6 +504,8 @@ const styles = StyleSheet.create({
     padding: 3,
     borderRadius: tokens.radius.full,
     borderWidth: 1,
+    borderColor: colors.border,
+    backgroundColor: isDark ? '#1e293b' : '#e2e8f0',
   },
   themeTogglePill: {
     paddingHorizontal: 8,
@@ -521,7 +523,7 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   themeTogglePillActiveDark: {
-    backgroundColor: '#0f172a',
+    backgroundColor: '#090d16',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.35,
@@ -541,6 +543,6 @@ const styles = StyleSheet.create({
   logoutText: {
     fontSize: tokens.typography.size.sm,
     fontWeight: tokens.typography.weight.semibold,
-    color: tokens.colors.danger,
+    color: colors.danger,
   },
 });

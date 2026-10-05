@@ -445,7 +445,7 @@ export default function HomeScreen({ user, onLogout }) {
                   onPress={() => handleNavigate('collector_track_location')}
                   activeOpacity={0.7}
                 >
-                  <Text style={[styles.opsChipNumber, { color: tokens.colors.accent }]}>{activeCount}</Text>
+                  <Text style={[styles.opsChipNumber, { color: colors.accent }]}>{activeCount}</Text>
                   <Text style={styles.opsChipLabel}>Map Route</Text>
                 </TouchableOpacity>
               </View>
@@ -485,7 +485,7 @@ export default function HomeScreen({ user, onLogout }) {
 
               {collectorLoading ? (
                 <View style={styles.loadingBox}>
-                  <ActivityIndicator size="small" color={tokens.colors.accent} />
+                  <ActivityIndicator size="small" color={colors.accent} />
                   <Text style={styles.loadingBoxText}>Loading area feed...</Text>
                 </View>
               ) : filteredCollectorComplaints.length === 0 ? (

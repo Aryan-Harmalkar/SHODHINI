@@ -142,7 +142,7 @@ export default function MyComplaintsScreen({
 
         {loading ? (
           <View style={styles.centerContainer}>
-            <ActivityIndicator size="large" color={tokens.colors.accent} />
+            <ActivityIndicator size="large" color={colors.accent} />
             <Text style={styles.loadingText}>Loading reports...</Text>
           </View>
         ) : filtered.length === 0 ? (
