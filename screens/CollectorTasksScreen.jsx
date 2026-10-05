@@ -509,23 +509,26 @@ export default function CollectorTasksScreen({
         )}
       </ScrollView>
 
-        {/* VERIFICATION MODAL */}
-        <Modal
-          visible={verifyModalVisible}
-          transparent={true}
-          animationType="slide"
-          onRequestClose={() => setVerifyModalVisible(false)}
-        >
+        {/* VERIFICATION MODAL OVERLAY (Contained inside screen) */}
+        {verifyModalVisible && (
           <View style={styles.modalOverlay}>
             <View style={styles.modalCard}>
               <View style={styles.modalHeader}>
                 <Text style={styles.modalTitle}>Verify Cleanup</Text>
-                <TouchableOpacity onPress={() => setVerifyModalVisible(false)}>
+                <TouchableOpacity
+                  onPress={() => setVerifyModalVisible(false)}
+                  style={styles.modalCloseBtn}
+                  hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+                >
                   <Text style={styles.modalCloseText}>✕</Text>
                 </TouchableOpacity>
               </View>
 
-              <ScrollView contentContainerStyle={{ paddingBottom: 20 }}>
+              <ScrollView
+                style={styles.modalScroll}
+                contentContainerStyle={styles.modalScrollContent}
+                showsVerticalScrollIndicator={true}
+              >
                 {isFetchingDetails ? (
                   <View style={{ padding: 20, alignItems: 'center' }}>
                     <ActivityIndicator color={tokens.colors.accent} />
@@ -663,7 +666,7 @@ export default function CollectorTasksScreen({
               </ScrollView>
             </View>
           </View>
-        </Modal>
+        )}
       </View>
   );
 }
@@ -1069,27 +1072,41 @@ const styles = StyleSheet.create({
     marginTop: 2,
   },
   modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(15, 23, 42, 0.4)',
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(15, 23, 42, 0.75)',
     justifyContent: 'center',
     alignItems: 'center',
-    padding: 20,
+    padding: 16,
+    zIndex: 9999,
+    elevation: 9999,
   },
   modalCard: {
     backgroundColor: tokens.colors.background,
-    borderRadius: tokens.radius.xl,
-    maxHeight: '90%',
-    padding: tokens.spacing.lg,
+    borderRadius: 20,
     width: '100%',
-    maxWidth: 600,
-    flexShrink: 1,
+    maxHeight: '92%',
+    display: 'flex',
+    flexDirection: 'column',
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.35,
+    shadowRadius: 24,
+    elevation: 12,
+    borderWidth: 1,
+    borderColor: tokens.colors.border,
   },
   modalHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: tokens.spacing.md,
-    paddingBottom: tokens.spacing.sm,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 12,
     borderBottomWidth: 1,
     borderBottomColor: tokens.colors.border,
   },
@@ -1098,9 +1115,21 @@ const styles = StyleSheet.create({
     fontWeight: tokens.typography.weight.bold,
     color: tokens.colors.text,
   },
+  modalCloseBtn: {
+    padding: 4,
+  },
   modalCloseText: {
     fontSize: tokens.typography.size.lg,
     color: tokens.colors.muted,
+    fontWeight: 'bold',
+  },
+  modalScroll: {
+    flex: 1,
+    width: '100%',
+  },
+  modalScrollContent: {
+    padding: 16,
+    paddingBottom: 32,
   },
   compareRow: {
     flexDirection: 'row',
@@ -1119,13 +1148,13 @@ const styles = StyleSheet.create({
   },
   compareImage: {
     width: '100%',
-    height: 150,
+    height: 120,
     borderRadius: tokens.radius.md,
     backgroundColor: '#f1f5f9',
   },
   captureBtn: {
     width: '100%',
-    height: 150,
+    height: 120,
     borderRadius: tokens.radius.md,
     backgroundColor: tokens.colors.surface,
     borderWidth: 2,
