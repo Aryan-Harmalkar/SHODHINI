@@ -258,7 +258,7 @@ export default function WastePickupScreen({
             <Text style={styles.inputLabel}>Pickup Address / House No. & Landmark</Text>
             <TextInput
               style={styles.input}
-              placeholder="e.g. House No. 42, Near Munang Chapel, Assagao"
+              placeholder="e.g. House No. 42, Near Ghateshwar Nagar, Assagao"
               placeholderTextColor={colors.muted}
               value={address}
               onChangeText={setAddress}

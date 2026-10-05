@@ -370,7 +370,7 @@ export default function HomeScreen({ user, onLogout }) {
           <View style={styles.greetingHeader}>
             <Text style={styles.greetingTitle}>Welcome, {user?.name || 'User'}</Text>
             <Text style={styles.greetingSub}>
-              📍 {user?.area || 'Assagao - Ward 1'} • {isCollector ? 'Garbage Collector' : 'Citizen Resident'}
+              📍 {user?.area || 'Assagao - Ward 1 (Ghateshwar Nagar)'} • {isCollector ? 'Garbage Collector' : 'Citizen Resident'}
             </Text>
           </View>
 
@@ -459,7 +459,7 @@ export default function HomeScreen({ user, onLogout }) {
                     </TouchableOpacity>
                   </View>
                   <Text style={styles.liveAlertTitle}>
-                    {liveAlert.category || 'General Waste'} • {user?.area || 'Assagao - Ward 1'}
+                    {liveAlert.category || 'General Waste'} • {user?.area || 'Assagao - Ward 1 (Ghateshwar Nagar)'}
                   </Text>
                   <Text style={styles.liveAlertDesc} numberOfLines={2}>
                     {liveAlert.description || 'New waste issue filed in your ward.'}
@@ -496,7 +496,7 @@ export default function HomeScreen({ user, onLogout }) {
                     </Text>
                     <Text style={styles.dutyCardSubtitle}>
                       {isDutyOnline
-                        ? `Live alerts active for ${user?.area || 'Assagao - Ward 1'}`
+                        ? `Live alerts active for ${user?.area || 'Assagao - Ward 1 (Ghateshwar Nagar)'}`
                         : 'Complaints & notifications paused while off duty.'}
                     </Text>
                   </View>

@@ -462,7 +462,7 @@ export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar 
                     </View>
 
                     <View style={styles.geotagMetaRow}>
-                      <Text style={styles.geotagWard}>🏛️ {selectedAreaName || 'Assagao - Ward 1 (Munang Waddo)'}</Text>
+                      <Text style={styles.geotagWard}>🏛️ {selectedAreaName || 'Assagao - Ward 1 (Ghateshwar Nagar)'}</Text>
                     </View>
                   </View>
 

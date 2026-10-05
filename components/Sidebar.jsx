@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useMemo } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import {
   StyleSheet,
   Text,
@@ -23,8 +23,8 @@ export default function Sidebar({
   onToggleDuty,
 }) {
   const isWorker = isCollector || user?.role === 'worker';
-  const slideAnim = useRef(new Animated.Value(-290)).current;
-  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const [slideAnim] = useState(() => new Animated.Value(-290));
+  const [fadeAnim] = useState(() => new Animated.Value(0));
   const { isDark, colors, toggleTheme } = useTheme();
   const styles = useMemo(() => getStyles(colors, isDark), [colors, isDark]);
 
@@ -46,7 +46,7 @@ export default function Sidebar({
       slideAnim.setValue(-290);
       fadeAnim.setValue(0);
     }
-  }, [visible]);
+  }, [visible, fadeAnim, slideAnim]);
 
   if (!visible) return null;
 
@@ -79,7 +79,7 @@ export default function Sidebar({
             <View style={styles.userInfo}>
               <Text style={styles.userName}>{user?.name || 'User'}</Text>
               <Text style={styles.userRole}>
-                {isWorker ? 'Sanitation Worker' : 'Citizen'} • {user?.area || 'Assagao - Ward 1'}
+                {isWorker ? 'Sanitation Worker' : 'Citizen'} • {user?.area || 'Assagao - Ward 1 (Ghateshwar Nagar)'}
               </Text>
             </View>
           </View>

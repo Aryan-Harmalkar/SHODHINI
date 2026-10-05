@@ -70,7 +70,7 @@ export async function setCollectorDutyStatus(userId, isOnline) {
 export const ASSAGAO_VILLAGE = 'Assagao';
 
 export const ASSAGAO_WARDS = [
-  { id: 1, name: 'Assagao - Ward 1 (Munang Waddo)', shortName: 'Ward 1 (Munang Waddo)', village: 'Assagao' },
+  { id: 1, name: 'Assagao - Ward 1 (Ghateshwar Nagar)', shortName: 'Ward 1 (Ghateshwar Nagar)', village: 'Assagao' },
   { id: 2, name: 'Assagao - Ward 2 (Bouta Waddo)', shortName: 'Ward 2 (Bouta Waddo)', village: 'Assagao' },
   { id: 3, name: 'Assagao - Ward 3 (Socol Waddo)', shortName: 'Ward 3 (Socol Waddo)', village: 'Assagao' },
   { id: 4, name: 'Assagao - Ward 4 (Badem)', shortName: 'Ward 4 (Badem)', village: 'Assagao' },
@@ -89,6 +89,12 @@ export function formatWardName(areaId, fallback = null) {
   if (numId && ASSAGAO_WARD_MAP[numId]) {
     return ASSAGAO_WARD_MAP[numId];
   }
+  if (typeof areaId === 'string') {
+    const strMatch = areaId.match(/Ward\s*(\d+)/i);
+    if (strMatch && ASSAGAO_WARD_MAP[strMatch[1]]) {
+      return ASSAGAO_WARD_MAP[strMatch[1]];
+    }
+  }
   if (typeof fallback === 'string' && fallback.trim()) {
     const match = fallback.match(/Ward\s*(\d+)/i);
     if (match && ASSAGAO_WARD_MAP[match[1]]) {
@@ -96,7 +102,7 @@ export function formatWardName(areaId, fallback = null) {
     }
     return fallback;
   }
-  return 'Assagao - Ward 1 (Munang Waddo)';
+  return 'Assagao - Ward 1 (Ghateshwar Nagar)';
 }
 
 /**

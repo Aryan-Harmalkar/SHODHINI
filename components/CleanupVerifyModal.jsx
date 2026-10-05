@@ -14,21 +14,6 @@ import * as ImagePicker from 'expo-image-picker';
 import { tokens, useTheme } from '../lib/theme';
 import { verifyCleanupWithGemini } from '../lib/aiVision';
 import { getComplaintDetails } from '../db/database';
-import { ensureForegroundPermission, watchPreciseLocation } from '../lib/locationHelper';
-
-// Max allowed distance (metres) between citizen's reported GPS and collector's live GPS
-const MAX_DISTANCE_METERS = 100;
-
-function getDistanceMeters(lat1, lon1, lat2, lon2) {
-  const toRad = (d) => (d * Math.PI) / 180;
-  const R = 6371000;
-  const dLat = toRad(lat2 - lat1);
-  const dLon = toRad(lon2 - lon1);
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
-  return 2 * R * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-}
 
 function formatTimestamp(iso) {
   if (!iso) return '—';
@@ -68,31 +53,32 @@ export default function CleanupVerifyModal({
   const [afterImageUri, setAfterImageUri] = useState(null);
   const [afterImageBase64, setAfterImageBase64] = useState(null);
   const [verificationResult, setVerificationResult] = useState(null);
-  const [collectorLocation, setCollectorLocation] = useState(null);
-  const [distanceMeters, setDistanceMeters] = useState(null);
   const [locMessage, setLocMessage] = useState('');
   const [isFetchingDetails, setIsFetchingDetails] = useState(false);
   const [isVerifying, setIsVerifying] = useState(false);
   const [afterCapturedAt, setAfterCapturedAt] = useState(null);
   const [submitting, setSubmitting] = useState(false);
 
-  useEffect(() => {
-    if (!visible || !complaint) return;
-
-    // Reset verification states
+  const handleClose = () => {
     setBeforeImageBase64(null);
     setAfterImageUri(null);
     setAfterImageBase64(null);
     setVerificationResult(null);
-    setCollectorLocation(null);
     setLocMessage('');
     setCitizenDetails(null);
-    setDistanceMeters(null);
     setAfterCapturedAt(null);
     setSubmitting(false);
-    setIsFetchingDetails(true);
+    onClose();
+  };
+
+  useEffect(() => {
+    if (!visible || !complaint?.id) return;
 
     let isMounted = true;
+    queueMicrotask(() => {
+      if (isMounted) setIsFetchingDetails(true);
+    });
+
     getComplaintDetails(complaint.id)
       .then((details) => {
         if (!isMounted) return;
@@ -113,7 +99,7 @@ export default function CleanupVerifyModal({
     return () => {
       isMounted = false;
     };
-  }, [visible, complaint?.id]);
+  }, [visible, complaint]);
 
   if (!visible || !complaint) return null;
 
@@ -179,10 +165,8 @@ export default function CleanupVerifyModal({
         complaintId: complaint.id,
         afterImageBase64,
         resolvedAt,
-        latitude: collectorLocation?.latitude,
-        longitude: collectorLocation?.longitude,
       });
-      onClose();
+      handleClose();
     } catch (err) {
       Alert.alert('Error', err.message || 'Could not complete verification.');
     } finally {
@@ -222,7 +206,7 @@ export default function CleanupVerifyModal({
         <View style={styles.modalHeader}>
           <Text style={styles.modalTitle}>Verify Cleanup</Text>
           <TouchableOpacity
-            onPress={onClose}
+            onPress={handleClose}
             style={styles.modalCloseBtn}
             hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
           >

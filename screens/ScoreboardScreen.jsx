@@ -27,7 +27,7 @@ export default function ScoreboardScreen({
   const styles = useMemo(() => getStyles(colors, isDark), [colors, isDark]);
 
   const isWorker = user?.role === 'worker' || isCollector;
-  const userWardName = user?.area || (user?.area_id ? formatWardName(user.area_id) : 'Assagao - Ward 1');
+  const userWardName = user?.area || (user?.area_id ? formatWardName(user.area_id) : 'Assagao - Ward 1 (Ghateshwar Nagar)');
 
   const [tab, setTab] = useState(isWorker ? 'wards' : 'citizens');
   const [citizens, setCitizens] = useState([]);

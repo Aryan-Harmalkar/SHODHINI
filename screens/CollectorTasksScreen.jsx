@@ -136,7 +136,7 @@ export default function CollectorTasksScreen({
         <View style={styles.workerHeader}>
           <View>
             <Text style={styles.workerName}>👷 {user?.name || 'Sanitation Team'}</Text>
-            <Text style={styles.workerArea}>📍 {user?.area || 'Assagao - Ward 1'}</Text>
+            <Text style={styles.workerArea}>📍 {user?.area || 'Assagao - Ward 1 (Ghateshwar Nagar)'}</Text>
           </View>
           <TouchableOpacity
             style={[
