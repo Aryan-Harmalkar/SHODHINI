@@ -196,8 +196,8 @@ export default function CollectorTasksScreen({
       Alert.alert('Location Mismatch', 'You must be at the reported location to complete this job.');
       return;
     }
-    if (verificationResult && !verificationResult.isCleaned) {
-      Alert.alert('Verification Failed', 'AI detected that the area is not fully clean or is the wrong location. Please re-clean and capture again.');
+    if (verificationResult && (!verificationResult.isCleaned || !verificationResult.isSameLocation)) {
+      Alert.alert('Verification Failed', verificationResult.rejectionReason || 'AI detected that the area is not fully clean or is the wrong location. Please re-clean and capture again.');
       return;
     }
     setVerifyModalVisible(false);
@@ -629,7 +629,7 @@ export default function CollectorTasksScreen({
                             <Text style={styles.verifyingText}>AI is verifying the cleanup...</Text>
                           </View>
                         ) : verificationResult ? (
-                          verificationResult.isCleaned ? (
+                          verificationResult.isCleaned && verificationResult.isSameLocation ? (
                             <View style={styles.successBox}>
                               <Text style={styles.successBoxText}>✅ Cleanup Verified by AI!</Text>
                             </View>
@@ -647,9 +647,9 @@ export default function CollectorTasksScreen({
                         <TouchableOpacity
                           style={[
                             styles.confirmDoneBtn,
-                            (!afterImageUri || isVerifying || locationVerified === false || (verificationResult && !verificationResult.isCleaned)) && { opacity: 0.5 }
+                            (!afterImageUri || isVerifying || locationVerified === false || (verificationResult && (!verificationResult.isCleaned || !verificationResult.isSameLocation))) && { opacity: 0.5 }
                           ]}
-                          disabled={!afterImageUri || isVerifying || locationVerified === false || (verificationResult && !verificationResult.isCleaned && !!beforeImageBase64)}
+                          disabled={!afterImageUri || isVerifying || locationVerified === false || (verificationResult && (!verificationResult.isCleaned || !verificationResult.isSameLocation) && !!beforeImageBase64)}
                           onPress={handleConfirmDone}
                         >
                           <Text style={styles.confirmDoneBtnText}>Submit & Complete Job</Text>
