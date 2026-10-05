@@ -20,70 +20,13 @@ export default function RewardsScreen({
   const { colors, isDark, toggleTheme } = useTheme();
   const styles = useMemo(() => getStyles(colors, isDark), [colors, isDark]);
 
-  const [activeTab, setActiveTab] = useState(initialTab || 'redeem');
+  const [activeTab, setActiveTab] = useState('history');
 
   useEffect(() => {
-    if (initialTab) {
-      if (initialTab === 'coupons') setActiveTab('coupons');
-      else if (initialTab === 'history') setActiveTab('history');
-      else setActiveTab('redeem');
-    }
+    setActiveTab('history');
   }, [initialTab]);
 
-  const redeemOptions = [
-    {
-      id: 'r1',
-      title: '₹50 Municipal Tax Discount',
-      cost: 50,
-      icon: '🏛️',
-      category: 'Municipal Utility',
-    },
-    {
-      id: 'r2',
-      title: 'Free Tree Sapling & Planter',
-      cost: 30,
-      icon: '🪴',
-      category: 'Environment',
-    },
-    {
-      id: 'r3',
-      title: 'Free Doorstep Bulky Waste Pickup',
-      cost: 40,
-      icon: '🚚',
-      category: 'Sanitation Service',
-    },
-    {
-      id: 'r4',
-      title: '₹100 Eco-Grocery Voucher',
-      cost: 100,
-      icon: '🥬',
-      category: 'Retail Discount',
-    },
-  ];
-
-  const earnedCoupons = [
-    {
-      id: 'c1',
-      code: 'GREENMUNI50',
-      title: '₹50 Property/Water Tax Rebate',
-      validTill: '31 Dec 2026',
-      icon: '🏛️',
-    },
-    {
-      id: 'c2',
-      code: 'FREEPICKUP26',
-      title: '1x Free Bulky Waste Pickup',
-      validTill: '15 Nov 2026',
-      icon: '🚚',
-    },
-    {
-      id: 'c3',
-      code: 'ECOSCRAP10',
-      title: '10% Extra Bonus on Scrap Sale',
-      validTill: '30 Oct 2026',
-      icon: '♻️',
-    },
-  ];
+  // Redemption and coupons removed for now
 
   const pointsHistory = [
     {
@@ -120,36 +63,7 @@ export default function RewardsScreen({
     },
   ];
 
-  const handleRedeem = (item) => {
-    if (ecoPoints < item.cost) {
-      Alert.alert(
-        'Insufficient Points',
-        `You need ${item.cost} points for this reward. You currently have ${ecoPoints} points.`
-      );
-      return;
-    }
-    Alert.alert(
-      'Confirm Redemption',
-      `Redeem "${item.title}" for ${item.cost} points?`,
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Redeem',
-          onPress: () => {
-            Alert.alert(
-              'Reward Redeemed 🎉',
-              `Coupon for ${item.title} has been generated in "My Coupons"!`
-            );
-            setActiveTab('coupons');
-          },
-        },
-      ]
-    );
-  };
-
-  const handleCopyCode = (code) => {
-    Alert.alert('Code Copied', `Coupon code "${code}" is ready to use!`);
-  };
+  // Handlers for redemption removed
 
   return (
     <View style={styles.container}>
@@ -193,91 +107,14 @@ export default function RewardsScreen({
           </TouchableOpacity>
         </View>
 
-        {/* Minimal Tab Selector */}
-        <View style={styles.tabRow}>
-          <TouchableOpacity
-            style={[styles.tabBtn, activeTab === 'redeem' && styles.activeTabBtn]}
-            onPress={() => setActiveTab('redeem')}
-            activeOpacity={0.7}
-          >
-            <Text style={[styles.tabBtnText, activeTab === 'redeem' && styles.activeTabBtnText]}>
-              Redeem
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.tabBtn, activeTab === 'coupons' && styles.activeTabBtn]}
-            onPress={() => setActiveTab('coupons')}
-            activeOpacity={0.7}
-          >
-            <Text style={[styles.tabBtnText, activeTab === 'coupons' && styles.activeTabBtnText]}>
-              My Coupons ({earnedCoupons.length})
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.tabBtn, activeTab === 'history' && styles.activeTabBtn]}
-            onPress={() => setActiveTab('history')}
-            activeOpacity={0.7}
-          >
-            <Text style={[styles.tabBtnText, activeTab === 'history' && styles.activeTabBtnText]}>
-              History
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* TAB 1: REDEEM REWARDS */}
-        {activeTab === 'redeem' && (
-          <View style={styles.listContainer}>
-            {redeemOptions.map((opt) => {
-              const canAfford = ecoPoints >= opt.cost;
-              return (
-                <View key={opt.id} style={styles.rewardCard}>
-                  <Text style={styles.rewardIcon}>{opt.icon}</Text>
-                  <View style={styles.rewardInfo}>
-                    <Text style={styles.rewardTitle}>{opt.title}</Text>
-                    <Text style={styles.rewardCost}>{opt.cost} points</Text>
-                  </View>
-                  <TouchableOpacity
-                    style={[styles.redeemBtn, !canAfford && styles.redeemBtnDisabled]}
-                    onPress={() => handleRedeem(opt)}
-                    activeOpacity={0.8}
-                  >
-                    <Text style={styles.redeemBtnText}>
-                      {canAfford ? 'Redeem' : 'Need pts'}
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-              );
-            })}
-          </View>
-        )}
-
-        {/* TAB 2: MY COUPONS */}
-        {activeTab === 'coupons' && (
-          <View style={styles.listContainer}>
-            {earnedCoupons.map((c) => (
-              <View key={c.id} style={styles.couponCard}>
-                <Text style={styles.couponIcon}>{c.icon}</Text>
-                <View style={styles.couponInfo}>
-                  <Text style={styles.couponTitle}>{c.title}</Text>
-                  <Text style={styles.couponCode}>{c.code}</Text>
-                </View>
-                <TouchableOpacity
-                  style={styles.copyBtn}
-                  onPress={() => handleCopyCode(c.code)}
-                  activeOpacity={0.7}
-                >
-                  <Text style={styles.copyBtnText}>Copy</Text>
-                </TouchableOpacity>
-              </View>
-            ))}
-          </View>
-        )}
-
-        {/* TAB 3: POINTS HISTORY */}
-        {activeTab === 'history' && (
-          <View style={styles.historyCard}>
+        {/* POINTS HISTORY */}
+        <Text style={{
+          fontSize: tokens.typography.size.sm,
+          fontFamily: tokens.typography.family.bold,
+          color: colors.text,
+          marginBottom: tokens.spacing.md,
+        }}>Points History</Text>
+        <View style={styles.historyCard}>
             {pointsHistory.map((h) => {
               const isCredit = h.type === 'credit';
               return (
@@ -294,7 +131,6 @@ export default function RewardsScreen({
               );
             })}
           </View>
-        )}
       </ScrollView>
     </View>
   );
