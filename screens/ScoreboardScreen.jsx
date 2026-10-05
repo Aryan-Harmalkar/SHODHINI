@@ -168,13 +168,19 @@ export default function ScoreboardScreen({
           <View style={styles.listCard}>
             {/* WARD CLEANLINESS RANKING */}
             {tab === 'wards' && (
-              wards.length === 0 ? (
-                <View style={styles.emptyBox}>
-                  <Text style={styles.emptyText}>No ward data recorded yet.</Text>
-                </View>
-              ) : (
-                wards.map((ward) => {
+              (() => {
+                const activeWards = wards.filter((ward) => ward.resolved > 0 || ward.active > 0);
+                if (activeWards.length === 0) {
+                  return (
+                    <View style={styles.emptyBox}>
+                      <Text style={styles.emptyText}>No ward data recorded yet.</Text>
+                    </View>
+                  );
+                }
+                return activeWards.map((ward, index) => {
                   const isUserWard = userWardName.toLowerCase() === ward.name.toLowerCase();
+                  // Re-calculate visual rank for filtered list
+                  const visualRank = index + 1;
 
                   return (
                     <View
@@ -183,7 +189,7 @@ export default function ScoreboardScreen({
                     >
                       <View style={styles.rankBadge}>
                         <Text style={styles.rankNum}>
-                          {ward.rank === 1 ? '🥇' : ward.rank === 2 ? '🥈' : ward.rank === 3 ? '🥉' : `#${ward.rank}`}
+                          {visualRank === 1 ? '🥇' : visualRank === 2 ? '🥈' : visualRank === 3 ? '🥉' : `#${visualRank}`}
                         </Text>
                       </View>
 
@@ -203,8 +209,8 @@ export default function ScoreboardScreen({
                       </View>
                     </View>
                   );
-                })
-              )
+                });
+              })()
             )}
 
             {/* CITIZEN CHAMPIONS */}
