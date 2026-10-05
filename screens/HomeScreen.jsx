@@ -24,6 +24,7 @@ import SupervisorDashboardScreen from './SupervisorDashboardScreen';
 import TrainingScreen from './TrainingScreen';
 import ComplaintCard from '../components/ComplaintCard';
 import CleanupVerifyModal from '../components/CleanupVerifyModal';
+import AdvertisementCarousel from '../components/AdvertisementCarousel';
 import {
   getUserEcoPoints,
   getAreaComplaints,
@@ -504,6 +505,8 @@ export default function HomeScreen({ user, onLogout }) {
                   <Text style={styles.gridCardTitle}>Scrap Recycling</Text>
                 </TouchableOpacity>
               </View>
+
+              <AdvertisementCarousel isDark={isDark} />
             </>
           )}
 
