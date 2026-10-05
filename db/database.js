@@ -305,7 +305,7 @@ export async function fileComplaint({
   latitude = null,
   longitude = null,
   aiAnalysis = null,
-  imageUrl = null,
+  imageBase64 = null,
   requiresAdminVerification = false,
 }) {
   const {
@@ -344,6 +344,7 @@ export async function fileComplaint({
     latitude,
     longitude,
     status: 'Submitted',
+    citizen_image_base64: imageBase64,
   };
 
   const { data, error } = await supabase
@@ -581,6 +582,29 @@ export async function getCollectorCleanupStats(workerId, areaId) {
 }
 
 /**
+ * Fetch a single complaint's details (including base64 images)
+ */
+export async function getComplaintDetails(complaintId) {
+  if (!complaintId) return null;
+  try {
+    const { data, error } = await supabase
+      .from('complaints')
+      .select('*, areas(name), profiles:citizen_id(name, phone)')
+      .eq('id', complaintId)
+      .single();
+
+    if (error) {
+      console.error('Error fetching complaint details:', error.message);
+      return null;
+    }
+    return data;
+  } catch (e) {
+    console.error('Exception in getComplaintDetails:', e);
+    return null;
+  }
+}
+
+/**
  * Fetch complaints for an area (for collectors)
  */
 export async function getAreaComplaints(areaId) {
@@ -618,10 +642,16 @@ export async function getAreaComplaints(areaId) {
 /**
  * Update complaint status (collector action)
  */
-export async function updateComplaintStatus({ complaintId, status, workerId }) {
+export async function updateComplaintStatus({ complaintId, status, workerId, collectorImageBase64 = null, resolvedAt = null }) {
   const updatePayload = { status };
   if (workerId) {
     updatePayload.assigned_worker_id = workerId;
+  }
+  if (collectorImageBase64) {
+    updatePayload.collector_image_base64 = collectorImageBase64;
+  }
+  if (resolvedAt) {
+    updatePayload.resolved_at = resolvedAt;
   }
 
   const { data, error } = await supabase

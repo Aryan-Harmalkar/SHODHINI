@@ -37,6 +37,7 @@ export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar 
 
   // Live Photo States
   const [photoUri, setPhotoUri] = useState(null);
+  const [photoBase64, setPhotoBase64] = useState(null);
   const [photoTimestamp, setPhotoTimestamp] = useState(null);
   const [readableAddress, setReadableAddress] = useState(null);
   const [capturingPhoto, setCapturingPhoto] = useState(false);
@@ -245,6 +246,7 @@ export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar 
       if (!result.canceled && result.assets && result.assets.length > 0) {
         const asset = result.assets[0];
         setPhotoUri(asset.uri);
+        setPhotoBase64(asset.base64);
         setPhotoTimestamp(
           new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
         );
@@ -355,7 +357,7 @@ export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar 
         latitude: pinCoords?.latitude ?? null,
         longitude: pinCoords?.longitude ?? null,
         aiAnalysis: aiResult,
-        imageUrl: photoUri,
+        imageBase64: photoBase64,
       });
 
       setSuccessData({

@@ -8,8 +8,13 @@ import {
   Linking,
   ActivityIndicator,
   Alert,
+  Modal,
+  Image,
 } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
 import { tokens } from '../lib/theme';
+import { verifyCleanupWithGemini } from '../lib/aiVision';
+import { getComplaintDetails } from '../db/database';
 
 export default function CollectorTasksScreen({
   user,
@@ -22,6 +27,16 @@ export default function CollectorTasksScreen({
   onRefresh,
 }) {
   const [activeTab, setActiveTab] = useState(initialTab || 'available');
+
+  // Verification Modal States
+  const [verifyModalVisible, setVerifyModalVisible] = useState(false);
+  const [verifyingComplaint, setVerifyingComplaint] = useState(null);
+  const [beforeImageBase64, setBeforeImageBase64] = useState(null);
+  const [afterImageUri, setAfterImageUri] = useState(null);
+  const [afterImageBase64, setAfterImageBase64] = useState(null);
+  const [isVerifying, setIsVerifying] = useState(false);
+  const [verificationResult, setVerificationResult] = useState(null);
+  const [isFetchingDetails, setIsFetchingDetails] = useState(false);
 
   useEffect(() => {
     if (initialTab) {
@@ -37,6 +52,79 @@ export default function CollectorTasksScreen({
   );
   const completedTasks = complaints.filter((c) => c.status === 'Completed');
   const activeGeoTasks = complaints.filter((c) => c.status !== 'Completed');
+
+  const handleVerifyClick = async (complaint) => {
+    setVerifyingComplaint(complaint);
+    setVerifyModalVisible(true);
+    setBeforeImageBase64(null);
+    setAfterImageUri(null);
+    setAfterImageBase64(null);
+    setVerificationResult(null);
+    setIsFetchingDetails(true);
+
+    try {
+      const details = await getComplaintDetails(complaint.id);
+      if (details?.citizen_image_base64) {
+        setBeforeImageBase64(details.citizen_image_base64);
+      } else {
+        Alert.alert('Notice', 'No before image available for this complaint. Proceed with capture anyway.');
+      }
+    } catch (err) {
+      console.warn('Could not fetch before image', err);
+    } finally {
+      setIsFetchingDetails(false);
+    }
+  };
+
+  const handleTakeAfterPhoto = async () => {
+    try {
+      const cameraPerm = await ImagePicker.requestCameraPermissionsAsync();
+      if (cameraPerm.status !== 'granted') {
+        throw new Error('Camera permission is required to verify cleanup.');
+      }
+
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ['images'],
+        allowsEditing: false,
+        quality: 0.7,
+        base64: true,
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const asset = result.assets[0];
+        setAfterImageUri(asset.uri);
+        setAfterImageBase64(asset.base64);
+
+        if (beforeImageBase64) {
+          setIsVerifying(true);
+          setVerificationResult(null);
+          try {
+            const res = await verifyCleanupWithGemini({
+              beforeBase64: beforeImageBase64,
+              afterBase64: asset.base64,
+            });
+            setVerificationResult(res);
+          } catch (err) {
+            setVerificationResult({ isCleaned: false, rejectionReason: err.message });
+          } finally {
+            setIsVerifying(false);
+          }
+        }
+      }
+    } catch (err) {
+      Alert.alert('Camera Error', err.message);
+    }
+  };
+
+  const handleConfirmDone = async () => {
+    if (verificationResult && !verificationResult.isCleaned) {
+      Alert.alert('Verification Failed', 'AI detected that the area is not fully clean or is the wrong location. Please re-clean and capture again.');
+      return;
+    }
+    setVerifyModalVisible(false);
+    const resolvedAt = new Date().toISOString();
+    await onUpdateStatus(verifyingComplaint.id, 'Completed', afterImageBase64, resolvedAt);
+  };
 
   const handleOpenMaps = (lat, lng, address) => {
     if (lat && lng) {
@@ -240,7 +328,7 @@ export default function CollectorTasksScreen({
                     <View style={styles.actionRow}>
                       <TouchableOpacity
                         style={[styles.doneBtn, isUpdating && styles.btnDisabled]}
-                        onPress={() => onUpdateStatus(item.id, 'Completed')}
+                        onPress={() => handleVerifyClick(item)}
                         disabled={isUpdating}
                         activeOpacity={0.8}
                       >
@@ -333,7 +421,103 @@ export default function CollectorTasksScreen({
             )}
           </View>
         )}
-      </ScrollView>
+        {/* VERIFICATION MODAL */}
+        <Modal
+          visible={verifyModalVisible}
+          transparent={true}
+          animationType="slide"
+          onRequestClose={() => setVerifyModalVisible(false)}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalCard}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalTitle}>Verify Cleanup</Text>
+                <TouchableOpacity onPress={() => setVerifyModalVisible(false)}>
+                  <Text style={styles.modalCloseText}>✕</Text>
+                </TouchableOpacity>
+              </View>
+
+              <ScrollView style={{ maxHeight: '80%' }}>
+                {isFetchingDetails ? (
+                  <View style={{ padding: 20, alignItems: 'center' }}>
+                    <ActivityIndicator color={tokens.colors.accent} />
+                    <Text style={{ marginTop: 10, color: tokens.colors.muted }}>Loading before image...</Text>
+                  </View>
+                ) : (
+                  <>
+                    <View style={styles.compareRow}>
+                      <View style={styles.compareCol}>
+                        <Text style={styles.compareLabel}>Before</Text>
+                        {beforeImageBase64 ? (
+                          <Image
+                            source={{ uri: `data:image/jpeg;base64,${beforeImageBase64}` }}
+                            style={styles.compareImage}
+                          />
+                        ) : (
+                          <View style={[styles.compareImage, { justifyContent: 'center', alignItems: 'center', backgroundColor: '#e2e8f0' }]}>
+                            <Text style={{ color: '#64748b', fontSize: 12 }}>No Image</Text>
+                          </View>
+                        )}
+                      </View>
+                      
+                      <View style={styles.compareCol}>
+                        <Text style={styles.compareLabel}>After</Text>
+                        {afterImageUri ? (
+                          <Image
+                            source={{ uri: afterImageUri }}
+                            style={styles.compareImage}
+                          />
+                        ) : (
+                          <TouchableOpacity style={styles.captureBtn} onPress={handleTakeAfterPhoto}>
+                            <Text style={styles.captureBtnText}>📷 Capture</Text>
+                          </TouchableOpacity>
+                        )}
+                      </View>
+                    </View>
+
+                    {afterImageUri && (
+                      <View style={{ marginTop: 20 }}>
+                        {isVerifying ? (
+                          <View style={styles.verifyingBox}>
+                            <ActivityIndicator size="small" color="#0ea5e9" />
+                            <Text style={styles.verifyingText}>AI is verifying the cleanup...</Text>
+                          </View>
+                        ) : verificationResult ? (
+                          verificationResult.isCleaned ? (
+                            <View style={styles.successBox}>
+                              <Text style={styles.successBoxText}>✅ Cleanup Verified by AI!</Text>
+                            </View>
+                          ) : (
+                            <View style={styles.errorBox}>
+                              <Text style={styles.errorBoxText}>❌ Verification Failed</Text>
+                              <Text style={styles.errorReasonText}>{verificationResult.rejectionReason}</Text>
+                              <TouchableOpacity style={styles.retryBtn} onPress={handleTakeAfterPhoto}>
+                                <Text style={styles.retryBtnText}>Retry Capture</Text>
+                              </TouchableOpacity>
+                            </View>
+                          )
+                        ) : null}
+
+                        <TouchableOpacity
+                          style={[
+                            styles.confirmDoneBtn,
+                            (!afterImageUri || isVerifying || (verificationResult && !verificationResult.isCleaned)) && { opacity: 0.5 }
+                          ]}
+                          disabled={!afterImageUri || isVerifying || (verificationResult && !verificationResult.isCleaned && !!beforeImageBase64)}
+                          onPress={handleConfirmDone}
+                        >
+                          <Text style={styles.confirmDoneBtnText}>Submit & Complete Job</Text>
+                        </TouchableOpacity>
+                      </View>
+                    )}
+                  </>
+                )}
+              </ScrollView>
+            </View>
+          </View>
+        </Modal>
+
+      </View>
     </View>
   );
 }
@@ -677,5 +861,135 @@ const styles = StyleSheet.create({
     color: tokens.colors.muted,
     textAlign: 'center',
     marginTop: 2,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(15, 23, 42, 0.4)',
+    justifyContent: 'flex-end',
+  },
+  modalCard: {
+    backgroundColor: tokens.colors.background,
+    borderTopLeftRadius: tokens.radius.xl,
+    borderTopRightRadius: tokens.radius.xl,
+    maxHeight: '90%',
+    padding: tokens.spacing.lg,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: tokens.spacing.md,
+    paddingBottom: tokens.spacing.sm,
+    borderBottomWidth: 1,
+    borderBottomColor: tokens.colors.border,
+  },
+  modalTitle: {
+    fontSize: tokens.typography.size.base,
+    fontWeight: tokens.typography.weight.bold,
+    color: tokens.colors.text,
+  },
+  modalCloseText: {
+    fontSize: tokens.typography.size.lg,
+    color: tokens.colors.muted,
+  },
+  compareRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 10,
+  },
+  compareCol: {
+    flex: 1,
+  },
+  compareLabel: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    marginBottom: 4,
+    color: tokens.colors.text,
+    textAlign: 'center',
+  },
+  compareImage: {
+    width: '100%',
+    height: 150,
+    borderRadius: tokens.radius.md,
+    backgroundColor: '#f1f5f9',
+  },
+  captureBtn: {
+    width: '100%',
+    height: 150,
+    borderRadius: tokens.radius.md,
+    backgroundColor: tokens.colors.surface,
+    borderWidth: 2,
+    borderColor: tokens.colors.border,
+    borderStyle: 'dashed',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  captureBtnText: {
+    fontSize: 12,
+    color: tokens.colors.muted,
+    fontWeight: 'bold',
+  },
+  verifyingBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 12,
+    backgroundColor: '#e0f2fe',
+    borderRadius: tokens.radius.md,
+  },
+  verifyingText: {
+    marginLeft: 8,
+    color: '#0284c7',
+    fontWeight: 'bold',
+  },
+  successBox: {
+    padding: 12,
+    backgroundColor: '#dcfce7',
+    borderRadius: tokens.radius.md,
+    alignItems: 'center',
+  },
+  successBoxText: {
+    color: '#166534',
+    fontWeight: 'bold',
+  },
+  errorBox: {
+    padding: 12,
+    backgroundColor: '#fee2e2',
+    borderRadius: tokens.radius.md,
+    alignItems: 'center',
+  },
+  errorBoxText: {
+    color: '#991b1b',
+    fontWeight: 'bold',
+  },
+  errorReasonText: {
+    color: '#991b1b',
+    fontSize: 12,
+    marginTop: 4,
+    textAlign: 'center',
+  },
+  retryBtn: {
+    marginTop: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    backgroundColor: '#b91c1c',
+    borderRadius: tokens.radius.sm,
+  },
+  retryBtnText: {
+    color: '#ffffff',
+    fontSize: 11,
+    fontWeight: 'bold',
+  },
+  confirmDoneBtn: {
+    marginTop: 16,
+    backgroundColor: tokens.colors.accent,
+    padding: 14,
+    borderRadius: tokens.radius.md,
+    alignItems: 'center',
+  },
+  confirmDoneBtnText: {
+    color: '#ffffff',
+    fontWeight: 'bold',
+    fontSize: tokens.typography.size.sm,
   },
 });

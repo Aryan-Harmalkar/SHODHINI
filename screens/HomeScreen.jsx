@@ -154,13 +154,15 @@ export default function HomeScreen({ user, onLogout }) {
     }
   };
 
-  const handleStatusUpdate = async (complaintId, newStatus) => {
+  const handleStatusUpdate = async (complaintId, newStatus, collectorImageBase64 = null, resolvedAt = null) => {
     setUpdatingId(complaintId);
     try {
       await updateComplaintStatus({
         complaintId,
         status: newStatus,
         workerId: user.id,
+        collectorImageBase64,
+        resolvedAt,
       });
 
       setCollectorComplaints((prev) =>
