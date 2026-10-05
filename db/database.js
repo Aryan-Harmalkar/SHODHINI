@@ -433,6 +433,21 @@ export async function fileComplaint({
     fullDescription = `${category || 'Roadside waste'} reported at live geotag location.`;
   }
 
+  // Find GCs in the same ward to build the assignment queue
+  let gcQueue = [];
+  try {
+    const { data: workers } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('role', 'WORKER')
+      .eq('area_id', areaId);
+    if (workers && workers.length > 0) {
+      gcQueue = workers.map(w => w.id);
+    }
+  } catch (err) {
+    console.warn('Could not fetch GC queue', err);
+  }
+
   // Attempt insert with core schema fields guaranteed to succeed
   const insertPayload = {
     citizen_id: activeUserId,
@@ -446,7 +461,10 @@ export async function fileComplaint({
     geo_accuracy_m: geoAccuracyM,
     geo_captured_at: geoCapturedAt,
     geo_source: geoSource,
-    status: 'Submitted',
+    gc_queue: gcQueue,
+    assigned_worker_id: gcQueue.length > 0 ? gcQueue[0] : null,
+    assigned_at: gcQueue.length > 0 ? new Date().toISOString() : null,
+    status: gcQueue.length > 0 ? 'Pending GC' : 'Submitted',
     citizen_image_base64: imageBase64,
   };
 
@@ -472,7 +490,7 @@ export async function getUserComplaints(userId) {
     const { data, error } = await supabase
       .from('complaints')
       .select(
-        'id, citizen_id, area_id, category, description, latitude, longitude, status, assigned_worker_id, eco_points, created_at, areas(name)'
+        'id, citizen_id, area_id, category, description, latitude, longitude, status, assigned_worker_id, eco_points, created_at, gc_queue, assigned_at, accepted_at, sla_warning_issued, areas(name)'
       )
       .eq('citizen_id', userId)
       .order('created_at', { ascending: false });
@@ -695,7 +713,7 @@ export async function getAreaComplaints(areaId) {
     const { data, error } = await supabase
       .from('complaints')
       .select(
-        'id, citizen_id, area_id, category, description, latitude, longitude, status, assigned_worker_id, eco_points, created_at, areas(name), profiles:citizen_id(name, phone)'
+        'id, citizen_id, area_id, category, description, latitude, longitude, status, assigned_worker_id, eco_points, created_at, gc_queue, assigned_at, accepted_at, sla_warning_issued, areas(name), profiles:citizen_id(name, phone)'
       )
       .eq('area_id', areaId)
       .order('created_at', { ascending: false });
@@ -760,15 +778,23 @@ export async function updateComplaintStatus({ complaintId, status, workerId, col
 }
 
 /**
- * Reject a complaint (GC action)
+ * Reject a complaint (GC action) or Timeout - Pass to next GC
  */
-export async function rejectComplaint({ complaintId, reason }) {
+export async function rejectComplaint({ complaintId, reason = 'Timeout', currentQueue = [] }) {
+  const newQueue = [...currentQueue].slice(1);
+  const nextWorker = newQueue.length > 0 ? newQueue[0] : null;
+
+  const updatePayload = {
+    gc_queue: newQueue,
+    assigned_worker_id: nextWorker,
+    assigned_at: nextWorker ? new Date().toISOString() : null,
+    status: nextWorker ? 'Pending GC' : 'Submitted',
+    rejection_reason: reason,
+  };
+
   const { data, error } = await supabase
     .from('complaints')
-    .update({ 
-      status: 'Rejected',
-      rejection_reason: reason
-    })
+    .update(updatePayload)
     .eq('id', complaintId)
     .select()
     .single();
@@ -778,6 +804,16 @@ export async function rejectComplaint({ complaintId, reason }) {
   }
 
   return data;
+}
+
+/**
+ * Mark SLA Warning Issued
+ */
+export async function markSlaWarningIssued(complaintId) {
+  await supabase
+    .from('complaints')
+    .update({ sla_warning_issued: true })
+    .eq('id', complaintId);
 }
 
 /**

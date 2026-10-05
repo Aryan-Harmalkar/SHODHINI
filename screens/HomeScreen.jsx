@@ -31,6 +31,7 @@ import {
   getCollectorDutyStatus,
   setCollectorDutyStatus,
   formatWardName,
+  rejectComplaint,
 } from '../db/database';
 import { supabase } from '../lib/supabase';
 import { sendLocalComplaintNotification } from '../lib/notifications';
@@ -212,8 +213,18 @@ export default function HomeScreen({ user, onLogout }) {
             : c
         )
       );
+    } finally {
+      setUpdatingId(null);
+    }
+  };
+
+  const handleRejectTask = async (complaintId, reason, currentQueue) => {
+    setUpdatingId(complaintId);
+    try {
+      await rejectComplaint({ complaintId, reason, currentQueue });
+      await loadCollectorData();
     } catch (err) {
-      Alert.alert('Status Update Failed', err.message || 'Could not update complaint status.');
+      Alert.alert('Rejection Failed', err.message);
     } finally {
       setUpdatingId(null);
     }
@@ -299,6 +310,7 @@ export default function HomeScreen({ user, onLogout }) {
             onRefresh={loadCollectorData}
             isDutyOnline={isDutyOnline}
             onToggleDuty={handleToggleDuty}
+            onRejectTask={handleRejectTask}
           />
         );
       }

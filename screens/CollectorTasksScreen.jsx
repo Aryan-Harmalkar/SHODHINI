@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import {
   StyleSheet,
   Text,
@@ -8,6 +8,7 @@ import {
   Linking,
   ActivityIndicator,
   Alert,
+  Modal,
 } from 'react-native';
 import { tokens, useTheme } from '../lib/theme';
 import CleanupVerifyModal from '../components/CleanupVerifyModal';
@@ -47,6 +48,7 @@ export default function CollectorTasksScreen({
   onRefresh,
   isDutyOnline = true,
   onToggleDuty,
+  onRejectTask,
 }) {
   const { colors, isDark, toggleTheme } = useTheme();
   const styles = useMemo(() => getStyles(colors, isDark), [colors, isDark]);
@@ -63,13 +65,44 @@ export default function CollectorTasksScreen({
   }
 
   const availableTasks = complaints.filter(
-    (c) => !c.status || c.status === 'Submitted'
+    (c) => (!c.status || c.status === 'Submitted') && c.assigned_worker_id !== user?.id
   );
   const pendingTasks = complaints.filter(
-    (c) => c.status === 'In Progress' || c.status === 'Assigned'
+    (c) => c.status === 'In Progress' || c.status === 'Assigned' || (c.status === 'Pending GC' && c.assigned_worker_id === user?.id)
   );
   const completedTasks = complaints.filter((c) => c.status === 'Completed');
   const activeGeoTasks = complaints.filter((c) => c.status !== 'Completed');
+
+  const priorityTasks = complaints.filter(
+    (c) => c.status === 'Pending GC' && c.assigned_worker_id === user?.id
+  );
+
+  const [now, setNow] = useState(Date.now());
+  const autoRejectedRef = useRef(new Set());
+  const [rejectingId, setRejectingId] = useState(null);
+
+  useEffect(() => {
+    if (priorityTasks.length > 0) {
+      const interval = setInterval(() => {
+        setNow(Date.now());
+      }, 1000);
+      return () => clearInterval(interval);
+    }
+  }, [priorityTasks.length]);
+
+  useEffect(() => {
+    // Check timeouts
+    priorityTasks.forEach((pt) => {
+      if (pt.assigned_at && !autoRejectedRef.current.has(pt.id)) {
+        const diffMs = Date.now() - new Date(pt.assigned_at).getTime();
+        const remaining = 180 - Math.floor(diffMs / 1000);
+        if (remaining <= 0) {
+          autoRejectedRef.current.add(pt.id);
+          if (onRejectTask) onRejectTask(pt.id, 'Timeout', pt.gc_queue || []);
+        }
+      }
+    });
+  }, [now, priorityTasks]);
 
   const handleVerifyClick = (complaint) => {
     setVerifyingComplaint(complaint);
@@ -130,6 +163,75 @@ export default function CollectorTasksScreen({
           </TouchableOpacity>
         </View>
       </View>
+
+      {/* PRIORITY ALERTS */}
+      {priorityTasks.length > 0 && isDutyOnline && (
+        <View style={{ paddingHorizontal: 16, paddingTop: 16 }}>
+          {priorityTasks.map((pt) => {
+            const diffMs = Date.now() - new Date(pt.assigned_at).getTime();
+            const remaining = Math.max(0, 180 - Math.floor(diffMs / 1000));
+            const mins = Math.floor(remaining / 60);
+            const secs = remaining % 60;
+            const timeStr = `${mins}:${secs.toString().padStart(2, '0')}`;
+
+            return (
+              <View key={pt.id} style={{ backgroundColor: '#fee2e2', padding: 16, borderRadius: 12, marginBottom: 12, borderWidth: 2, borderColor: '#ef4444' }}>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#991b1b', flex: 1 }}>
+                    🚨 Incoming Priority Request
+                  </Text>
+                  <View style={{ backgroundColor: '#ef4444', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 8 }}>
+                    <Text style={{ color: '#fff', fontWeight: '900', fontSize: 16 }}>{timeStr}</Text>
+                  </View>
+                </View>
+                <Text style={{ color: '#7f1d1d', marginTop: 8, fontSize: 14 }}>
+                  {pt.description}
+                </Text>
+                <Text style={{ color: '#7f1d1d', marginTop: 4, fontSize: 14, fontWeight: 'bold' }}>
+                  📍 {pt.location}
+                </Text>
+                
+                <View style={{ flexDirection: 'row', gap: 12, marginTop: 16 }}>
+                  <TouchableOpacity
+                    style={{ flex: 1, backgroundColor: '#10b981', padding: 14, borderRadius: 8, alignItems: 'center' }}
+                    onPress={() => onUpdateStatus(pt.id, 'In Progress')}
+                    disabled={updatingId === pt.id}
+                  >
+                    {updatingId === pt.id ? (
+                      <ActivityIndicator size="small" color="#fff" />
+                    ) : (
+                      <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 16 }}>✅ Accept</Text>
+                    )}
+                  </TouchableOpacity>
+                  
+                  <TouchableOpacity
+                    style={{ flex: 1, backgroundColor: '#fff', borderWidth: 1, borderColor: '#ef4444', padding: 14, borderRadius: 8, alignItems: 'center' }}
+                    onPress={() => {
+                      Alert.alert(
+                        'Reject Request',
+                        'Are you sure you want to reject this request? It will be sent to the next available collector.',
+                        [
+                          { text: 'Cancel', style: 'cancel' },
+                          { 
+                            text: 'Reject', 
+                            style: 'destructive',
+                            onPress: () => {
+                              if (onRejectTask) onRejectTask(pt.id, 'Rejected by GC', pt.gc_queue || []);
+                            }
+                          }
+                        ]
+                      );
+                    }}
+                    disabled={updatingId === pt.id}
+                  >
+                    <Text style={{ color: '#ef4444', fontWeight: 'bold', fontSize: 16 }}>❌ Reject</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            );
+          })}
+        </View>
+      )}
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         {/* Sleek Worker Header */}
@@ -303,6 +405,14 @@ export default function CollectorTasksScreen({
                       </View>
                     </View>
 
+                    {item.accepted_at && (Date.now() - new Date(item.accepted_at).getTime()) > 3600000 && (
+                      <View style={{ backgroundColor: '#fef2f2', padding: 8, borderRadius: 6, marginBottom: 8, borderWidth: 1, borderColor: '#ef4444' }}>
+                        <Text style={{ color: '#b91c1c', fontWeight: 'bold', fontSize: 13 }}>
+                          ⚠️ SLA Warning: You accepted this over 1 hour ago. Please arrive immediately.
+                        </Text>
+                      </View>
+                    )}
+
                     <Text style={styles.descriptionText}>{item.description}</Text>
 
                     <Text style={styles.locationText}>📍 {item.location}</Text>
@@ -368,6 +478,13 @@ export default function CollectorTasksScreen({
                       <Text style={styles.geoLocation}>📍 {item.location}</Text>
                     </View>
                   </View>
+                  
+                  {item.accepted_at && (Date.now() - new Date(item.accepted_at).getTime()) > 3600000 && (
+                    <Text style={{ color: '#b91c1c', fontWeight: 'bold', fontSize: 12, marginTop: 4, marginLeft: 36 }}>
+                      ⚠️ SLA Missed! (Over 1 hr)
+                    </Text>
+                  )}
+                  
                   <TouchableOpacity
                     style={styles.geoNavBtn}
                     onPress={() => handleOpenMaps(item.latitude, item.longitude, item.location)}
