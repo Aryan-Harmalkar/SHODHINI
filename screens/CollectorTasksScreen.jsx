@@ -237,7 +237,16 @@ export default function CollectorTasksScreen({
         {/* Sleek Worker Header */}
         <View style={styles.workerHeader}>
           <View>
-            <Text style={styles.workerName}>👷 {user?.name || 'Sanitation Team'}</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Text style={styles.workerName}>👷 {user?.name || 'Sanitation Team'}</Text>
+              {user?.gc_class && (
+                <View style={{ marginLeft: 8, backgroundColor: user.gc_class.includes('A') ? '#10b981' : '#fbbf24', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 4 }}>
+                  <Text style={{ fontSize: 10, fontWeight: '900', color: user.gc_class.includes('A') ? '#064e3b' : '#78350f', textTransform: 'uppercase' }}>
+                    {user.gc_class}
+                  </Text>
+                </View>
+              )}
+            </View>
             <Text style={styles.workerArea}>📍 {user?.area || 'Assagao - Ward 1 (Ghateshwar Nagar)'}</Text>
           </View>
           <TouchableOpacity

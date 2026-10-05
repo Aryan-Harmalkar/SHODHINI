@@ -151,7 +151,7 @@ export async function getCurrentUser() {
     const userId = session.user.id;
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select('id, role, name, phone, area_id, eco_points, expo_push_token, areas(id, name)')
+      .select('id, role, name, phone, area_id, eco_points, expo_push_token, gc_class, areas(id, name)')
       .eq('id', userId)
       .maybeSingle();
 
@@ -294,6 +294,7 @@ export async function signUpUser({ role, name, phone, areaId, password }) {
       phone: cleanPhone,
       area_id: areaId || null,
       eco_points: 0,
+      gc_class: role === 'WORKER' ? 'Class B' : null,
     });
   } catch (pe) {
     console.warn('Profile upsert note:', pe);
