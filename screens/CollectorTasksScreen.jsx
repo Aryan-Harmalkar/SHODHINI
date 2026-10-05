@@ -1071,14 +1071,14 @@ const styles = StyleSheet.create({
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(15, 23, 42, 0.4)',
-    justifyContent: 'flex-end',
+    justifyContent: 'center',
     alignItems: 'center',
+    padding: 20,
   },
   modalCard: {
     backgroundColor: tokens.colors.background,
-    borderTopLeftRadius: tokens.radius.xl,
-    borderTopRightRadius: tokens.radius.xl,
-    maxHeight: '90%',
+    borderRadius: tokens.radius.xl,
+    maxHeight: '100%',
     padding: tokens.spacing.lg,
     width: '100%',
     maxWidth: 600,
