@@ -568,6 +568,7 @@ export default function CollectorTasksScreen({
                           <Image
                             source={{ uri: `data:image/jpeg;base64,${beforeImageBase64}` }}
                             style={styles.compareImage}
+                            resizeMode="cover"
                           />
                         ) : (
                           <View style={[styles.compareImage, { justifyContent: 'center', alignItems: 'center', backgroundColor: '#e2e8f0' }]}>
@@ -582,6 +583,7 @@ export default function CollectorTasksScreen({
                           <Image
                             source={{ uri: afterImageUri }}
                             style={styles.compareImage}
+                            resizeMode="cover"
                           />
                         ) : (
                           <TouchableOpacity style={styles.captureBtn} onPress={handleTakeAfterPhoto}>
@@ -1070,6 +1072,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'rgba(15, 23, 42, 0.4)',
     justifyContent: 'flex-end',
+    alignItems: 'center',
   },
   modalCard: {
     backgroundColor: tokens.colors.background,
@@ -1077,6 +1080,8 @@ const styles = StyleSheet.create({
     borderTopRightRadius: tokens.radius.xl,
     maxHeight: '90%',
     padding: tokens.spacing.lg,
+    width: '100%',
+    maxWidth: 600,
   },
   modalHeader: {
     flexDirection: 'row',
