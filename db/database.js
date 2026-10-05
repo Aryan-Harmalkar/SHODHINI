@@ -1,3 +1,5 @@
+import { Platform } from 'react-native';
+import * as SecureStore from 'expo-secure-store';
 import { supabase } from '../lib/supabase';
 
 /**
@@ -5,6 +7,64 @@ import { supabase } from '../lib/supabase';
  */
 export async function initDatabase() {
   return true;
+}
+
+/**
+ * Get collector on-duty status (true = Online/Active, false = Offline/Off-Duty)
+ */
+export async function getCollectorDutyStatus(userId) {
+  if (!userId) return true;
+  const storageKey = `shodhini_collector_duty_${userId}`;
+  try {
+    if (Platform.OS === 'web' && typeof localStorage !== 'undefined') {
+      const stored = localStorage.getItem(storageKey);
+      if (stored !== null) return stored === 'true';
+    } else {
+      const stored = await SecureStore.getItemAsync(storageKey);
+      if (stored !== null) return stored === 'true';
+    }
+  } catch {}
+
+  try {
+    const { data } = await supabase
+      .from('profiles')
+      .select('is_online')
+      .eq('id', userId)
+      .maybeSingle();
+    if (data && typeof data.is_online === 'boolean') {
+      return data.is_online;
+    }
+  } catch {}
+
+  return true;
+}
+
+/**
+ * Set collector on-duty status (Online vs Offline)
+ */
+export async function setCollectorDutyStatus(userId, isOnline) {
+  if (!userId) return isOnline;
+  const storageKey = `shodhini_collector_duty_${userId}`;
+  const strVal = isOnline ? 'true' : 'false';
+
+  try {
+    if (Platform.OS === 'web' && typeof localStorage !== 'undefined') {
+      localStorage.setItem(storageKey, strVal);
+    } else {
+      await SecureStore.setItemAsync(storageKey, strVal);
+    }
+  } catch {}
+
+  try {
+    await supabase
+      .from('profiles')
+      .update({ is_online: Boolean(isOnline) })
+      .eq('id', userId);
+  } catch (err) {
+    console.warn('Note: Could not update remote is_online status:', err?.message);
+  }
+
+  return isOnline;
 }
 
 export const ASSAGAO_VILLAGE = 'Assagao';

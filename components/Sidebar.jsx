@@ -19,6 +19,8 @@ export default function Sidebar({
   ecoPoints = 0,
   onLogout,
   isCollector = false,
+  isDutyOnline = true,
+  onToggleDuty,
 }) {
   const isWorker = isCollector || user?.role === 'worker';
   const slideAnim = useRef(new Animated.Value(-290)).current;
@@ -92,10 +94,24 @@ export default function Sidebar({
 
         {/* Quick Status / Points Strip */}
         {isWorker ? (
-          <View style={styles.workerStatusStrip}>
-            <View style={styles.dutyDot} />
-            <Text style={styles.workerStatusText}>Active Duty • {user?.area || 'Assagao - Ward 1'}</Text>
-          </View>
+          <TouchableOpacity
+            style={[
+              styles.workerStatusStrip,
+              isDutyOnline ? styles.workerStatusStripOnline : styles.workerStatusStripOffline,
+            ]}
+            onPress={onToggleDuty}
+            activeOpacity={0.7}
+          >
+            <View style={[styles.dutyDot, isDutyOnline ? styles.dutyDotOnline : styles.dutyDotOffline]} />
+            <Text style={[styles.workerStatusText, isDutyOnline ? styles.workerStatusTextOnline : styles.workerStatusTextOffline]}>
+              {isDutyOnline ? '🟢 On Duty (Online)' : '⚪ Off Duty (Offline)'}
+            </Text>
+            {onToggleDuty && (
+              <View style={styles.dutyPillMini}>
+                <Text style={styles.dutySwitchHint}>{isDutyOnline ? 'Go Off' : 'Go On'}</Text>
+              </View>
+            )}
+          </TouchableOpacity>
         ) : (
           <TouchableOpacity
             style={styles.ecoPointsStrip}
@@ -411,23 +427,54 @@ const getStyles = (colors, isDark) => StyleSheet.create({
   workerStatusStrip: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.accent + '20',
-    paddingVertical: 6,
+    paddingVertical: 7,
     paddingHorizontal: tokens.spacing.sm,
     borderRadius: tokens.radius.sm,
     marginBottom: tokens.spacing.sm,
+    borderWidth: 1,
+  },
+  workerStatusStripOnline: {
+    backgroundColor: isDark ? 'rgba(34,197,94,0.16)' : '#ecfdf5',
+    borderColor: isDark ? 'rgba(34,197,94,0.35)' : '#a7f3d0',
+  },
+  workerStatusStripOffline: {
+    backgroundColor: isDark ? 'rgba(148,163,184,0.12)' : '#f1f5f9',
+    borderColor: isDark ? 'rgba(148,163,184,0.25)' : '#cbd5e1',
   },
   dutyDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: colors.accent,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
     marginRight: 6,
+  },
+  dutyDotOnline: {
+    backgroundColor: '#22c55e',
+  },
+  dutyDotOffline: {
+    backgroundColor: isDark ? '#94a3b8' : '#64748b',
   },
   workerStatusText: {
     fontSize: tokens.typography.size.xs,
     fontWeight: tokens.typography.weight.bold,
-    color: colors.accent,
+    flex: 1,
+  },
+  workerStatusTextOnline: {
+    color: isDark ? '#4ade80' : '#15803d',
+  },
+  workerStatusTextOffline: {
+    color: colors.muted,
+  },
+  dutyPillMini: {
+    backgroundColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: tokens.radius.full,
+  },
+  dutySwitchHint: {
+    fontSize: 10,
+    fontWeight: tokens.typography.weight.bold,
+    color: colors.muted,
+    textTransform: 'uppercase',
   },
   ecoPointsStrip: {
     flexDirection: 'row',

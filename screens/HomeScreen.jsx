@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   StyleSheet,
   Text,
@@ -23,8 +23,12 @@ import {
   getUserEcoPoints,
   getAreaComplaints,
   updateComplaintStatus,
+  getCollectorDutyStatus,
+  setCollectorDutyStatus,
+  formatWardName,
 } from '../db/database';
 import { supabase } from '../lib/supabase';
+import { sendLocalComplaintNotification } from '../lib/notifications';
 import { tokens, useTheme } from '../lib/theme';
 
 export default function HomeScreen({ user, onLogout }) {
@@ -81,6 +85,29 @@ export default function HomeScreen({ user, onLogout }) {
   const [collectorFilter, setCollectorFilter] = useState('ALL');
   const [dashboardVerifyComplaint, setDashboardVerifyComplaint] = useState(null);
 
+  // Garbage Collector Online/Offline Duty State & Live Alerts
+  const [isDutyOnline, setIsDutyOnline] = useState(true);
+  const isDutyOnlineRef = useRef(true);
+  const [liveAlert, setLiveAlert] = useState(null);
+
+  useEffect(() => {
+    if (isCollector && user?.id) {
+      getCollectorDutyStatus(user.id).then((status) => {
+        setIsDutyOnline(status);
+        isDutyOnlineRef.current = status;
+      });
+    }
+  }, [isCollector, user?.id]);
+
+  const handleToggleDuty = async () => {
+    const next = !isDutyOnline;
+    setIsDutyOnline(next);
+    isDutyOnlineRef.current = next;
+    if (user?.id) {
+      await setCollectorDutyStatus(user.id, next);
+    }
+  };
+
   useEffect(() => {
     if (user?.id && !isCollector) {
       loadEcoPoints();
@@ -103,8 +130,16 @@ export default function HomeScreen({ user, onLogout }) {
           table: 'complaints',
           filter: `area_id=eq.${user.area_id}`,
         },
-        async () => {
+        async (payload) => {
+          // If collector is offline, suppress notifications & alerts
+          if (!isDutyOnlineRef.current) return;
+
           loadCollectorData();
+          sendLocalComplaintNotification({
+            title: `🚨 New Waste Alert: ${formatWardName(user.area_id)}`,
+            body: `${payload.new.category || 'General Waste'}: ${payload.new.description || 'New report filed in Assagao.'}`,
+          });
+          setLiveAlert(payload.new);
         }
       )
       .on(
@@ -274,6 +309,8 @@ export default function HomeScreen({ user, onLogout }) {
             onBackToHome={() => setCurrentScreen('home')}
             onOpenSidebar={() => setSidebarVisible(true)}
             onRefresh={loadCollectorData}
+            isDutyOnline={isDutyOnline}
+            onToggleDuty={handleToggleDuty}
           />
         );
       }
@@ -329,10 +366,20 @@ export default function HomeScreen({ user, onLogout }) {
                 <Text style={styles.topPointsText}>🌱 {ecoPoints} pts</Text>
               </TouchableOpacity>
             ) : (
-              <View style={styles.topDutyPill}>
-                <View style={styles.dutyDot} />
-                <Text style={styles.topDutyText}>{user?.area || 'Assagao - Ward 1'}</Text>
-              </View>
+              <TouchableOpacity
+                style={[
+                  styles.topDutyPill,
+                  isDutyOnline ? styles.topDutyPillOnline : styles.topDutyPillOffline,
+                ]}
+                onPress={handleToggleDuty}
+                activeOpacity={0.8}
+                accessibilityLabel="Toggle Collector Duty Status"
+              >
+                <View style={[styles.dutyDot, isDutyOnline ? styles.dutyDotOnline : styles.dutyDotOffline]} />
+                <Text style={[styles.topDutyText, isDutyOnline ? styles.topDutyTextOnline : styles.topDutyTextOffline]}>
+                  {isDutyOnline ? '🟢 On Duty' : '⚪ Off Duty'}
+                </Text>
+              </TouchableOpacity>
             )}
           </View>
         </View>
@@ -422,6 +469,87 @@ export default function HomeScreen({ user, onLogout }) {
           {/* COLLECTOR VIEW: CLEAN FIELD OPERATIONS */}
           {isCollector && (
             <View style={styles.collectorFeedContainer}>
+              {/* LIVE COMPLAINT ALERT BANNER */}
+              {liveAlert && (
+                <View style={styles.liveAlertCard}>
+                  <View style={styles.liveAlertTop}>
+                    <View style={styles.liveAlertBadge}>
+                      <Text style={styles.liveAlertBadgeText}>🚨 NEW COMPLAINT ALERT</Text>
+                    </View>
+                    <TouchableOpacity
+                      onPress={() => setLiveAlert(null)}
+                      style={styles.liveAlertClose}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={styles.liveAlertCloseText}>✕</Text>
+                    </TouchableOpacity>
+                  </View>
+                  <Text style={styles.liveAlertTitle}>
+                    {liveAlert.category || 'General Waste'} • {user?.area || 'Assagao - Ward 1'}
+                  </Text>
+                  <Text style={styles.liveAlertDesc} numberOfLines={2}>
+                    {liveAlert.description || 'New waste issue filed in your ward.'}
+                  </Text>
+                  <View style={styles.liveAlertActions}>
+                    <TouchableOpacity
+                      style={styles.liveAlertAcceptBtn}
+                      onPress={() => {
+                        handleStatusUpdate(liveAlert.id, 'In Progress');
+                        setLiveAlert(null);
+                      }}
+                      activeOpacity={0.8}
+                    >
+                      <Text style={styles.liveAlertAcceptText}>⚡ Accept Job</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.liveAlertDismissBtn}
+                      onPress={() => setLiveAlert(null)}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={styles.liveAlertDismissText}>Dismiss</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              )}
+
+              {/* DUTY STATUS SWITCHER CARD */}
+              <View style={[styles.dutyCard, isDutyOnline ? styles.dutyCardOnline : styles.dutyCardOffline]}>
+                <View style={styles.dutyCardLeft}>
+                  <View style={[styles.dutyIndicatorDot, isDutyOnline ? styles.dutyDotOnline : styles.dutyDotOffline]} />
+                  <View style={styles.dutyCardTextBox}>
+                    <Text style={[styles.dutyCardTitle, isDutyOnline ? styles.dutyTitleOnline : styles.dutyTitleOffline]}>
+                      {isDutyOnline ? '🟢 Online • On Duty' : '⚪ Offline • Off Duty'}
+                    </Text>
+                    <Text style={styles.dutyCardSubtitle}>
+                      {isDutyOnline
+                        ? `Live alerts active for ${user?.area || 'Assagao - Ward 1'}`
+                        : 'Complaints & notifications paused while off duty.'}
+                    </Text>
+                  </View>
+                </View>
+                <TouchableOpacity
+                  style={[styles.dutyToggleBtn, isDutyOnline ? styles.dutyToggleBtnOffline : styles.dutyToggleBtnOnline]}
+                  onPress={handleToggleDuty}
+                  activeOpacity={0.8}
+                >
+                  <Text style={[styles.dutyToggleBtnText, isDutyOnline ? styles.dutyToggleTextOffline : styles.dutyToggleTextOnline]}>
+                    {isDutyOnline ? 'Go Offline' : 'Go Online 🟢'}
+                  </Text>
+                </TouchableOpacity>
+              </View>
+
+              {!isDutyOnline && (
+                <View style={styles.offlineNoticeBanner}>
+                  <Text style={styles.offlineNoticeIcon}>⏸️</Text>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.offlineNoticeTitle}>You are currently Off Duty</Text>
+                    <Text style={styles.offlineNoticeDesc}>
+                      Switch to Online mode to receive realtime complaint dispatches and push notifications in your ward.
+                    </Text>
+                  </View>
+                </View>
+              )}
+
               {/* Quick Operations Strip */}
               <View style={styles.collectorOpsStrip}>
                 <TouchableOpacity
@@ -532,6 +660,8 @@ export default function HomeScreen({ user, onLogout }) {
         ecoPoints={isCollector ? 0 : ecoPoints}
         onLogout={onLogout}
         isCollector={isCollector}
+        isDutyOnline={isDutyOnline}
+        onToggleDuty={handleToggleDuty}
       />
       {isCollector && (
         <CleanupVerifyModal
@@ -640,24 +770,214 @@ const getStyles = (colors, isDark) =>
     topDutyPill: {
       flexDirection: 'row',
       alignItems: 'center',
-      backgroundColor: colors.accent + '20',
       paddingVertical: 4,
       paddingHorizontal: tokens.spacing.sm,
       borderRadius: tokens.radius.full,
       borderWidth: 1,
-      borderColor: colors.accent + '35',
+    },
+    topDutyPillOnline: {
+      backgroundColor: isDark ? 'rgba(34,197,94,0.18)' : '#ecfdf5',
+      borderColor: '#22c55e',
+    },
+    topDutyPillOffline: {
+      backgroundColor: isDark ? 'rgba(148,163,184,0.15)' : '#f1f5f9',
+      borderColor: isDark ? 'rgba(148,163,184,0.3)' : '#cbd5e1',
     },
     dutyDot: {
-      width: 6,
-      height: 6,
-      borderRadius: 3,
-      backgroundColor: colors.accent,
+      width: 8,
+      height: 8,
+      borderRadius: 4,
       marginRight: 6,
     },
+    dutyDotOnline: {
+      backgroundColor: '#22c55e',
+    },
+    dutyDotOffline: {
+      backgroundColor: isDark ? '#94a3b8' : '#64748b',
+    },
     topDutyText: {
-      color: colors.accent,
       fontSize: tokens.typography.size.xs,
       fontWeight: tokens.typography.weight.bold,
+    },
+    topDutyTextOnline: {
+      color: isDark ? '#4ade80' : '#15803d',
+    },
+    topDutyTextOffline: {
+      color: colors.muted,
+    },
+    dutyCard: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      padding: tokens.spacing.md,
+      borderRadius: tokens.radius.lg,
+      borderWidth: 1,
+      marginBottom: tokens.spacing.md,
+      gap: tokens.spacing.sm,
+    },
+    dutyCardOnline: {
+      backgroundColor: isDark ? 'rgba(34,197,94,0.1)' : '#f0fdf4',
+      borderColor: isDark ? 'rgba(34,197,94,0.35)' : '#bbf7d0',
+    },
+    dutyCardOffline: {
+      backgroundColor: isDark ? 'rgba(148,163,184,0.08)' : '#f8fafc',
+      borderColor: colors.border,
+    },
+    dutyCardLeft: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      flex: 1,
+      gap: tokens.spacing.sm,
+    },
+    dutyIndicatorDot: {
+      width: 12,
+      height: 12,
+      borderRadius: 6,
+    },
+    dutyCardTextBox: {
+      flex: 1,
+    },
+    dutyCardTitle: {
+      fontSize: tokens.typography.size.sm,
+      fontWeight: tokens.typography.weight.bold,
+    },
+    dutyTitleOnline: {
+      color: isDark ? '#4ade80' : '#166534',
+    },
+    dutyTitleOffline: {
+      color: colors.muted,
+    },
+    dutyCardSubtitle: {
+      fontSize: tokens.typography.size.xs,
+      color: colors.muted,
+      marginTop: 2,
+    },
+    dutyToggleBtn: {
+      paddingVertical: 8,
+      paddingHorizontal: 14,
+      borderRadius: tokens.radius.full,
+    },
+    dutyToggleBtnOnline: {
+      backgroundColor: '#22c55e',
+    },
+    dutyToggleBtnOffline: {
+      backgroundColor: isDark ? 'rgba(239,68,68,0.15)' : '#fee2e2',
+      borderWidth: 1,
+      borderColor: isDark ? 'rgba(239,68,68,0.4)' : '#fca5a5',
+    },
+    dutyToggleBtnText: {
+      fontSize: tokens.typography.size.xs,
+      fontWeight: tokens.typography.weight.bold,
+    },
+    dutyToggleTextOnline: {
+      color: '#ffffff',
+    },
+    dutyToggleTextOffline: {
+      color: isDark ? '#f87171' : '#b91c1c',
+    },
+    liveAlertCard: {
+      backgroundColor: isDark ? '#1e293b' : '#ffffff',
+      borderRadius: tokens.radius.lg,
+      padding: tokens.spacing.md,
+      borderWidth: 2,
+      borderColor: '#f59e0b',
+      marginBottom: tokens.spacing.md,
+      ...tokens.shadow.md,
+    },
+    liveAlertTop: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      marginBottom: 6,
+    },
+    liveAlertBadge: {
+      backgroundColor: '#fef3c7',
+      paddingVertical: 3,
+      paddingHorizontal: 8,
+      borderRadius: tokens.radius.full,
+      borderWidth: 1,
+      borderColor: '#fde68a',
+    },
+    liveAlertBadgeText: {
+      fontSize: 11,
+      fontWeight: tokens.typography.weight.extrabold,
+      color: '#b45309',
+    },
+    liveAlertClose: {
+      padding: 4,
+    },
+    liveAlertCloseText: {
+      fontSize: 14,
+      color: colors.muted,
+      fontWeight: tokens.typography.weight.bold,
+    },
+    liveAlertTitle: {
+      fontSize: tokens.typography.size.sm,
+      fontWeight: tokens.typography.weight.bold,
+      color: colors.text,
+      marginBottom: 4,
+    },
+    liveAlertDesc: {
+      fontSize: tokens.typography.size.xs,
+      color: colors.muted,
+      marginBottom: tokens.spacing.sm,
+      lineHeight: 18,
+    },
+    liveAlertActions: {
+      flexDirection: 'row',
+      gap: tokens.spacing.sm,
+    },
+    liveAlertAcceptBtn: {
+      flex: 1,
+      backgroundColor: '#22c55e',
+      paddingVertical: 8,
+      borderRadius: tokens.radius.md,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    liveAlertAcceptText: {
+      color: '#ffffff',
+      fontSize: tokens.typography.size.xs,
+      fontWeight: tokens.typography.weight.bold,
+    },
+    liveAlertDismissBtn: {
+      paddingVertical: 8,
+      paddingHorizontal: 14,
+      borderRadius: tokens.radius.md,
+      borderWidth: 1,
+      borderColor: colors.border,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    liveAlertDismissText: {
+      color: colors.muted,
+      fontSize: tokens.typography.size.xs,
+      fontWeight: tokens.typography.weight.medium,
+    },
+    offlineNoticeBanner: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: isDark ? 'rgba(234,179,8,0.1)' : '#fffbeb',
+      borderWidth: 1,
+      borderColor: isDark ? 'rgba(234,179,8,0.3)' : '#fde68a',
+      borderRadius: tokens.radius.md,
+      padding: tokens.spacing.md,
+      marginBottom: tokens.spacing.md,
+      gap: tokens.spacing.sm,
+    },
+    offlineNoticeIcon: {
+      fontSize: 22,
+    },
+    offlineNoticeTitle: {
+      fontSize: tokens.typography.size.xs,
+      fontWeight: tokens.typography.weight.bold,
+      color: isDark ? '#facc15' : '#854d0e',
+      marginBottom: 2,
+    },
+    offlineNoticeDesc: {
+      fontSize: 11,
+      color: isDark ? '#d4d4d8' : '#713f12',
+      lineHeight: 16,
     },
     scrollContent: {
       padding: tokens.spacing.md,

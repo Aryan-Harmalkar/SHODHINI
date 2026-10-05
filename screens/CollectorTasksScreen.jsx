@@ -45,6 +45,8 @@ export default function CollectorTasksScreen({
   onBackToHome,
   onOpenSidebar,
   onRefresh,
+  isDutyOnline = true,
+  onToggleDuty,
 }) {
   const { colors, isDark, toggleTheme } = useTheme();
   const styles = useMemo(() => getStyles(colors, isDark), [colors, isDark]);
@@ -136,11 +138,39 @@ export default function CollectorTasksScreen({
             <Text style={styles.workerName}>👷 {user?.name || 'Sanitation Team'}</Text>
             <Text style={styles.workerArea}>📍 {user?.area || 'Assagao - Ward 1'}</Text>
           </View>
-          <View style={styles.dutyPill}>
-            <View style={styles.dutyDot} />
-            <Text style={styles.dutyText}>ON DUTY</Text>
-          </View>
+          <TouchableOpacity
+            style={[
+              styles.dutyPill,
+              isDutyOnline ? styles.dutyPillOnline : styles.dutyPillOffline,
+            ]}
+            onPress={onToggleDuty}
+            activeOpacity={0.7}
+          >
+            <View style={[styles.dutyDot, isDutyOnline ? styles.dutyDotOnline : styles.dutyDotOffline]} />
+            <Text style={[styles.dutyText, isDutyOnline ? styles.dutyTextOnline : styles.dutyTextOffline]}>
+              {isDutyOnline ? 'ONLINE' : 'OFFLINE'}
+            </Text>
+          </TouchableOpacity>
         </View>
+
+        {!isDutyOnline && (
+          <TouchableOpacity
+            style={styles.offlineAlertBar}
+            onPress={onToggleDuty}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.offlineAlertIcon}>⏸️</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.offlineAlertTitle}>You are currently Offline</Text>
+              <Text style={styles.offlineAlertSub}>
+                New complaint alerts & dispatches are paused. Tap to go Online.
+              </Text>
+            </View>
+            <View style={styles.goOnlineBadge}>
+              <Text style={styles.goOnlineBadgeText}>Go Online 🟢</Text>
+            </View>
+          </TouchableOpacity>
+        )}
 
         {/* Single Cohesive Tab Selector */}
         <View style={styles.tabBar}>
@@ -500,24 +530,75 @@ const getStyles = (colors, isDark) =>
     dutyPill: {
       flexDirection: 'row',
       alignItems: 'center',
-      backgroundColor: colors.accent + '20',
       paddingVertical: 4,
       paddingHorizontal: tokens.spacing.sm,
       borderRadius: tokens.radius.full,
       borderWidth: 1,
-      borderColor: colors.accent + '40',
+    },
+    dutyPillOnline: {
+      backgroundColor: isDark ? 'rgba(34,197,94,0.18)' : '#ecfdf5',
+      borderColor: '#22c55e',
+    },
+    dutyPillOffline: {
+      backgroundColor: isDark ? 'rgba(148,163,184,0.15)' : '#f1f5f9',
+      borderColor: isDark ? 'rgba(148,163,184,0.3)' : '#cbd5e1',
     },
     dutyDot: {
-      width: 6,
-      height: 6,
-      borderRadius: 3,
-      backgroundColor: colors.accent,
+      width: 7,
+      height: 7,
+      borderRadius: 3.5,
       marginRight: 6,
     },
+    dutyDotOnline: {
+      backgroundColor: '#22c55e',
+    },
+    dutyDotOffline: {
+      backgroundColor: isDark ? '#94a3b8' : '#64748b',
+    },
     dutyText: {
-      color: colors.accent,
       fontSize: 10,
       fontWeight: tokens.typography.weight.bold,
+    },
+    dutyTextOnline: {
+      color: isDark ? '#4ade80' : '#15803d',
+    },
+    dutyTextOffline: {
+      color: colors.muted,
+    },
+    offlineAlertBar: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: isDark ? 'rgba(234,179,8,0.1)' : '#fffbeb',
+      borderWidth: 1,
+      borderColor: isDark ? 'rgba(234,179,8,0.3)' : '#fde68a',
+      borderRadius: tokens.radius.md,
+      padding: tokens.spacing.sm,
+      marginBottom: tokens.spacing.md,
+      gap: tokens.spacing.sm,
+    },
+    offlineAlertIcon: {
+      fontSize: 20,
+    },
+    offlineAlertTitle: {
+      fontSize: tokens.typography.size.xs,
+      fontWeight: tokens.typography.weight.bold,
+      color: isDark ? '#facc15' : '#854d0e',
+    },
+    offlineAlertSub: {
+      fontSize: 10,
+      color: isDark ? '#d4d4d8' : '#713f12',
+      marginTop: 1,
+    },
+    goOnlineBadge: {
+      backgroundColor: '#22c55e',
+      paddingVertical: 4,
+      paddingHorizontal: 8,
+      borderRadius: tokens.radius.full,
+    },
+    goOnlineBadgeText: {
+      fontSize: 10,
+      fontWeight: tokens.typography.weight.bold,
+      color: '#ffffff',
     },
     tabBar: {
       flexDirection: 'row',
