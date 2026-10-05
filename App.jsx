@@ -7,6 +7,7 @@ import {
   ActivityIndicator,
   Text,
   Platform,
+  Image,
 } from 'react-native';
 import HomeScreen from './screens/HomeScreen';
 import AuthScreen from './screens/AuthScreen';
@@ -65,7 +66,12 @@ function MainAppShell() {
   if (initializing) {
     return (
       <View style={[styles.centerContainer, { backgroundColor: colors.background }]}>
-        <ActivityIndicator size="large" color="#2e7d32" />
+        <Image
+          source={require('./assets/logo.png')}
+          style={{ width: 140, height: 140, marginBottom: 16 }}
+          resizeMode="contain"
+        />
+        <ActivityIndicator size="large" color="#16a34a" />
         <Text style={[styles.loadingText, { color: colors.text }]}>Loading SHODHINI...</Text>
       </View>
     );

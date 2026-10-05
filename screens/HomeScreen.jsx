@@ -7,6 +7,7 @@ import {
   ScrollView,
   ActivityIndicator,
   Alert,
+  Image,
 } from 'react-native';
 import Sidebar from '../components/Sidebar';
 import FileComplaintScreen from './FileComplaintScreen';
@@ -301,6 +302,11 @@ export default function HomeScreen({ user, onLogout }) {
             >
               <Text style={styles.hamburgerIcon}>☰</Text>
             </TouchableOpacity>
+            <Image
+              source={require('../assets/leaf-icon.png')}
+              style={styles.headerLogo}
+              resizeMode="contain"
+            />
             <Text style={styles.appName}>SHODHINI</Text>
           </View>
 
@@ -606,6 +612,11 @@ const getStyles = (colors, isDark) =>
       fontSize: tokens.typography.size.lg,
       color: colors.text,
       fontWeight: tokens.typography.weight.bold,
+    },
+    headerLogo: {
+      width: 22,
+      height: 22,
+      marginRight: 6,
     },
     appName: {
       fontSize: tokens.typography.size.base,

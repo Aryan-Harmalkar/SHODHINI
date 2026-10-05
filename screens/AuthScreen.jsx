@@ -10,6 +10,7 @@ import {
   Platform,
   ActivityIndicator,
   Modal,
+  Image,
 } from 'react-native';
 import { signUpUser, loginUser, getAreas } from '../db/database';
 import { tokens, useTheme } from '../lib/theme';
@@ -161,7 +162,14 @@ export default function AuthScreen({ onAuthSuccess }) {
         <View style={styles.header}>
           <View style={styles.headerTopRow}>
             <View style={{ width: 44 }} />
-            <Text style={styles.brandTitle}>SHODHINI</Text>
+            <View style={styles.brandCenterWrap}>
+              <Image
+                source={require('../assets/leaf-icon.png')}
+                style={styles.authLogo}
+                resizeMode="contain"
+              />
+              <Text style={styles.brandTitle}>SHODHINI</Text>
+            </View>
             <TouchableOpacity 
               style={styles.themeToggleBtn} 
               onPress={toggleTheme}
@@ -389,6 +397,15 @@ const getStyles = (colors, isDark) => StyleSheet.create({
   },
   themeToggleIcon: {
     fontSize: 20,
+  },
+  brandCenterWrap: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  authLogo: {
+    width: 54,
+    height: 54,
+    marginBottom: 6,
   },
   brandTitle: {
     fontSize: tokens.typography.size.xxl,

@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   ScrollView,
   Animated,
+  Image,
 } from 'react-native';
 import { tokens, useTheme } from '../lib/theme';
 
@@ -67,11 +68,18 @@ export default function Sidebar({
       >
         {/* Minimal Drawer Header */}
         <View style={styles.drawerHeader}>
-          <View style={styles.userInfo}>
-            <Text style={styles.userName}>{user?.name || 'User'}</Text>
-            <Text style={styles.userRole}>
-              {isWorker ? 'Sanitation Worker' : 'Citizen'} • {user?.area || (user?.area_id ? `Ward ${user.area_id}` : 'Ward 1')}
-            </Text>
+          <View style={styles.headerLeft}>
+            <Image
+              source={require('../assets/leaf-icon.png')}
+              style={styles.drawerLogo}
+              resizeMode="contain"
+            />
+            <View style={styles.userInfo}>
+              <Text style={styles.userName}>{user?.name || 'User'}</Text>
+              <Text style={styles.userRole}>
+                {isWorker ? 'Sanitation Worker' : 'Citizen'} • {user?.area || (user?.area_id ? `Ward ${user.area_id}` : 'Ward 1')}
+              </Text>
+            </View>
           </View>
           <TouchableOpacity
             style={styles.closeBtn}
@@ -364,6 +372,17 @@ const getStyles = (colors, isDark) => StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
     marginBottom: tokens.spacing.sm,
+  },
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    gap: 10,
+    marginRight: tokens.spacing.xs,
+  },
+  drawerLogo: {
+    width: 32,
+    height: 32,
   },
   userInfo: {
     flex: 1,
