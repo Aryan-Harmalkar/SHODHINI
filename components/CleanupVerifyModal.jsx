@@ -136,12 +136,13 @@ export default function CleanupVerifyModal({
             });
             setVerificationResult(res);
           } catch (err) {
-            console.warn('AI verification note:', err);
+            console.warn('AI verification error:', err);
             setVerificationResult({
-              isCleaned: true,
-              isSameLocation: true,
-              rejectionReason: null,
-              manualFallback: true,
+              isCleaned: false,
+              isSameLocation: false,
+              rejectionReason:
+                err?.message ||
+                'Could not complete AI verification. Please tap "Retake Photo" to try again, or use "Attest & Pass" to confirm on-site.',
             });
           } finally {
             setIsVerifying(false);
