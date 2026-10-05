@@ -18,14 +18,10 @@ import { tokens, useTheme } from '../lib/theme';
 import { analyzeWasteImageWithGemini } from '../lib/aiVision';
 import {
   IS_WEB,
-  LOCATION_ERROR,
-  REQUIRED_ACCURACY_M,
-  ensureForegroundPermission,
   geocodeAddress,
   getReadableAddress,
-  hasForegroundPermission,
-  watchPreciseLocation,
 } from '../lib/locationHelper';
+import { captureGeotag, checkGeotagPermission } from '../lib/geotag';
 import LocationPinMap from '../components/LocationPinMap';
 
 export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar }) {
@@ -56,9 +52,9 @@ export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar 
   const [permBlocked, setPermBlocked] = useState(false);
   const [manualAddress, setManualAddress] = useState('');
   const [geocodingAddress, setGeocodingAddress] = useState(false);
-  const watchRef = useRef(null);
   const reverseTimerRef = useRef(null);
-  const locationCoords = pinCoords;
+  const [geotag, setGeotag] = useState(null); // { latitude, longitude, accuracy_m, captured_at, source }
+  const locationCoords = pinCoords || (geotag ? { latitude: geotag.latitude, longitude: geotag.longitude } : null);
 
   // AI Analysis States
   const [analyzingAi, setAnalyzingAi] = useState(false);
@@ -93,11 +89,16 @@ export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar 
     }
 
     init();
+  }, []);
 
-    return () => {
-      watchRef.current?.cancel();
-      clearTimeout(reverseTimerRef.current);
+  useEffect(() => {
+    // Check initial permission status if we want to show warning, but don't prompt yet
+    const checkPerm = async () => {
+      const state = await checkGeotagPermission();
+      if (state === 'denied') setLocStatus('denied');
     };
+    checkPerm();
+    return () => clearTimeout(reverseTimerRef.current);
   }, []);
 
   const updateAddressFor = (coord, delayMs = 0) => {
@@ -108,60 +109,17 @@ export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar 
     }, delayMs);
   };
 
-  /**
-   * Watches GPS for up to ~15 s and keeps the most accurate reading.
-   * Native accepts only fixes with accuracy <= 30 m. Web returns its best
-   * (approximate) estimate and the user must confirm/adjust the pin.
-   */
-  const startPreciseLocation = async () => {
-    watchRef.current?.cancel();
-    setLocStatus('searching');
-    setLocMessage('');
-    setLiveAccuracy(null);
-    setPinConfirmed(false);
-
-    const ctl = watchPreciseLocation({
-      onUpdate: (best) => {
-        if (watchRef.current === ctl) setLiveAccuracy(best.accuracy);
-      },
-    });
-    watchRef.current = ctl;
-
-    try {
-      const fix = await ctl.promise;
-      if (watchRef.current !== ctl) return;
-      const coord = { latitude: fix.latitude, longitude: fix.longitude };
-      setGpsFix({ accuracy: fix.accuracy, source: IS_WEB ? 'web' : 'gps', approximate: fix.approximate });
-      setLiveAccuracy(fix.accuracy);
-      setPinCoords(coord);
-      setLocStatus('ready');
-      updateAddressFor(coord);
-    } catch (err) {
-      if (watchRef.current !== ctl) return;
-      if (err.code === LOCATION_ERROR.PERMISSION_DENIED) {
-        setLocStatus('denied');
-      } else {
-        setLocStatus('imprecise');
-        if (err.best) setLiveAccuracy(err.best.accuracy);
-      }
-      setLocMessage(err.message || 'Location not precise enough, move outdoors and retry.');
-    }
-  };
-
-  /** User tapped "Allow location" after reading the explanation. */
   const handleAllowLocation = async () => {
-    try {
-      const { granted, canAskAgain } = await ensureForegroundPermission();
-      if (granted) {
-        setPermBlocked(false);
-        startPreciseLocation();
+    const state = await checkGeotagPermission();
+    if (state === 'denied') {
+      if (IS_WEB) {
+        setLocMessage('Location is blocked for this site. Tap the lock icon in the address bar > Permissions > Location > Allow, then tap Retry.');
       } else {
-        setPermBlocked(!canAskAgain);
-        setLocStatus('denied');
+        setLocMessage('Location permission denied in device settings.');
       }
-    } catch (err) {
-      setLocStatus('denied');
-      setLocMessage(err.message || 'Could not request location permission.');
+    } else {
+      setLocMessage('');
+      setLocStatus('checking');
     }
   };
 
@@ -213,18 +171,38 @@ export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar 
 
   /**
    * Captures Live Photo using device camera and acquires fresh live GPS geotag.
-   * Strictly requires internal GPS fix - throws an error if GPS is unavailable!
    */
   const handleTakeLivePhoto = async () => {
     setErrorMessage('');
     setCapturingPhoto(true);
+    setLocMessage('');
+    setLocStatus('searching');
 
     try {
+      const permState = await checkGeotagPermission();
+      if (permState === 'denied') {
+        if (IS_WEB) {
+           setLocMessage('Location is blocked for this site. Tap the lock icon in the address bar > Permissions > Location > Allow, then tap Retry.');
+        }
+        setLocStatus('denied');
+        throw new Error('Location permission is denied.');
+      }
+
       // 1. Request Camera Permission & Launch Device Camera
       const cameraPerm = await ImagePicker.requestCameraPermissionsAsync();
       if (cameraPerm.status !== 'granted') {
         throw new Error('Camera permission denied. Camera access is required to capture live geotagged waste photos.');
       }
+
+      // 2. Start Geotag capture concurrently
+      let geotagPromise = captureGeotag({
+        targetAccuracyM: 30,
+        timeoutMs: 15000,
+        onUpdate: (acc) => setLiveAccuracy(Math.round(acc))
+      }).catch(err => {
+        if (err.message === 'denied') setLocStatus('denied');
+        return null; // Resolve to null if failed
+      });
 
       const result = await ImagePicker.launchCameraAsync({
         mediaTypes: ['images'],
@@ -242,12 +220,24 @@ export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar 
         );
 
         // 3. Immediately trigger Gemini AI Vision Analysis
-        await runGeminiAnalysis(asset.base64, asset.uri);
+        runGeminiAnalysis(asset.base64, asset.uri);
+
+        // 4. Wait for geotag
+        const tag = await geotagPromise;
+        if (tag) {
+          setGeotag(tag);
+          setLocStatus('ready');
+        } else {
+          setLocStatus('imprecise'); // fallback to manual pin
+        }
+      } else {
+        setLocStatus('checking');
       }
     } catch (err) {
       console.error('Camera capture error:', err);
       setErrorMessage(err.message);
-      Alert.alert('Camera Error', err.message, [{ text: 'OK' }]);
+      //Alert.alert('Error', err.message, [{ text: 'OK' }]);
+      setLocStatus('checking');
     } finally {
       setCapturingPhoto(false);
     }
@@ -322,6 +312,16 @@ export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar 
       return;
     }
 
+    if (!locationCoords) {
+      setErrorMessage('Please acquire a location or confirm a manual pin on the map.');
+      return;
+    }
+
+    if (!geotag && !pinConfirmed && !manualAddress.trim()) {
+      setErrorMessage('Please confirm the location pin on the map before submitting.');
+      return;
+    }
+
     setLoading(true);
     try {
       const fullNotes = [
@@ -336,8 +336,11 @@ export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar 
         areaId: selectedAreaId,
         category: 'Roadside waste',
         description: fullNotes || `Waste report in ${selectedAreaName || 'Assagao'}`,
-        latitude: pinCoords?.latitude ?? null,
-        longitude: pinCoords?.longitude ?? null,
+        latitude: locationCoords.latitude,
+        longitude: locationCoords.longitude,
+        geoAccuracyM: geotag?.accuracy_m ?? gpsFix?.accuracy ?? null,
+        geoCapturedAt: geotag?.captured_at ?? new Date().toISOString(),
+        geoSource: geotag?.source ?? (pinConfirmed ? 'manual' : (gpsFix?.source ?? 'unknown')),
         aiAnalysis: aiResult,
         imageBase64: photoBase64,
       });
@@ -454,7 +457,6 @@ export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar 
                 <View style={styles.photoContainer}>
                   <Image source={{ uri: photoUri }} style={styles.photoPreview} />
 
-                  {/* Live Photo Verification Badge */}
                   <View style={styles.geotagBadge}>
                     <View style={styles.geotagHeader}>
                       <Text style={styles.geotagLiveDot}>● LIVE VERIFIED PHOTO</Text>
@@ -464,6 +466,17 @@ export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar 
                     <View style={styles.geotagMetaRow}>
                       <Text style={styles.geotagWard}>🏛️ {selectedAreaName || 'Assagao - Ward 1 (Ghateshwar Nagar)'}</Text>
                     </View>
+                    
+                    <View style={[styles.geotagMetaRow, { marginTop: 4 }]}>
+                      <Text style={styles.geotagWard}>
+                        📍 Accuracy: {geotag?.accuracy_m ? `${Math.round(geotag.accuracy_m)} m` : (locStatus === 'searching' ? `Getting precise location... ${liveAccuracy ? `(${liveAccuracy}m)` : ''}` : 'Manual Pin')}
+                      </Text>
+                    </View>
+                    {geotag?.accuracy_m > 50 && (
+                      <View style={{ backgroundColor: '#fef3c7', padding: 4, borderRadius: 4, marginTop: 4 }}>
+                        <Text style={{ color: '#d97706', fontSize: 12, fontWeight: 'bold' }}>⚠️ Location is approximate.</Text>
+                      </View>
+                    )}
                   </View>
 
                   <TouchableOpacity
