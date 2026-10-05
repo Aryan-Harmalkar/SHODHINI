@@ -365,7 +365,7 @@ export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar 
 
       setTimeout(() => {
         onBackToHome();
-      }, 2600);
+      }, 1500);
     } catch (err) {
       setErrorMessage(err.message || 'Failed to submit complaint. Please try again.');
     } finally {
@@ -408,6 +408,13 @@ export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar 
                 ✅ Status: Dispatched
               </Text>
             </View>
+            <TouchableOpacity 
+              style={[styles.submitBtn, { marginTop: 24, paddingHorizontal: 32 }]} 
+              onPress={onBackToHome}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.submitBtnText}>Return to Home Menu</Text>
+            </TouchableOpacity>
           </View>
         ) : (
           <View style={styles.formCard}>
