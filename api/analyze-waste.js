@@ -6,28 +6,59 @@
  */
 
 const CANDIDATE_MODELS = [
-  'gemini-3.5-flash-lite',
-  'gemini-3.5-flash',
+  'gemini-2.0-flash',
+  'gemini-1.5-flash',
+  'gemini-2.5-flash',
   'gemini-3.7-flash',
 ];
 
-const PROMPT = `You are a municipal waste detection AI for a civic waste reporting app.
-Inspect this live camera photograph taken by a citizen reporting waste in their area.
+const PROMPT = `You are an expert AI inspector for a municipal civic waste reporting system.
+Your job is to strictly validate photographs submitted by citizens.
 
-Analyze the image carefully and output the following assessment:
-1. isWaste: (boolean)
-   - MUST be FALSE if the subject is a living animal (dog, cat, cow, bird, pet), a human/person, or a clean environment with no trash.
-   - MUST be TRUE if the subject contains garbage, litter, dumped plastics, overflowing bins, construction debris, hazardous chemical waste, OR a deceased animal carcass.
-2. isTooSmall: (boolean)
-   - MUST be TRUE if the waste visible in the photo is very minor, trivial, or a single small item (such as 1 bottle, a single straw, a single wrapper, a cigarette butt, a single disposable cup, or a tiny scrap of paper) that can easily be picked up and disposed of by the user/citizen themselves into a nearby dustbin, without needing a municipal waste truck or collection team.
-   - MUST be FALSE if there is a substantial amount of garbage, multiple items, a pile, overflowing dumpsters, dumped bags, hazardous waste, deceased animals, or anything requiring municipal team cleanup.
-3. rejectionReason: (string or null)
-   - If isWaste is false: clear explanation of why this photo is rejected (e.g., "Living animal detected. Live animals are not waste.", "Human detected in photo.", "No waste visible.").
-   - If isTooSmall is true: "This waste is too small or minor (e.g., 1 bottle or straw) and can easily be cleaned up by you directly! Please reserve municipal complaints for larger waste piles or overflowing bins."
-   - If valid municipal waste: null.
+CRITICAL PRIORITY RULES (EVALUATE IN THIS EXACT ORDER):
+
+STEP 1: HUMAN & LIVING ANIMAL DETECTION (HIGHEST PRIORITY - ABSOLUTE OVERRIDE)
+- Carefully inspect the image for ANY human person, human face, selfie, child, adult, body, skin, hand, silhouette, or person in the foreground or background.
+- Carefully inspect for ANY living animal (dog, cat, bird, pet, cow, livestock, wildlife).
+- If ANY human person or living animal is detected:
+  * containsHuman: true (if human/person present)
+  * containsLivingAnimal: true (if live animal present)
+  * isWaste: MUST BE FALSE (no exceptions! Even if they are holding trash or trash is nearby).
+  * isTooSmall: MUST BE FALSE.
+  * rejectionReason: "Human detected in photograph. Humans and living beings are strictly prohibited from being reported as waste." (or "Living animal detected in photograph. Live animals are not waste.")
+  * Stop evaluation here!
+
+STEP 2: CLEAN OR NON-WASTE ENVIRONMENT
+- If no humans/animals, check if the photograph shows a clean street, room, vehicle, building, furniture, or everyday non-waste objects without actual garbage.
+- If no garbage/trash is present:
+  * containsHuman: false
+  * containsLivingAnimal: false
+  * isWaste: FALSE
+  * isTooSmall: FALSE
+  * rejectionReason: "No municipal waste detected. This area appears clean or contains normal everyday items."
+
+STEP 3: TRIVIAL / MINOR WASTE (CAN BE CLEANED BY CITIZEN)
+- If actual garbage is present, check if it is merely 1 single minor item (such as 1 bottle, a single straw, a single wrapper, a cigarette butt, or a tiny scrap of paper) that can easily be picked up and thrown into a dustbin by the citizen themselves.
+- If YES:
+  * containsHuman: false
+  * containsLivingAnimal: false
+  * isWaste: TRUE
+  * isTooSmall: TRUE
+  * rejectionReason: "This waste is too minor (e.g. 1 bottle or straw) and can easily be cleaned up by you directly! Please reserve municipal complaints for larger waste piles or overflowing bins."
+
+STEP 4: LEGITIMATE MUNICIPAL WASTE
+- The photo shows substantial garbage requiring municipal collection: waste piles, overflowing dumpsters, dumped bags, scattered litter, construction debris, hazardous waste, or deceased animal carcass.
+- If YES:
+  * containsHuman: false
+  * containsLivingAnimal: false
+  * isWaste: TRUE
+  * isTooSmall: FALSE
+  * rejectionReason: null
 
 Return strictly a valid JSON object matching this schema:
 {
+  "containsHuman": boolean,
+  "containsLivingAnimal": boolean,
   "isWaste": boolean,
   "isTooSmall": boolean,
   "rejectionReason": string | null
@@ -121,7 +152,28 @@ export default async function handler(req, res) {
         continue;
       }
 
-      const parsed = JSON.parse(rawJson.trim());
+      let cleaned = rawJson.trim();
+      if (cleaned.startsWith('```json')) {
+        cleaned = cleaned.replace(/^```json\s*/, '').replace(/```\s*$/, '');
+      } else if (cleaned.startsWith('```')) {
+        cleaned = cleaned.replace(/^```\s*/, '').replace(/```\s*$/, '');
+      }
+
+      const parsed = JSON.parse(cleaned.trim());
+
+      // STRICT CODE GUARDS: Ensure human/animal detections NEVER get marked as waste
+      if (parsed.containsHuman === true) {
+        parsed.isWaste = false;
+        parsed.isTooSmall = false;
+        parsed.rejectionReason =
+          parsed.rejectionReason || 'Human detected in photograph. Humans and living beings cannot be reported as waste.';
+      } else if (parsed.containsLivingAnimal === true) {
+        parsed.isWaste = false;
+        parsed.isTooSmall = false;
+        parsed.rejectionReason =
+          parsed.rejectionReason || 'Living animal detected in photograph. Live animals are not waste.';
+      }
+
       return res.status(200).json(parsed);
     } catch (err) {
       console.warn(`Model ${model} error:`, err.message);
