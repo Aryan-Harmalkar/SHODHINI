@@ -47,18 +47,8 @@ export default function HomeScreen({ user, onLogout }) {
     if (isCollector && (screen === 'rewards' || screen.startsWith('rewards_') || screen === 'complaint' || screen === 'waste_pickup' || screen === 'recycle')) {
       return;
     }
-    if (screen === 'rewards_redeem') {
-      setRewardsTab('redeem');
-      setCurrentScreen('rewards');
-    } else if (screen === 'rewards_coupons') {
-      setRewardsTab('coupons');
-      setCurrentScreen('rewards');
-    } else if (screen === 'rewards_history') {
-      setRewardsTab('history');
-      setCurrentScreen('rewards');
-    } else if (screen === 'rewards') {
-      setRewardsTab('redeem');
-      setCurrentScreen('rewards');
+    if (screen === 'rewards' || screen.startsWith('rewards_')) {
+      setCurrentScreen('waste_pickup');
     } else if (screen === 'collector_tasks_available') {
       setCollectorTasksTab('available');
       setCurrentScreen('collector_tasks');
@@ -258,8 +248,10 @@ export default function HomeScreen({ user, onLogout }) {
         return (
           <WastePickupScreen
             user={user}
+            ecoPoints={ecoPoints}
             onBackToHome={() => setCurrentScreen('home')}
             onOpenSidebar={() => setSidebarVisible(true)}
+            onPointsUpdated={(newPts) => setEcoPoints(newPts)}
           />
         );
       }
@@ -283,18 +275,7 @@ export default function HomeScreen({ user, onLogout }) {
           />
         );
       }
-      if (currentScreen === 'rewards') {
-        return (
-          <RewardsScreen
-            user={user}
-            ecoPoints={ecoPoints}
-            initialTab={rewardsTab}
-            onBackToHome={() => setCurrentScreen('home')}
-            onOpenSidebar={() => setSidebarVisible(true)}
-            onNavigatePickup={() => setCurrentScreen('waste_pickup')}
-          />
-        );
-      }
+
     }
 
     if (isCollector) {
@@ -360,7 +341,7 @@ export default function HomeScreen({ user, onLogout }) {
             {!isCollector ? (
               <TouchableOpacity
                 style={styles.topPointsPill}
-                onPress={() => handleNavigate('rewards')}
+                onPress={() => handleNavigate('waste_pickup')}
                 activeOpacity={0.8}
               >
                 <Text style={styles.topPointsText}>🌱 {ecoPoints} pts</Text>
@@ -436,14 +417,7 @@ export default function HomeScreen({ user, onLogout }) {
                   <Text style={styles.gridCardTitle}>Scoreboard</Text>
                 </TouchableOpacity>
 
-                <TouchableOpacity
-                  style={styles.gridCard}
-                  onPress={() => handleNavigate('rewards')}
-                  activeOpacity={0.7}
-                >
-                  <Text style={styles.gridCardIcon}>🎁</Text>
-                  <Text style={styles.gridCardTitle}>Rewards</Text>
-                </TouchableOpacity>
+
 
                 <TouchableOpacity
                   style={styles.gridCard}

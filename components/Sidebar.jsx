@@ -117,12 +117,12 @@ export default function Sidebar({
             style={styles.ecoPointsStrip}
             activeOpacity={0.7}
             onPress={() => {
-              onNavigate('rewards');
+              onNavigate('waste_pickup');
               onClose();
             }}
           >
             <Text style={styles.ecoPointsText}>🌱 {ecoPoints} Eco Points</Text>
-            <Text style={styles.ecoPointsArrow}>Redeem →</Text>
+            <Text style={styles.ecoPointsArrow}>Use for Pickup →</Text>
           </TouchableOpacity>
         )}
 
@@ -242,46 +242,7 @@ export default function Sidebar({
                 </Text>
               </TouchableOpacity>
 
-              <TouchableOpacity
-                style={[styles.menuItem, (currentScreen === 'rewards' || currentScreen.startsWith('rewards_')) && styles.activeMenuItem]}
-                onPress={() => { onNavigate('rewards'); onClose(); }}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.menuIcon}>🎁</Text>
-                <Text style={[styles.menuText, (currentScreen === 'rewards' || currentScreen.startsWith('rewards_')) && styles.activeMenuText]}>
-                  Rewards & Coupons
-                </Text>
-              </TouchableOpacity>
 
-              {/* Indented Sub-items */}
-              <View style={styles.subMenuList}>
-                <TouchableOpacity
-                  style={styles.subMenuItem}
-                  onPress={() => { onNavigate('rewards_redeem'); onClose(); }}
-                  activeOpacity={0.7}
-                >
-                  <Text style={styles.subMenuDot}>•</Text>
-                  <Text style={styles.subMenuText}>Redeem Points</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={styles.subMenuItem}
-                  onPress={() => { onNavigate('rewards_coupons'); onClose(); }}
-                  activeOpacity={0.7}
-                >
-                  <Text style={styles.subMenuDot}>•</Text>
-                  <Text style={styles.subMenuText}>My Coupons</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={styles.subMenuItem}
-                  onPress={() => { onNavigate('rewards_history'); onClose(); }}
-                  activeOpacity={0.7}
-                >
-                  <Text style={styles.subMenuDot}>•</Text>
-                  <Text style={styles.subMenuText}>Points History</Text>
-                </TouchableOpacity>
-              </View>
 
               <TouchableOpacity
                 style={[styles.menuItem, currentScreen === 'waste_pickup' && styles.activeMenuItem]}
