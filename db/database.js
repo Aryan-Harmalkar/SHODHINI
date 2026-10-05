@@ -323,30 +323,23 @@ export async function fileComplaint({
   let fullDescription = userText;
 
   if (aiAnalysis) {
-    const headerPrefix = requiresAdminVerification
-      ? `[PENDING ADMIN CROSS-VERIFICATION - AI Sureness: ${aiAnalysis.confidence}%]`
-      : `[AI VERIFIED - ${aiAnalysis.confidence}% Sureness]`;
+    const headerPrefix = `[AI VERIFIED WASTE]`;
 
     const aiReport = [
       headerPrefix,
       userText ? `User Notes: ${userText}` : null,
-      `• AI Classification: ${aiAnalysis.classification}`,
-      `• Contamination Rating: ${aiAnalysis.contaminationRating}`,
-      aiAnalysis.hazardWarning ? `• Warning: ${aiAnalysis.hazardWarning}` : null,
-      aiAnalysis.suggestedTools?.length ? `• Suggested Tools: ${aiAnalysis.suggestedTools.join(', ')}` : null,
-      aiAnalysis.predictedCleanTimeFormatted ? `• Predicted Clean Time: ${aiAnalysis.predictedCleanTimeFormatted}` : null,
     ].filter(Boolean).join('\n');
 
     fullDescription = aiReport;
   } else if (!userText) {
-    fullDescription = `${category} reported at live geotag location.`;
+    fullDescription = `${category || 'Roadside waste'} reported at live geotag location.`;
   }
 
   // Attempt insert with core schema fields guaranteed to succeed
   const insertPayload = {
     citizen_id: activeUserId,
     area_id: areaId,
-    category: category || aiAnalysis?.category || 'Roadside waste',
+    category: category || 'Roadside waste',
     description: fullDescription,
     latitude,
     longitude,
@@ -420,6 +413,40 @@ export async function getUserEcoPoints(userId) {
     return data?.eco_points || 0;
   } catch (e) {
     console.warn('Error in getUserEcoPoints:', e);
+    return 0;
+  }
+}
+
+/**
+ * Update (add or deduct) eco points for a user
+ */
+export async function updateUserEcoPoints(userId, deltaPoints) {
+  if (!userId) return 0;
+  try {
+    const { data: profile, error: fetchErr } = await supabase
+      .from('profiles')
+      .select('eco_points')
+      .eq('id', userId)
+      .maybeSingle();
+
+    if (fetchErr || !profile) return 0;
+
+    let newPoints = (profile.eco_points || 0) + deltaPoints;
+    if (newPoints < 0) newPoints = 0;
+
+    const { error: updateErr } = await supabase
+      .from('profiles')
+      .update({ eco_points: newPoints })
+      .eq('id', userId);
+
+    if (updateErr) {
+      console.warn('Error updating eco points:', updateErr.message);
+      return profile.eco_points || 0;
+    }
+    
+    return newPoints;
+  } catch (e) {
+    console.warn('Exception in updateUserEcoPoints:', e);
     return 0;
   }
 }

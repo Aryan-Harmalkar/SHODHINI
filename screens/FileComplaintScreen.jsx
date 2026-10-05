@@ -13,7 +13,7 @@ import {
   Linking,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import { fileComplaint, getAreas, getCurrentUser } from '../db/database';
+import { fileComplaint, getAreas, getCurrentUser, updateUserEcoPoints } from '../db/database';
 import { tokens } from '../lib/theme';
 import { analyzeWasteImageWithGemini } from '../lib/aiVision';
 import {
@@ -274,6 +274,11 @@ export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar 
         imageUri: uri,
       });
       setAiResult(analysis);
+      
+      if (analysis && !analysis.isWaste && currentUser?.id) {
+        await updateUserEcoPoints(currentUser.id, -5);
+        // Optional: refresh local state
+      }
     } catch (err) {
       console.warn('Gemini AI Analysis warning:', err);
       setErrorMessage(err.message || 'AI analysis could not complete. Please retry.');
@@ -332,8 +337,6 @@ export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar 
 
     setLoading(true);
     try {
-      const isLowConfidence = aiResult.confidence < 20;
-
       // Include reverse-geocoded address into notes if available
       const fullNotes = [
         description.trim(),
@@ -347,19 +350,15 @@ export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar 
       await fileComplaint({
         citizenId,
         areaId: selectedAreaId,
-        category: aiResult.category,
+        category: 'Roadside waste',
         description: fullNotes,
         latitude: pinCoords?.latitude ?? null,
         longitude: pinCoords?.longitude ?? null,
         aiAnalysis: aiResult,
         imageUrl: photoUri,
-        requiresAdminVerification: isLowConfidence,
       });
 
       setSuccessData({
-        isLowConfidence,
-        confidence: aiResult.confidence,
-        classification: aiResult.classification,
         areaName: selectedAreaName,
         address: readableAddress?.shortAddress || '',
       });
@@ -394,25 +393,19 @@ export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar 
         {/* SUCCESS CARD */}
         {successData ? (
           <View style={styles.successCard}>
-            <Text style={styles.successIcon}>
-              {successData.isLowConfidence ? '🛡️' : '🚀'}
-            </Text>
+            <Text style={styles.successIcon}>🚀</Text>
             <Text style={styles.successTitle}>
-              {successData.isLowConfidence
-                ? 'Submitted for Admin Verification'
-                : 'Complaint Dispatched to Collector!'}
+              Complaint Dispatched to Collector!
             </Text>
             <Text style={styles.successDesc}>
-              {successData.isLowConfidence
-                ? `AI confidence was under 20% (${successData.confidence}%). Your report has been routed to the Municipal Admin for cross-verification before dispatching to ${successData.areaName} collectors.`
-                : `AI verified (${successData.confidence}% sureness). Dispatched directly to sanitation workers in ${successData.areaName}. You will earn 15 Eco Points once resolved!`}
+              AI verified waste. Dispatched directly to sanitation workers in {successData.areaName}. You will earn 15 Eco Points once resolved!
             </Text>
             {successData.address ? (
               <Text style={styles.successAddressText}>📍 {successData.address}</Text>
             ) : null}
             <View style={styles.successBadge}>
               <Text style={styles.successBadgeText}>
-                {successData.isLowConfidence ? '⏳ Status: Admin Review' : '✅ Status: Dispatched'}
+                ✅ Status: Dispatched
               </Text>
             </View>
           </View>
@@ -676,113 +669,28 @@ export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar 
                   </View>
                 ) : aiResult ? (
                   <View style={styles.aiResultBox}>
-                    {/* Status / Category Card */}
                     <View
                       style={[
                         styles.aiClassificationCard,
-                        !aiResult.isWaste
-                          ? styles.aiRejectCard
-                          : aiResult.confidence < 20
-                          ? styles.aiLowCard
-                          : styles.aiVerifiedCard,
+                        !aiResult.isWaste ? styles.aiRejectCard : styles.aiVerifiedCard,
                       ]}
                     >
                       <View style={styles.aiCardTop}>
                         <View style={styles.aiClassificationInfo}>
                           <Text style={styles.aiTagLabel}>
-                            {!aiResult.isWaste
-                              ? '🚫 NON-WASTE DETECTED'
-                              : aiResult.confidence < 20
-                              ? '⚠️ LOW SURENESS (<20%)'
-                              : '✅ AI VERIFIED WASTE'}
-                          </Text>
-                          <Text style={styles.aiClassificationTitle}>
-                            {aiResult.classification}
-                          </Text>
-                        </View>
-                        <View
-                          style={[
-                            styles.confidencePill,
-                            !aiResult.isWaste
-                              ? styles.confidencePillRed
-                              : aiResult.confidence < 20
-                              ? styles.confidencePillAmber
-                              : styles.confidencePillGreen,
-                          ]}
-                        >
-                          <Text style={styles.confidencePillText}>
-                            {aiResult.confidence}% Sureness
+                            {!aiResult.isWaste ? '🚫 NON-WASTE DETECTED' : '✅ AI VERIFIED WASTE'}
                           </Text>
                         </View>
                       </View>
 
-                      {/* Non-Waste Rejection Notice */}
                       {!aiResult.isWaste && (
                         <View style={styles.rejectionNoticeBox}>
                           <Text style={styles.rejectionNoticeText}>
                             {aiResult.rejectionReason}
                           </Text>
-                        </View>
-                      )}
-
-                      {/* Low Confidence Admin Notice */}
-                      {aiResult.isWaste && aiResult.confidence < 20 && (
-                        <View style={styles.adminReviewNoticeBox}>
-                          <Text style={styles.adminReviewNoticeTitle}>
-                            🛡️ Municipal Admin Cross-Verification Required
+                          <Text style={[styles.rejectionNoticeText, { marginTop: 8, fontWeight: 'bold' }]}>
+                            Penalty: 5 Eco Points deducted for uploading a non-waste image.
                           </Text>
-                          <Text style={styles.adminReviewNoticeText}>
-                            AI certainty is below 20%. This complaint will be held for Municipal Admin cross-verification before dispatching to the garbage collector.
-                          </Text>
-                        </View>
-                      )}
-
-                      {/* Hazard & Contamination Rating */}
-                      {aiResult.isWaste && (
-                        <View style={styles.aiSpecsGrid}>
-                          <View style={styles.specItem}>
-                            <Text style={styles.specLabel}>Contamination</Text>
-                            <Text
-                              style={[
-                                styles.specValue,
-                                aiResult.contaminationRating === 'Biohazard'
-                                  ? styles.specBiohazard
-                                  : aiResult.contaminationRating.includes('High')
-                                  ? styles.specHazard
-                                  : null,
-                              ]}
-                            >
-                              {aiResult.contaminationRating}
-                            </Text>
-                          </View>
-
-                          <View style={styles.specItem}>
-                            <Text style={styles.specLabel}>Est. Clean Time</Text>
-                            <Text style={styles.specValue}>
-                              ⏱️ {aiResult.predictedCleanTimeFormatted}
-                            </Text>
-                          </View>
-                        </View>
-                      )}
-
-                      {/* Warning Notice if any */}
-                      {aiResult.hazardWarning && (
-                        <View style={styles.warningStrip}>
-                          <Text style={styles.warningStripText}>{aiResult.hazardWarning}</Text>
-                        </View>
-                      )}
-
-                      {/* Suggested Tools Required */}
-                      {aiResult.suggestedTools?.length > 0 && (
-                        <View style={styles.toolsContainer}>
-                          <Text style={styles.toolsTitle}>🛠️ Suggested Tools for Collector:</Text>
-                          <View style={styles.toolsChipsRow}>
-                            {aiResult.suggestedTools.map((tool, idx) => (
-                              <View key={idx} style={styles.toolChip}>
-                                <Text style={styles.toolChipText}>{tool}</Text>
-                              </View>
-                            ))}
-                          </View>
                         </View>
                       )}
                     </View>

@@ -182,6 +182,12 @@ export default function HomeScreen({ user, onLogout }) {
   const activeCount = collectorComplaints.filter((c) => c.status !== 'Completed').length;
   const completedCount = collectorComplaints.filter((c) => c.status === 'Completed').length;
 
+  const filteredCollectorComplaints = collectorComplaints.filter((c) => {
+    if (collectorFilter === 'ACTIVE') return c.status !== 'Completed';
+    if (collectorFilter === 'COMPLETED') return c.status === 'Completed';
+    return true;
+  });
+
   const renderContent = () => {
     if (!isCollector) {
       if (currentScreen === 'complaint') {

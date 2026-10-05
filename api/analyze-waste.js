@@ -11,23 +11,14 @@ const CANDIDATE_MODELS = [
   'gemini-3.7-flash',
 ];
 
-const PROMPT = `You are a specialized municipal waste management AI auditor.
-Inspect this live camera photograph taken by a citizen for a municipal sanitation department.
+const PROMPT = `You are a municipal waste detection AI.
+Inspect this live camera photograph taken by a citizen.
 
 Analyze the image carefully and output the following assessment:
 1. isWaste: (boolean)
    - MUST be FALSE if the subject is a living animal (dog, cat, cow, bird, pet), a human/person, or a clean environment with no trash.
    - MUST be TRUE if the subject contains garbage, litter, dumped plastics, overflowing bins, construction debris, hazardous chemical waste, OR a deceased animal carcass.
-2. classification: (string) Specific name of what is detected (e.g., "Roadside Plastic & Packaging Litter", "Dead Animal / Animal Carcass", "Living Domestic Animal (Not Waste)", "Person Detected (Not Waste)", "Overflowing Public Waste Bin", "Construction Demolition Rubble").
-3. category: (string) Must be exactly one of: ["Roadside waste", "Overflowing bin", "Dead animal", "Construction debris", "Other", "Not Waste"].
-4. confidence: (number between 0 and 100) Your certainty percentage that this is actual garbage or waste requiring sanitation pickup. (For living animals or humans, this MUST be < 20, e.g. 5).
-5. contaminationRating: (string) One of: ["None", "Low", "Medium", "High (Hazardous)", "Biohazard"]. (Deceased animals MUST be "Biohazard").
-6. hazardWarning: (string or null) Specific safety or biohazard warning for municipal workers (e.g. sharp glass, biohazard decay, chemical fumes).
-7. suggestedTools: (array of strings) 3-5 tools required by the garbage collector (e.g. ["Heavy Duty Gloves", "Biohazard Sacks", "Lime Powder Disinfectant", "Sanitary Shovel"]).
-8. predictedCleanTimeMinutes: (number) Estimated minutes for a sanitation worker to clean the site (e.g. 15, 25, 45).
-9. predictedCleanTimeFormatted: (string) Formatted time string (e.g. "~20 mins", "~35 mins").
-10. rejectionReason: (string or null) If isWaste is false, clear explanation of why this photo is rejected as non-waste.
-11. summary: (string) Short 1-2 sentence description of the waste and site conditions.
+2. rejectionReason: (string or null) If isWaste is false, clear explanation of why this photo is rejected as non-waste (e.g., "Living animal detected", "Human detected", "No waste visible").
 
 Return strictly a valid JSON object matching this schema.`;
 
