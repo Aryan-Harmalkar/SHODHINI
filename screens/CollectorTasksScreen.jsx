@@ -251,7 +251,7 @@ export default function CollectorTasksScreen({
                         activeOpacity={0.8}
                       >
                         {isUpdating ? (
-                          <ActivityIndicator size="small" color="#ffffff" />
+                          <ActivityIndicator size="small" color={isDark ? '#000' : '#fff'} />
                         ) : (
                           <Text style={styles.primaryActionText}>Accept Job</Text>
                         )}
@@ -318,7 +318,7 @@ export default function CollectorTasksScreen({
                         activeOpacity={0.8}
                       >
                         {isUpdating ? (
-                          <ActivityIndicator size="small" color="#ffffff" />
+                          <ActivityIndicator size="small" color={isDark ? '#000' : '#fff'} />
                         ) : (
                           <Text style={styles.doneBtnText}>📸 Verify Cleanup</Text>
                         )}
@@ -459,11 +459,11 @@ const getStyles = (colors, isDark) =>
     menuIcon: {
       fontSize: tokens.typography.size.lg,
       color: colors.text,
-      fontWeight: tokens.typography.weight.bold,
+      fontFamily: tokens.typography.family.bold,
     },
     screenTitle: {
       fontSize: tokens.typography.size.base,
-      fontWeight: tokens.typography.weight.extrabold,
+      fontFamily: tokens.typography.family.extrabold,
       color: colors.accent,
     },
     topRight: {
@@ -497,7 +497,7 @@ const getStyles = (colors, isDark) =>
     backHomeBtn: {
       paddingVertical: 6,
       paddingHorizontal: tokens.spacing.sm,
-      borderRadius: tokens.radius.sm,
+      borderRadius: tokens.radius.lg,
       backgroundColor: colors.card,
       borderWidth: 1,
       borderColor: colors.border,
@@ -505,10 +505,10 @@ const getStyles = (colors, isDark) =>
     backHomeText: {
       color: colors.text,
       fontSize: tokens.typography.size.xs,
-      fontWeight: tokens.typography.weight.semibold,
+      fontFamily: tokens.typography.family.semibold,
     },
     scrollContent: {
-      padding: tokens.spacing.md,
+      padding: tokens.spacing.lg,
       paddingBottom: tokens.spacing.xxl,
     },
     workerHeader: {
@@ -519,7 +519,7 @@ const getStyles = (colors, isDark) =>
     },
     workerName: {
       fontSize: tokens.typography.size.base,
-      fontWeight: tokens.typography.weight.bold,
+      fontFamily: tokens.typography.family.bold,
       color: colors.text,
     },
     workerArea: {
@@ -557,7 +557,7 @@ const getStyles = (colors, isDark) =>
     },
     dutyText: {
       fontSize: 10,
-      fontWeight: tokens.typography.weight.bold,
+      fontFamily: tokens.typography.family.bold,
     },
     dutyTextOnline: {
       color: isDark ? '#4ade80' : '#15803d',
@@ -571,7 +571,7 @@ const getStyles = (colors, isDark) =>
       backgroundColor: isDark ? 'rgba(234,179,8,0.1)' : '#fffbeb',
       borderWidth: 1,
       borderColor: isDark ? 'rgba(234,179,8,0.3)' : '#fde68a',
-      borderRadius: tokens.radius.md,
+      borderRadius: tokens.radius.xl,
       padding: tokens.spacing.sm,
       marginBottom: tokens.spacing.md,
       gap: tokens.spacing.sm,
@@ -581,7 +581,7 @@ const getStyles = (colors, isDark) =>
     },
     offlineAlertTitle: {
       fontSize: tokens.typography.size.xs,
-      fontWeight: tokens.typography.weight.bold,
+      fontFamily: tokens.typography.family.bold,
       color: isDark ? '#facc15' : '#854d0e',
     },
     offlineAlertSub: {
@@ -597,15 +597,15 @@ const getStyles = (colors, isDark) =>
     },
     goOnlineBadgeText: {
       fontSize: 10,
-      fontWeight: tokens.typography.weight.bold,
-      color: '#ffffff',
+      fontFamily: tokens.typography.family.bold,
+      color: isDark ? '#000' : '#fff',
     },
     tabBar: {
       flexDirection: 'row',
       backgroundColor: colors.card,
       borderWidth: 1,
       borderColor: colors.border,
-      borderRadius: tokens.radius.md,
+      borderRadius: tokens.radius.xl,
       padding: 3,
       marginBottom: tokens.spacing.md,
     },
@@ -613,7 +613,7 @@ const getStyles = (colors, isDark) =>
       flex: 1,
       paddingVertical: 7,
       alignItems: 'center',
-      borderRadius: tokens.radius.sm,
+      borderRadius: tokens.radius.lg,
     },
     tabButtonActive: {
       backgroundColor: colors.background,
@@ -621,12 +621,12 @@ const getStyles = (colors, isDark) =>
     },
     tabButtonText: {
       fontSize: 11,
-      fontWeight: tokens.typography.weight.semibold,
+      fontFamily: tokens.typography.family.semibold,
       color: colors.muted,
     },
     tabButtonTextActive: {
       color: colors.accent,
-      fontWeight: tokens.typography.weight.bold,
+      fontFamily: tokens.typography.family.bold,
     },
     taskList: {
       gap: tokens.spacing.sm,
@@ -634,7 +634,7 @@ const getStyles = (colors, isDark) =>
     taskCard: {
       backgroundColor: colors.card,
       borderRadius: tokens.radius.lg,
-      padding: tokens.spacing.md,
+      padding: tokens.spacing.lg,
       borderWidth: 1,
       borderColor: colors.border,
     },
@@ -646,7 +646,7 @@ const getStyles = (colors, isDark) =>
     },
     categoryTitle: {
       fontSize: tokens.typography.size.sm,
-      fontWeight: tokens.typography.weight.bold,
+      fontFamily: tokens.typography.family.bold,
       color: colors.text,
     },
     cardTime: {
@@ -661,7 +661,7 @@ const getStyles = (colors, isDark) =>
     },
     pendingPillText: {
       fontSize: 9,
-      fontWeight: tokens.typography.weight.extrabold,
+      fontFamily: tokens.typography.family.extrabold,
       color: isDark ? '#fcd34d' : '#d97706',
     },
     descriptionText: {
@@ -689,27 +689,27 @@ const getStyles = (colors, isDark) =>
       flex: 1,
       backgroundColor: colors.accent,
       paddingVertical: 8,
-      borderRadius: tokens.radius.sm,
+      borderRadius: tokens.radius.lg,
       alignItems: 'center',
       justifyContent: 'center',
     },
     primaryActionText: {
-      color: '#ffffff',
+      color: isDark ? '#000' : '#fff',
       fontSize: tokens.typography.size.xs,
-      fontWeight: tokens.typography.weight.bold,
+      fontFamily: tokens.typography.family.bold,
     },
     doneBtn: {
       flex: 1,
       backgroundColor: colors.accent,
       paddingVertical: 8,
-      borderRadius: tokens.radius.sm,
+      borderRadius: tokens.radius.lg,
       alignItems: 'center',
       justifyContent: 'center',
     },
     doneBtnText: {
-      color: '#ffffff',
+      color: isDark ? '#000' : '#fff',
       fontSize: tokens.typography.size.xs,
-      fontWeight: tokens.typography.weight.bold,
+      fontFamily: tokens.typography.family.bold,
     },
     secondaryActionBtn: {
       backgroundColor: colors.surface,
@@ -717,11 +717,11 @@ const getStyles = (colors, isDark) =>
       borderColor: colors.border,
       paddingVertical: 8,
       paddingHorizontal: tokens.spacing.sm,
-      borderRadius: tokens.radius.sm,
+      borderRadius: tokens.radius.lg,
     },
     secondaryActionText: {
       fontSize: tokens.typography.size.xs,
-      fontWeight: tokens.typography.weight.semibold,
+      fontFamily: tokens.typography.family.semibold,
       color: colors.text,
     },
     callBtn: {
@@ -730,7 +730,7 @@ const getStyles = (colors, isDark) =>
       borderColor: colors.border,
       paddingVertical: 8,
       paddingHorizontal: tokens.spacing.sm,
-      borderRadius: tokens.radius.sm,
+      borderRadius: tokens.radius.lg,
     },
     callIcon: {
       fontSize: tokens.typography.size.xs,
@@ -744,7 +744,7 @@ const getStyles = (colors, isDark) =>
       justifyContent: 'space-between',
       backgroundColor: colors.card,
       borderRadius: tokens.radius.lg,
-      padding: tokens.spacing.md,
+      padding: tokens.spacing.lg,
       borderWidth: 1,
       borderColor: colors.border,
     },
@@ -756,13 +756,13 @@ const getStyles = (colors, isDark) =>
     },
     geoNumber: {
       fontSize: tokens.typography.size.sm,
-      fontWeight: tokens.typography.weight.extrabold,
+      fontFamily: tokens.typography.family.extrabold,
       color: colors.accent,
       width: 24,
     },
     geoCategory: {
       fontSize: tokens.typography.size.xs,
-      fontWeight: tokens.typography.weight.bold,
+      fontFamily: tokens.typography.family.bold,
       color: colors.text,
     },
     geoLocation: {
@@ -776,11 +776,11 @@ const getStyles = (colors, isDark) =>
       borderColor: colors.border,
       paddingVertical: 6,
       paddingHorizontal: tokens.spacing.sm,
-      borderRadius: tokens.radius.sm,
+      borderRadius: tokens.radius.lg,
     },
     geoNavText: {
       fontSize: tokens.typography.size.xs,
-      fontWeight: tokens.typography.weight.semibold,
+      fontFamily: tokens.typography.family.semibold,
       color: colors.accent,
     },
     completedCard: {
@@ -802,11 +802,11 @@ const getStyles = (colors, isDark) =>
     completedCheck: {
       fontSize: 14,
       color: colors.accent,
-      fontWeight: tokens.typography.weight.extrabold,
+      fontFamily: tokens.typography.family.extrabold,
     },
     completedCategory: {
       fontSize: tokens.typography.size.xs,
-      fontWeight: tokens.typography.weight.semibold,
+      fontFamily: tokens.typography.family.semibold,
       color: colors.text,
     },
     completedLocation: {
@@ -816,7 +816,7 @@ const getStyles = (colors, isDark) =>
     completedTag: {
       fontSize: 10,
       color: colors.accent,
-      fontWeight: tokens.typography.weight.bold,
+      fontFamily: tokens.typography.family.bold,
     },
     emptyBox: {
       padding: tokens.spacing.xl,
@@ -828,7 +828,7 @@ const getStyles = (colors, isDark) =>
     },
     emptyTitle: {
       fontSize: tokens.typography.size.sm,
-      fontWeight: tokens.typography.weight.bold,
+      fontFamily: tokens.typography.family.bold,
       color: colors.text,
     },
     emptySub: {

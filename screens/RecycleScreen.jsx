@@ -209,11 +209,11 @@ const getStyles = (colors, isDark) => StyleSheet.create({
   menuIcon: {
     fontSize: tokens.typography.size.lg,
     color: colors.text,
-    fontWeight: tokens.typography.weight.bold,
+    fontFamily: tokens.typography.family.bold,
   },
   screenTitle: {
     fontSize: tokens.typography.size.base,
-    fontWeight: tokens.typography.weight.bold,
+    fontFamily: tokens.typography.family.bold,
     color: colors.text,
   },
   backHomeBtn: {
@@ -229,16 +229,19 @@ const getStyles = (colors, isDark) => StyleSheet.create({
   backHomeText: {
     color: colors.accent,
     fontSize: tokens.typography.size.sm,
-    fontWeight: tokens.typography.weight.bold,
+    fontFamily: tokens.typography.family.bold,
   },
   scrollContent: {
+    maxWidth: 720,
+    width: '100%',
+    alignSelf: 'center',
     padding: tokens.spacing.md,
     paddingBottom: tokens.spacing.xxl,
   },
   heroBanner: {
     backgroundColor: colors.card,
     borderRadius: tokens.radius.xl,
-    padding: tokens.spacing.lg,
+    padding: tokens.spacing.md,
     marginBottom: tokens.spacing.md,
     borderWidth: 2,
     borderColor: colors.accent + '30',
@@ -254,12 +257,12 @@ const getStyles = (colors, isDark) => StyleSheet.create({
   },
   ecoBadgeText: {
     fontSize: tokens.typography.size.xs,
-    fontWeight: tokens.typography.weight.extrabold,
+    fontFamily: tokens.typography.family.extrabold,
     color: colors.accent,
   },
   heroTitle: {
     fontSize: tokens.typography.size.lg,
-    fontWeight: tokens.typography.weight.extrabold,
+    fontFamily: tokens.typography.family.extrabold,
     color: colors.text,
     marginBottom: tokens.spacing.xs,
   },
@@ -271,14 +274,14 @@ const getStyles = (colors, isDark) => StyleSheet.create({
   formCard: {
     backgroundColor: colors.card,
     borderRadius: tokens.radius.xl,
-    padding: tokens.spacing.lg,
+    padding: tokens.spacing.md,
     borderWidth: 1,
     borderColor: colors.border,
     ...tokens.shadow.sm,
   },
   formTitle: {
     fontSize: tokens.typography.size.base,
-    fontWeight: tokens.typography.weight.bold,
+    fontFamily: tokens.typography.family.bold,
     color: colors.text,
   },
   formSubtitle: {
@@ -296,7 +299,7 @@ const getStyles = (colors, isDark) => StyleSheet.create({
     paddingVertical: tokens.spacing.md,
     paddingHorizontal: tokens.spacing.md,
     backgroundColor: colors.surface,
-    borderRadius: tokens.radius.md,
+    borderRadius: tokens.radius.lg,
     marginBottom: tokens.spacing.xs,
     borderWidth: 1,
     borderColor: colors.border,
@@ -309,6 +312,7 @@ const getStyles = (colors, isDark) => StyleSheet.create({
   itemLeft: {
     flexDirection: 'row',
     alignItems: 'center',
+    flex: 1,
   },
   checkbox: {
     width: 22,
@@ -326,18 +330,20 @@ const getStyles = (colors, isDark) => StyleSheet.create({
     borderColor: colors.accent,
   },
   checkMark: {
-    color: '#ffffff',
+    color: isDark ? '#000' : '#fff',
     fontSize: 14,
-    fontWeight: tokens.typography.weight.extrabold,
+    fontFamily: tokens.typography.family.extrabold,
   },
   itemLabel: {
     fontSize: tokens.typography.size.sm,
     color: colors.text,
-    fontWeight: tokens.typography.weight.semibold,
+    flexShrink: 1,
+    marginRight: tokens.spacing.sm,
+    fontFamily: tokens.typography.family.semibold,
   },
   itemLabelActive: {
     color: colors.accent,
-    fontWeight: tokens.typography.weight.bold,
+    fontFamily: tokens.typography.family.bold,
   },
   ptsBadge: {
     backgroundColor: colors.accent + '20',
@@ -347,7 +353,7 @@ const getStyles = (colors, isDark) => StyleSheet.create({
   },
   ptsBadgeText: {
     fontSize: tokens.typography.size.xs,
-    fontWeight: tokens.typography.weight.extrabold,
+    fontFamily: tokens.typography.family.extrabold,
     color: colors.accent,
   },
   estPointsBox: {
@@ -357,18 +363,18 @@ const getStyles = (colors, isDark) => StyleSheet.create({
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.accent,
-    borderRadius: tokens.radius.md,
+    borderRadius: tokens.radius.lg,
     padding: tokens.spacing.md,
     marginBottom: tokens.spacing.lg,
   },
   estPointsLabel: {
     fontSize: tokens.typography.size.sm,
-    fontWeight: tokens.typography.weight.bold,
+    fontFamily: tokens.typography.family.bold,
     color: colors.text,
   },
   estPointsValue: {
     fontSize: tokens.typography.size.base,
-    fontWeight: tokens.typography.weight.extrabold,
+    fontFamily: tokens.typography.family.extrabold,
     color: colors.accent,
   },
   inputGroup: {
@@ -376,7 +382,7 @@ const getStyles = (colors, isDark) => StyleSheet.create({
   },
   inputLabel: {
     fontSize: tokens.typography.size.sm,
-    fontWeight: tokens.typography.weight.semibold,
+    fontFamily: tokens.typography.family.semibold,
     color: colors.text,
     marginBottom: tokens.spacing.sm,
   },
@@ -384,7 +390,7 @@ const getStyles = (colors, isDark) => StyleSheet.create({
     backgroundColor: colors.inputBg,
     borderWidth: 1,
     borderColor: colors.inputBorder,
-    borderRadius: tokens.radius.md,
+    borderRadius: tokens.radius.lg,
     paddingHorizontal: tokens.spacing.md,
     paddingVertical: tokens.spacing.sm,
     fontSize: tokens.typography.size.sm,
@@ -394,15 +400,15 @@ const getStyles = (colors, isDark) => StyleSheet.create({
   submitBtn: {
     backgroundColor: colors.accent,
     paddingVertical: tokens.spacing.md,
-    borderRadius: tokens.radius.md,
+    borderRadius: tokens.radius.lg,
     alignItems: 'center',
     marginTop: tokens.spacing.xs,
     minHeight: 48,
     justifyContent: 'center',
   },
   submitBtnText: {
-    color: '#ffffff',
+    color: isDark ? '#000' : '#fff',
     fontSize: tokens.typography.size.sm,
-    fontWeight: tokens.typography.weight.bold,
+    fontFamily: tokens.typography.family.bold,
   },
 });

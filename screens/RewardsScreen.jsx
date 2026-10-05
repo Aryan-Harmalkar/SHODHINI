@@ -348,17 +348,17 @@ const getStyles = (colors, isDark) => StyleSheet.create({
   menuIcon: {
     fontSize: tokens.typography.size.lg,
     color: colors.text,
-    fontWeight: tokens.typography.weight.bold,
+    fontFamily: tokens.typography.family.bold,
   },
   screenTitle: {
     fontSize: tokens.typography.size.base,
-    fontWeight: tokens.typography.weight.extrabold,
+    fontFamily: tokens.typography.family.extrabold,
     color: colors.accent,
   },
   backHomeBtn: {
     paddingVertical: 6,
     paddingHorizontal: tokens.spacing.sm,
-    borderRadius: tokens.radius.sm,
+    borderRadius: tokens.radius.lg,
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
@@ -366,10 +366,10 @@ const getStyles = (colors, isDark) => StyleSheet.create({
   backHomeText: {
     color: colors.text,
     fontSize: tokens.typography.size.xs,
-    fontWeight: tokens.typography.weight.semibold,
+    fontFamily: tokens.typography.family.semibold,
   },
   scrollContent: {
-    padding: tokens.spacing.md,
+    padding: tokens.spacing.lg,
     paddingBottom: tokens.spacing.xxl,
   },
   balanceCard: {
@@ -378,7 +378,7 @@ const getStyles = (colors, isDark) => StyleSheet.create({
     alignItems: 'center',
     backgroundColor: colors.card,
     borderRadius: tokens.radius.lg,
-    padding: tokens.spacing.md,
+    padding: tokens.spacing.lg,
     marginBottom: tokens.spacing.md,
     borderWidth: 1,
     borderColor: colors.border,
@@ -389,7 +389,7 @@ const getStyles = (colors, isDark) => StyleSheet.create({
   },
   balanceVal: {
     fontSize: tokens.typography.size.xl,
-    fontWeight: tokens.typography.weight.extrabold,
+    fontFamily: tokens.typography.family.extrabold,
     color: colors.accent,
     marginTop: 2,
   },
@@ -397,19 +397,19 @@ const getStyles = (colors, isDark) => StyleSheet.create({
     backgroundColor: colors.accent + '20',
     paddingVertical: 6,
     paddingHorizontal: tokens.spacing.sm,
-    borderRadius: tokens.radius.sm,
+    borderRadius: tokens.radius.lg,
   },
   earnMoreText: {
     color: colors.accent,
     fontSize: tokens.typography.size.xs,
-    fontWeight: tokens.typography.weight.bold,
+    fontFamily: tokens.typography.family.bold,
   },
   tabRow: {
     flexDirection: 'row',
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: tokens.radius.md,
+    borderRadius: tokens.radius.xl,
     padding: 3,
     marginBottom: tokens.spacing.md,
   },
@@ -417,7 +417,7 @@ const getStyles = (colors, isDark) => StyleSheet.create({
     flex: 1,
     paddingVertical: 7,
     alignItems: 'center',
-    borderRadius: tokens.radius.sm,
+    borderRadius: tokens.radius.lg,
   },
   activeTabBtn: {
     backgroundColor: colors.card,
@@ -427,12 +427,12 @@ const getStyles = (colors, isDark) => StyleSheet.create({
   },
   tabBtnText: {
     fontSize: tokens.typography.size.xs,
-    fontWeight: tokens.typography.weight.semibold,
+    fontFamily: tokens.typography.family.semibold,
     color: colors.muted,
   },
   activeTabBtnText: {
     color: colors.accent,
-    fontWeight: tokens.typography.weight.bold,
+    fontFamily: tokens.typography.family.bold,
   },
   listContainer: {
     gap: tokens.spacing.sm,
@@ -442,7 +442,7 @@ const getStyles = (colors, isDark) => StyleSheet.create({
     alignItems: 'center',
     backgroundColor: colors.card,
     borderRadius: tokens.radius.lg,
-    padding: tokens.spacing.md,
+    padding: tokens.spacing.lg,
     borderWidth: 1,
     borderColor: colors.border,
   },
@@ -455,35 +455,35 @@ const getStyles = (colors, isDark) => StyleSheet.create({
   },
   rewardTitle: {
     fontSize: tokens.typography.size.sm,
-    fontWeight: tokens.typography.weight.bold,
+    fontFamily: tokens.typography.family.bold,
     color: colors.text,
   },
   rewardCost: {
     fontSize: tokens.typography.size.xs,
     color: colors.accent,
-    fontWeight: tokens.typography.weight.semibold,
+    fontFamily: tokens.typography.family.semibold,
     marginTop: 2,
   },
   redeemBtn: {
     backgroundColor: colors.accent,
     paddingVertical: 6,
     paddingHorizontal: tokens.spacing.md,
-    borderRadius: tokens.radius.sm,
+    borderRadius: tokens.radius.lg,
   },
   redeemBtnDisabled: {
     backgroundColor: colors.muted + '40',
   },
   redeemBtnText: {
-    color: '#ffffff',
+    color: isDark ? '#000' : '#fff',
     fontSize: tokens.typography.size.xs,
-    fontWeight: tokens.typography.weight.bold,
+    fontFamily: tokens.typography.family.bold,
   },
   couponCard: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: colors.card,
     borderRadius: tokens.radius.lg,
-    padding: tokens.spacing.md,
+    padding: tokens.spacing.lg,
     borderWidth: 1,
     borderColor: colors.border,
   },
@@ -496,7 +496,7 @@ const getStyles = (colors, isDark) => StyleSheet.create({
   },
   couponTitle: {
     fontSize: tokens.typography.size.sm,
-    fontWeight: tokens.typography.weight.bold,
+    fontFamily: tokens.typography.family.bold,
     color: colors.text,
   },
   couponCode: {
@@ -511,11 +511,11 @@ const getStyles = (colors, isDark) => StyleSheet.create({
     borderColor: colors.border,
     paddingVertical: 6,
     paddingHorizontal: tokens.spacing.sm,
-    borderRadius: tokens.radius.sm,
+    borderRadius: tokens.radius.lg,
   },
   copyBtnText: {
     fontSize: tokens.typography.size.xs,
-    fontWeight: tokens.typography.weight.bold,
+    fontFamily: tokens.typography.family.bold,
     color: colors.accent,
   },
   historyCard: {
@@ -541,7 +541,7 @@ const getStyles = (colors, isDark) => StyleSheet.create({
   },
   historyTitle: {
     fontSize: tokens.typography.size.xs,
-    fontWeight: tokens.typography.weight.semibold,
+    fontFamily: tokens.typography.family.semibold,
     color: colors.text,
   },
   historyDate: {
@@ -551,6 +551,6 @@ const getStyles = (colors, isDark) => StyleSheet.create({
   },
   historyPoints: {
     fontSize: tokens.typography.size.sm,
-    fontWeight: tokens.typography.weight.extrabold,
+    fontFamily: tokens.typography.family.extrabold,
   },
 });

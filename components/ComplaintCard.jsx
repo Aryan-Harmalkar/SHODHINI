@@ -76,7 +76,7 @@ export default function ComplaintCard({ item, updatingId, onUpdateStatus, onVeri
               activeOpacity={0.8}
             >
               {isUpdating ? (
-                <ActivityIndicator size="small" color="#ffffff" />
+                <ActivityIndicator size="small" color={isDark ? '#000' : '#fff'} />
               ) : (
                 <Text style={styles.primaryBtnText}>Accept Job</Text>
               )}
@@ -95,7 +95,7 @@ export default function ComplaintCard({ item, updatingId, onUpdateStatus, onVeri
               activeOpacity={0.8}
             >
               {isUpdating ? (
-                <ActivityIndicator size="small" color="#ffffff" />
+                <ActivityIndicator size="small" color={isDark ? '#000' : '#fff'} />
               ) : (
                 <Text style={styles.doneBtnText}>📸 Verify Cleanup</Text>
               )}
@@ -120,113 +120,128 @@ export default function ComplaintCard({ item, updatingId, onUpdateStatus, onVeri
 const getStyles = (colors, isDark) =>
   StyleSheet.create({
     card: {
-      backgroundColor: colors.card,
-      borderRadius: tokens.radius.lg,
-      padding: tokens.spacing.md,
-      marginBottom: tokens.spacing.sm,
+      backgroundColor: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)',
+      borderRadius: tokens.radius.xl,
+      padding: 6,
+      marginBottom: tokens.spacing.md,
       borderWidth: 1,
-      borderColor: colors.border,
-      position: 'relative',
-      overflow: 'hidden',
+      borderColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
     },
     header: {
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
-      marginBottom: tokens.spacing.xs,
+      marginBottom: tokens.spacing.sm,
+      borderTopLeftRadius: tokens.radius.lg,
+      borderTopRightRadius: tokens.radius.lg,
+      padding: tokens.spacing.lg,
+      paddingBottom: tokens.spacing.xs,
     },
     headerText: {
       flex: 1,
     },
     category: {
-      fontSize: tokens.typography.size.sm,
-      fontWeight: tokens.typography.weight.bold,
+      fontSize: tokens.typography.size.base,
+      fontFamily: tokens.typography.family.bold,
       color: colors.text,
+      letterSpacing: -0.5,
     },
     date: {
-      fontSize: 10,
+      fontSize: 11,
       color: colors.muted,
-      marginTop: 1,
+      marginTop: 2,
+      fontFamily: tokens.typography.family.medium,
     },
     badge: {
-      paddingHorizontal: tokens.spacing.sm,
-      paddingVertical: 3,
+      paddingHorizontal: tokens.spacing.md,
+      paddingVertical: 6,
       borderRadius: tokens.radius.full,
     },
     badgeText: {
       fontSize: 10,
-      fontWeight: tokens.typography.weight.bold,
+      fontFamily: tokens.typography.family.bold,
+      letterSpacing: 0.5,
+      textTransform: 'uppercase',
     },
     adminReviewBanner: {
       backgroundColor: isDark ? 'rgba(245, 158, 11, 0.15)' : '#fffbeb',
-      borderRadius: tokens.radius.sm,
-      padding: 6,
-      marginBottom: tokens.spacing.xs,
+      paddingHorizontal: tokens.spacing.md,
+      paddingVertical: 10,
       borderLeftWidth: 3,
       borderLeftColor: '#f59e0b',
     },
     adminReviewBannerText: {
-      fontSize: 10,
+      fontSize: 11,
       color: isDark ? '#fcd34d' : '#92400e',
-      fontWeight: tokens.typography.weight.medium,
+      fontFamily: tokens.typography.family.medium,
     },
     description: {
-      fontSize: tokens.typography.size.xs,
-      color: colors.text,
+      fontSize: tokens.typography.size.sm,
+      color: colors.textSecondary,
       marginBottom: tokens.spacing.sm,
-      lineHeight: 18,
+      lineHeight: 20,
+      paddingHorizontal: tokens.spacing.md,
     },
     metaRow: {
-      marginBottom: 2,
+      marginBottom: tokens.spacing.xs,
+      paddingHorizontal: tokens.spacing.md,
     },
     metaVal: {
       fontSize: tokens.typography.size.xs,
       color: colors.muted,
+      fontFamily: tokens.typography.family.medium,
     },
     actionRow: {
-      marginTop: tokens.spacing.sm,
-      paddingTop: tokens.spacing.xs,
+      paddingTop: tokens.spacing.sm,
+      borderBottomLeftRadius: tokens.radius.lg,
+      borderBottomRightRadius: tokens.radius.lg,
+      padding: tokens.spacing.lg,
     },
     primaryBtn: {
       backgroundColor: colors.accent,
-      paddingVertical: 8,
-      borderRadius: tokens.radius.sm,
+      paddingVertical: 14,
+      borderRadius: tokens.radius.full,
       alignItems: 'center',
       justifyContent: 'center',
     },
     primaryBtnText: {
-      color: '#ffffff',
-      fontSize: tokens.typography.size.xs,
-      fontWeight: tokens.typography.weight.bold,
+      color: isDark ? '#000' : '#ffffff',
+      fontSize: tokens.typography.size.sm,
+      fontFamily: tokens.typography.family.bold,
+      letterSpacing: 0.5,
     },
     doneBtn: {
       backgroundColor: colors.accent,
-      paddingVertical: 8,
-      borderRadius: tokens.radius.sm,
+      paddingVertical: 14,
+      borderRadius: tokens.radius.full,
       alignItems: 'center',
       justifyContent: 'center',
     },
     doneBtnText: {
-      color: '#ffffff',
-      fontSize: tokens.typography.size.xs,
-      fontWeight: tokens.typography.weight.bold,
+      color: isDark ? '#000' : '#ffffff',
+      fontSize: tokens.typography.size.sm,
+      fontFamily: tokens.typography.family.bold,
+      letterSpacing: 0.5,
     },
     btnDisabled: {
       opacity: 0.6,
     },
     completedBadgeRow: {
-      marginTop: tokens.spacing.xs,
       paddingTop: tokens.spacing.xs,
+      borderBottomLeftRadius: tokens.radius.lg,
+      borderBottomRightRadius: tokens.radius.lg,
+      padding: tokens.spacing.lg,
     },
     completedBadgeText: {
-      fontSize: 11,
+      fontSize: tokens.typography.size.sm,
       color: colors.accent,
-      fontWeight: tokens.typography.weight.semibold,
+      fontFamily: tokens.typography.family.bold,
     },
     overlay: {
       ...StyleSheet.absoluteFillObject,
-      backgroundColor: isDark ? 'rgba(15, 23, 42, 0.8)' : 'rgba(255, 255, 255, 0.7)',
+      backgroundColor: isDark ? 'rgba(5, 5, 5, 0.8)' : 'rgba(255, 255, 255, 0.8)',
       justifyContent: 'center',
       alignItems: 'center',
+      borderRadius: tokens.radius.xl,
     },
   });

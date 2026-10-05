@@ -348,7 +348,7 @@ export default function WastePickupScreen({
             activeOpacity={0.8}
           >
             {submitting ? (
-              <ActivityIndicator size="small" color="#ffffff" />
+              <ActivityIndicator size="small" color={isDark ? '#000' : '#fff'} />
             ) : (
               <Text style={styles.submitBtnText}>
                 {paymentChoice === 'points'
@@ -412,11 +412,11 @@ const getStyles = (colors, isDark) =>
     menuIcon: {
       fontSize: tokens.typography.size.lg,
       color: colors.text,
-      fontWeight: tokens.typography.weight.bold,
+      fontFamily: tokens.typography.family.bold,
     },
     screenTitle: {
       fontSize: tokens.typography.size.base,
-      fontWeight: tokens.typography.weight.bold,
+      fontFamily: tokens.typography.family.bold,
       color: colors.text,
     },
     backHomeBtn: {
@@ -432,16 +432,19 @@ const getStyles = (colors, isDark) =>
     backHomeText: {
       color: colors.accent,
       fontSize: tokens.typography.size.sm,
-      fontWeight: tokens.typography.weight.bold,
+      fontFamily: tokens.typography.family.bold,
     },
     scrollContent: {
+    maxWidth: 720,
+    width: '100%',
+    alignSelf: 'center',
       padding: tokens.spacing.md,
       paddingBottom: tokens.spacing.xxl,
     },
     heroBanner: {
       backgroundColor: colors.accent,
       borderRadius: tokens.radius.xl,
-      padding: tokens.spacing.lg,
+      padding: tokens.spacing.md,
       marginBottom: tokens.spacing.md,
     },
     paidBadge: {
@@ -454,14 +457,14 @@ const getStyles = (colors, isDark) =>
     },
     paidBadgeText: {
       fontSize: 10,
-      fontWeight: tokens.typography.weight.extrabold,
+      fontFamily: tokens.typography.family.extrabold,
       color: '#854d0e',
       letterSpacing: 0.5,
     },
     heroTitle: {
       fontSize: tokens.typography.size.lg,
-      fontWeight: tokens.typography.weight.extrabold,
-      color: '#ffffff',
+      fontFamily: tokens.typography.family.extrabold,
+      color: isDark ? '#000' : '#fff',
       marginBottom: tokens.spacing.xs,
     },
     heroDesc: {
@@ -471,7 +474,7 @@ const getStyles = (colors, isDark) =>
     },
     sectionLabel: {
       fontSize: tokens.typography.size.sm,
-      fontWeight: tokens.typography.weight.bold,
+      fontFamily: tokens.typography.family.bold,
       color: colors.text,
       marginBottom: tokens.spacing.sm,
       marginTop: tokens.spacing.xs,
@@ -498,12 +501,12 @@ const getStyles = (colors, isDark) =>
     },
     planName: {
       fontSize: tokens.typography.size.xs,
-      fontWeight: tokens.typography.weight.bold,
+      fontFamily: tokens.typography.family.bold,
       color: colors.text,
     },
     planPrice: {
       fontSize: tokens.typography.size.base,
-      fontWeight: tokens.typography.weight.extrabold,
+      fontFamily: tokens.typography.family.extrabold,
       color: colors.accent,
       marginTop: 2,
     },
@@ -535,11 +538,11 @@ const getStyles = (colors, isDark) =>
     balanceTitle: {
       fontSize: 11,
       color: colors.muted,
-      fontWeight: tokens.typography.weight.medium,
+      fontFamily: tokens.typography.family.medium,
     },
     balancePoints: {
       fontSize: tokens.typography.size.base,
-      fontWeight: tokens.typography.weight.extrabold,
+      fontFamily: tokens.typography.family.extrabold,
       color: isDark ? '#4ade80' : '#15803d',
     },
     eligibleBadge: {
@@ -552,7 +555,7 @@ const getStyles = (colors, isDark) =>
     },
     eligibleBadgeText: {
       fontSize: 10,
-      fontWeight: tokens.typography.weight.extrabold,
+      fontFamily: tokens.typography.family.extrabold,
       color: isDark ? '#4ade80' : '#166534',
     },
     needMoreBadge: {
@@ -565,7 +568,7 @@ const getStyles = (colors, isDark) =>
     },
     needMoreBadgeText: {
       fontSize: 10,
-      fontWeight: tokens.typography.weight.bold,
+      fontFamily: tokens.typography.family.bold,
       color: isDark ? '#facc15' : '#854d0e',
     },
     paymentMethodsRow: {
@@ -597,28 +600,28 @@ const getStyles = (colors, isDark) =>
     },
     paymentMethodTitle: {
       fontSize: tokens.typography.size.xs,
-      fontWeight: tokens.typography.weight.bold,
+      fontFamily: tokens.typography.family.bold,
       color: colors.text,
     },
     checkedCircle: {
       fontSize: 14,
-      fontWeight: tokens.typography.weight.bold,
+      fontFamily: tokens.typography.family.bold,
       color: colors.accent,
     },
     paymentCostText: {
       fontSize: tokens.typography.size.sm,
-      fontWeight: tokens.typography.weight.extrabold,
+      fontFamily: tokens.typography.family.extrabold,
       color: colors.text,
       marginTop: 2,
     },
     freeHighlight: {
       color: '#22c55e',
-      fontWeight: tokens.typography.weight.extrabold,
+      fontFamily: tokens.typography.family.extrabold,
     },
     disabledHighlight: {
       color: colors.muted,
       fontSize: 11,
-      fontWeight: tokens.typography.weight.medium,
+      fontFamily: tokens.typography.family.medium,
     },
     paymentDescText: {
       fontSize: 10,
@@ -629,14 +632,14 @@ const getStyles = (colors, isDark) =>
     formCard: {
       backgroundColor: colors.card,
       borderRadius: tokens.radius.xl,
-      padding: tokens.spacing.lg,
+      padding: tokens.spacing.md,
       borderWidth: 1,
       borderColor: colors.border,
       ...tokens.shadow.sm,
     },
     formTitle: {
       fontSize: tokens.typography.size.sm,
-      fontWeight: tokens.typography.weight.bold,
+      fontFamily: tokens.typography.family.bold,
       color: colors.text,
       marginBottom: tokens.spacing.md,
     },
@@ -645,7 +648,7 @@ const getStyles = (colors, isDark) =>
     },
     inputLabel: {
       fontSize: tokens.typography.size.xs,
-      fontWeight: tokens.typography.weight.semibold,
+      fontFamily: tokens.typography.family.semibold,
       color: colors.text,
       marginBottom: tokens.spacing.xs,
     },
@@ -653,7 +656,7 @@ const getStyles = (colors, isDark) =>
       backgroundColor: colors.inputBg,
       borderWidth: 1,
       borderColor: colors.inputBorder,
-      borderRadius: tokens.radius.md,
+      borderRadius: tokens.radius.lg,
       paddingHorizontal: tokens.spacing.md,
       paddingVertical: tokens.spacing.sm,
       fontSize: tokens.typography.size.xs,
@@ -681,13 +684,13 @@ const getStyles = (colors, isDark) =>
     pillText: {
       fontSize: 11,
       color: colors.text,
-      fontWeight: tokens.typography.weight.semibold,
+      fontFamily: tokens.typography.family.semibold,
     },
     activePillText: {
-      color: '#ffffff',
+      color: isDark ? '#000' : '#fff',
     },
     noticeBox: {
-      borderRadius: tokens.radius.md,
+      borderRadius: tokens.radius.lg,
       padding: tokens.spacing.sm,
       marginBottom: tokens.spacing.md,
       borderWidth: 1,
@@ -713,14 +716,14 @@ const getStyles = (colors, isDark) =>
     submitBtn: {
       backgroundColor: colors.accent,
       paddingVertical: tokens.spacing.md,
-      borderRadius: tokens.radius.md,
+      borderRadius: tokens.radius.lg,
       alignItems: 'center',
       minHeight: 48,
       justifyContent: 'center',
     },
     submitBtnText: {
-      color: '#ffffff',
+      color: isDark ? '#000' : '#fff',
       fontSize: tokens.typography.size.sm,
-      fontWeight: tokens.typography.weight.bold,
+      fontFamily: tokens.typography.family.bold,
     },
   });

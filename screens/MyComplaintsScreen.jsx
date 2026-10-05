@@ -293,11 +293,11 @@ const getStyles = (colors, isDark) =>
     menuIcon: {
       fontSize: tokens.typography.size.lg,
       color: colors.text,
-      fontWeight: tokens.typography.weight.bold,
+      fontFamily: tokens.typography.family.bold,
     },
     screenTitle: {
       fontSize: tokens.typography.size.base,
-      fontWeight: tokens.typography.weight.bold,
+      fontFamily: tokens.typography.family.bold,
       color: colors.text,
     },
     backHomeBtn: {
@@ -306,17 +306,17 @@ const getStyles = (colors, isDark) =>
       borderColor: colors.border,
       paddingVertical: tokens.spacing.sm,
       paddingHorizontal: tokens.spacing.md,
-      borderRadius: tokens.radius.sm,
+      borderRadius: tokens.radius.lg,
       minHeight: 44,
       justifyContent: 'center',
     },
     backHomeText: {
       color: colors.accent,
       fontSize: tokens.typography.size.sm,
-      fontWeight: tokens.typography.weight.bold,
+      fontFamily: tokens.typography.family.bold,
     },
     scrollContent: {
-      padding: tokens.spacing.md,
+      padding: tokens.spacing.lg,
       paddingBottom: tokens.spacing.xxl,
     },
     summaryCard: {
@@ -335,12 +335,12 @@ const getStyles = (colors, isDark) =>
     },
     ecoLabel: {
       fontSize: tokens.typography.size.sm,
-      fontWeight: tokens.typography.weight.semibold,
+      fontFamily: tokens.typography.family.semibold,
       color: colors.accent,
     },
     ecoPointsText: {
       fontSize: tokens.typography.size.xxl,
-      fontWeight: tokens.typography.weight.extrabold,
+      fontFamily: tokens.typography.family.extrabold,
       color: colors.text,
       marginTop: 2,
     },
@@ -355,7 +355,7 @@ const getStyles = (colors, isDark) =>
     ecoBadgeText: {
       color: colors.accent,
       fontSize: tokens.typography.size.xs,
-      fontWeight: tokens.typography.weight.bold,
+      fontFamily: tokens.typography.family.bold,
     },
     statsDivider: {
       height: 1,
@@ -371,7 +371,7 @@ const getStyles = (colors, isDark) =>
     },
     statNum: {
       fontSize: tokens.typography.size.lg,
-      fontWeight: tokens.typography.weight.bold,
+      fontFamily: tokens.typography.family.bold,
       color: colors.text,
     },
     statLabel: {
@@ -385,14 +385,14 @@ const getStyles = (colors, isDark) =>
       backgroundColor: colors.card,
       borderWidth: 1,
       borderColor: colors.border,
-      borderRadius: tokens.radius.md,
+      borderRadius: tokens.radius.xl,
       padding: 4,
     },
     filterPill: {
       flex: 1,
       paddingVertical: tokens.spacing.sm,
       alignItems: 'center',
-      borderRadius: tokens.radius.sm,
+      borderRadius: tokens.radius.lg,
       minHeight: 44,
       justifyContent: 'center',
     },
@@ -403,11 +403,11 @@ const getStyles = (colors, isDark) =>
     filterPillText: {
       fontSize: tokens.typography.size.sm,
       color: colors.muted,
-      fontWeight: tokens.typography.weight.semibold,
+      fontFamily: tokens.typography.family.semibold,
     },
     activeFilterPillText: {
       color: colors.text,
-      fontWeight: tokens.typography.weight.bold,
+      fontFamily: tokens.typography.family.bold,
     },
     centerContainer: {
       padding: tokens.spacing.xxl,
@@ -433,7 +433,7 @@ const getStyles = (colors, isDark) =>
     },
     emptyTitle: {
       fontSize: tokens.typography.size.base,
-      fontWeight: tokens.typography.weight.bold,
+      fontFamily: tokens.typography.family.bold,
       color: colors.text,
       marginBottom: tokens.spacing.sm,
     },
@@ -448,19 +448,19 @@ const getStyles = (colors, isDark) =>
       backgroundColor: colors.accent,
       paddingVertical: tokens.spacing.md,
       paddingHorizontal: tokens.spacing.lg,
-      borderRadius: tokens.radius.md,
+      borderRadius: tokens.radius.xl,
       minHeight: 48,
       justifyContent: 'center',
     },
     fileBtnText: {
-      color: '#ffffff',
-      fontWeight: tokens.typography.weight.bold,
+      color: isDark ? '#000' : '#fff',
+      fontFamily: tokens.typography.family.bold,
       fontSize: tokens.typography.size.sm,
     },
     complaintCard: {
       backgroundColor: colors.card,
       borderRadius: tokens.radius.lg,
-      padding: tokens.spacing.md,
+      padding: tokens.spacing.lg,
       marginBottom: tokens.spacing.sm,
       borderWidth: 1,
       borderColor: colors.border,
@@ -474,7 +474,7 @@ const getStyles = (colors, isDark) =>
     },
     categoryTitle: {
       fontSize: tokens.typography.size.base,
-      fontWeight: tokens.typography.weight.bold,
+      fontFamily: tokens.typography.family.bold,
       color: colors.text,
     },
     statusPill: {
@@ -487,7 +487,7 @@ const getStyles = (colors, isDark) =>
     },
     statusDoneText: {
       color: colors.accent,
-      fontWeight: tokens.typography.weight.bold,
+      fontFamily: tokens.typography.family.bold,
       fontSize: tokens.typography.size.xs,
     },
     statusInProgress: {
@@ -495,7 +495,7 @@ const getStyles = (colors, isDark) =>
     },
     statusInProgressText: {
       color: isDark ? '#fbbf24' : '#e65100',
-      fontWeight: tokens.typography.weight.bold,
+      fontFamily: tokens.typography.family.bold,
       fontSize: tokens.typography.size.xs,
     },
     statusSubmitted: {
@@ -503,7 +503,7 @@ const getStyles = (colors, isDark) =>
     },
     statusSubmittedText: {
       color: isDark ? '#38bdf8' : '#1565c0',
-      fontWeight: tokens.typography.weight.bold,
+      fontFamily: tokens.typography.family.bold,
       fontSize: tokens.typography.size.xs,
     },
     statusAdminReview: {
@@ -511,12 +511,12 @@ const getStyles = (colors, isDark) =>
     },
     statusAdminReviewText: {
       color: isDark ? '#fcd34d' : '#92400e',
-      fontWeight: tokens.typography.weight.bold,
+      fontFamily: tokens.typography.family.bold,
       fontSize: tokens.typography.size.xs,
     },
     adminNoticeStrip: {
       backgroundColor: isDark ? 'rgba(245, 158, 11, 0.15)' : '#fffbeb',
-      borderRadius: tokens.radius.sm,
+      borderRadius: tokens.radius.lg,
       padding: 6,
       marginBottom: tokens.spacing.xs,
       borderLeftWidth: 3,
@@ -541,12 +541,12 @@ const getStyles = (colors, isDark) =>
       fontSize: tokens.typography.size.xs,
       color: colors.muted,
       width: 60,
-      fontWeight: tokens.typography.weight.medium,
+      fontFamily: tokens.typography.family.medium,
     },
     metaValue: {
       fontSize: tokens.typography.size.xs,
       color: colors.text,
-      fontWeight: tokens.typography.weight.semibold,
+      fontFamily: tokens.typography.family.semibold,
       flex: 1,
     },
     rewardRow: {
@@ -560,12 +560,12 @@ const getStyles = (colors, isDark) =>
     rewardLabel: {
       fontSize: tokens.typography.size.xs,
       color: colors.muted,
-      fontWeight: tokens.typography.weight.semibold,
+      fontFamily: tokens.typography.family.semibold,
       marginRight: tokens.spacing.xs,
     },
     rewardValue: {
       fontSize: tokens.typography.size.xs,
-      fontWeight: tokens.typography.weight.bold,
+      fontFamily: tokens.typography.family.bold,
     },
     pointsEarned: {
       color: colors.accent,

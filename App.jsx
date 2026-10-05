@@ -8,17 +8,21 @@ import {
   Text,
   Platform,
   Image,
+  useWindowDimensions,
 } from 'react-native';
+
 import HomeScreen from './screens/HomeScreen';
 import AuthScreen from './screens/AuthScreen';
 import { initDatabase, getCurrentUser, logoutUser, updateUserPushToken } from './db/database';
 import { registerForPushNotificationsAsync } from './lib/notifications';
 import { ThemeProvider, useTheme } from './lib/theme';
+import { useFonts, PlusJakartaSans_400Regular, PlusJakartaSans_500Medium, PlusJakartaSans_600SemiBold, PlusJakartaSans_700Bold, PlusJakartaSans_800ExtraBold } from '@expo-google-fonts/plus-jakarta-sans';
 
 function MainAppShell() {
   const [currentUser, setCurrentUser] = useState(null);
   const [initializing, setInitializing] = useState(true);
   const { isDark, colors } = useTheme();
+  const { width } = useWindowDimensions();
 
   useEffect(() => {
     async function setup() {
@@ -77,37 +81,39 @@ function MainAppShell() {
     );
   }
 
-  const isWeb = Platform.OS === 'web';
+  const isWebDesktop = Platform.OS === 'web' && width > 768;
 
   return (
-    <View
-      style={
-        isWeb
-          ? [styles.webOuterCanvas, isDark && styles.webOuterCanvasDark]
-          : [styles.nativeContainer, { backgroundColor: colors.background }]
-      }
-    >
-      <View
-        style={
-          isWeb
-            ? [styles.mobileFrame, isDark && styles.mobileFrameDark]
-            : [styles.nativeContainer, { backgroundColor: colors.background }]
-        }
-      >
-        <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
-          <StatusBar style={isDark ? 'light' : 'dark'} />
-          {currentUser ? (
-            <HomeScreen user={currentUser} onLogout={handleLogout} />
-          ) : (
-            <AuthScreen onAuthSuccess={handleAuthSuccess} />
-          )}
-        </SafeAreaView>
-      </View>
+    <View style={[styles.nativeContainer, { backgroundColor: colors.background }]}>
+      <SafeAreaView style={[styles.safeArea, { backgroundColor: colors.background }]}>
+        <StatusBar style={isDark ? 'light' : 'dark'} />
+        {currentUser ? (
+          <HomeScreen user={currentUser} onLogout={handleLogout} />
+        ) : (
+          <AuthScreen onAuthSuccess={handleAuthSuccess} />
+        )}
+      </SafeAreaView>
     </View>
   );
 }
 
 export default function App() {
+  const [fontsLoaded] = useFonts({
+    PlusJakartaSans_400Regular,
+    PlusJakartaSans_500Medium,
+    PlusJakartaSans_600SemiBold,
+    PlusJakartaSans_700Bold,
+    PlusJakartaSans_800ExtraBold,
+  });
+
+  if (!fontsLoaded) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color="#16a34a" />
+      </View>
+    );
+  }
+
   return (
     <ThemeProvider>
       <MainAppShell />
@@ -122,14 +128,14 @@ const styles = StyleSheet.create({
   },
   webOuterCanvas: {
     flex: 1,
-    backgroundColor: '#f1f5f9',
+    backgroundColor: '#fafafa',
     alignItems: 'center',
     justifyContent: 'center',
     minHeight: '100vh',
     paddingVertical: 16,
   },
   webOuterCanvasDark: {
-    backgroundColor: '#020617',
+    backgroundColor: '#050505',
   },
   mobileFrame: {
     width: '100%',
@@ -137,21 +143,21 @@ const styles = StyleSheet.create({
     height: '96vh',
     maxHeight: 900,
     backgroundColor: '#ffffff',
-    borderRadius: 28,
+    borderRadius: 40,
     overflow: 'hidden',
     position: 'relative',
     borderWidth: 8,
-    borderColor: '#cbd5e1',
+    borderColor: 'rgba(0,0,0,0.05)',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 16 },
-    shadowOpacity: 0.15,
-    shadowRadius: 24,
-    elevation: 12,
+    shadowOffset: { width: 0, height: 24 },
+    shadowOpacity: 0.08,
+    shadowRadius: 48,
+    elevation: 24,
   },
   mobileFrameDark: {
-    backgroundColor: '#090d16',
-    borderColor: '#1e293b',
-    shadowOpacity: 0.6,
+    backgroundColor: '#0a0a0a',
+    borderColor: 'rgba(255,255,255,0.05)',
+    shadowOpacity: 0.4,
   },
   safeArea: {
     flex: 1,

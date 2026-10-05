@@ -301,17 +301,17 @@ const getStyles = (colors, isDark) => StyleSheet.create({
   menuIcon: {
     fontSize: tokens.typography.size.lg,
     color: colors.text,
-    fontWeight: tokens.typography.weight.bold,
+    fontFamily: tokens.typography.family.bold,
   },
   screenTitle: {
     fontSize: tokens.typography.size.base,
-    fontWeight: tokens.typography.weight.extrabold,
+    fontFamily: tokens.typography.family.extrabold,
     color: colors.accent,
   },
   backHomeBtn: {
     paddingVertical: 6,
     paddingHorizontal: tokens.spacing.sm,
-    borderRadius: tokens.radius.sm,
+    borderRadius: tokens.radius.lg,
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
@@ -319,10 +319,10 @@ const getStyles = (colors, isDark) => StyleSheet.create({
   backHomeText: {
     color: colors.text,
     fontSize: tokens.typography.size.xs,
-    fontWeight: tokens.typography.weight.semibold,
+    fontFamily: tokens.typography.family.semibold,
   },
   scrollContent: {
-    padding: tokens.spacing.md,
+    padding: tokens.spacing.lg,
     paddingBottom: tokens.spacing.xxl,
   },
   standingCard: {
@@ -331,14 +331,14 @@ const getStyles = (colors, isDark) => StyleSheet.create({
     alignItems: 'center',
     backgroundColor: colors.card,
     borderRadius: tokens.radius.lg,
-    padding: tokens.spacing.md,
+    padding: tokens.spacing.lg,
     marginBottom: tokens.spacing.md,
     borderWidth: 1,
     borderColor: colors.border,
   },
   standingName: {
     fontSize: tokens.typography.size.base,
-    fontWeight: tokens.typography.weight.bold,
+    fontFamily: tokens.typography.family.bold,
     color: colors.text,
   },
   standingSub: {
@@ -356,7 +356,7 @@ const getStyles = (colors, isDark) => StyleSheet.create({
   },
   ecoPillText: {
     color: colors.accent,
-    fontWeight: tokens.typography.weight.bold,
+    fontFamily: tokens.typography.family.bold,
     fontSize: tokens.typography.size.xs,
   },
   workerDutyPill: {
@@ -368,14 +368,14 @@ const getStyles = (colors, isDark) => StyleSheet.create({
   workerDutyText: {
     color: colors.accent,
     fontSize: tokens.typography.size.xs,
-    fontWeight: tokens.typography.weight.bold,
+    fontFamily: tokens.typography.family.bold,
   },
   tabRow: {
     flexDirection: 'row',
     backgroundColor: colors.surface,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: tokens.radius.md,
+    borderRadius: tokens.radius.xl,
     padding: 3,
     marginBottom: tokens.spacing.md,
   },
@@ -383,7 +383,7 @@ const getStyles = (colors, isDark) => StyleSheet.create({
     flex: 1,
     paddingVertical: 7,
     alignItems: 'center',
-    borderRadius: tokens.radius.sm,
+    borderRadius: tokens.radius.lg,
   },
   activeTabBtn: {
     backgroundColor: colors.card,
@@ -393,12 +393,12 @@ const getStyles = (colors, isDark) => StyleSheet.create({
   },
   tabBtnText: {
     fontSize: tokens.typography.size.xs,
-    fontWeight: tokens.typography.weight.semibold,
+    fontFamily: tokens.typography.family.semibold,
     color: colors.muted,
   },
   activeTabBtnText: {
     color: colors.accent,
-    fontWeight: tokens.typography.weight.bold,
+    fontFamily: tokens.typography.family.bold,
   },
   loadingBox: {
     padding: tokens.spacing.xl,
@@ -431,7 +431,7 @@ const getStyles = (colors, isDark) => StyleSheet.create({
   },
   rankNum: {
     fontSize: tokens.typography.size.sm,
-    fontWeight: tokens.typography.weight.bold,
+    fontFamily: tokens.typography.family.bold,
     color: colors.muted,
   },
   infoCol: {
@@ -439,12 +439,12 @@ const getStyles = (colors, isDark) => StyleSheet.create({
   },
   itemName: {
     fontSize: tokens.typography.size.sm,
-    fontWeight: tokens.typography.weight.semibold,
+    fontFamily: tokens.typography.family.semibold,
     color: colors.text,
   },
   currentUserName: {
     color: colors.accent,
-    fontWeight: tokens.typography.weight.bold,
+    fontFamily: tokens.typography.family.bold,
   },
   itemSub: {
     fontSize: 11,
@@ -456,7 +456,7 @@ const getStyles = (colors, isDark) => StyleSheet.create({
   },
   metricVal: {
     fontSize: tokens.typography.size.sm,
-    fontWeight: tokens.typography.weight.bold,
+    fontFamily: tokens.typography.family.bold,
     color: colors.accent,
   },
   emptyBox: {

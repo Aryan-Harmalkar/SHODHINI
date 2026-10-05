@@ -21,6 +21,7 @@ export default function Sidebar({
   isCollector = false,
   isDutyOnline = true,
   onToggleDuty,
+  isDesktopStatic = false,
 }) {
   const isWorker = isCollector || user?.role === 'worker';
   const [slideAnim] = useState(() => new Animated.Value(-290));
@@ -50,24 +51,8 @@ export default function Sidebar({
 
   if (!visible) return null;
 
-  return (
-    <View style={styles.overlay}>
-      {/* Backdrop */}
-      <Animated.View style={[styles.backdrop, { opacity: fadeAnim }]}>
-        <TouchableOpacity
-          style={StyleSheet.absoluteFillObject}
-          activeOpacity={1}
-          onPress={onClose}
-        />
-      </Animated.View>
-
-      {/* Drawer Content — Strictly contained inside the mobile frame */}
-      <Animated.View
-        style={[
-          styles.drawer,
-          { transform: [{ translateX: slideAnim }] },
-        ]}
-      >
+  const drawerContent = (
+    <>
         {/* Minimal Drawer Header */}
         <View style={styles.drawerHeader}>
           <View style={styles.headerLeft}>
@@ -83,13 +68,15 @@ export default function Sidebar({
               </Text>
             </View>
           </View>
-          <TouchableOpacity
-            style={styles.closeBtn}
-            onPress={onClose}
-            activeOpacity={0.7}
-          >
-            <Text style={styles.closeIcon}>✕</Text>
-          </TouchableOpacity>
+          {!isDesktopStatic && (
+            <TouchableOpacity
+              style={styles.closeBtn}
+              onPress={onClose}
+              activeOpacity={0.7}
+            >
+              <Text style={styles.closeIcon}>✕</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* Quick Status / Points Strip */}
@@ -305,6 +292,33 @@ export default function Sidebar({
             <Text style={styles.logoutText}>🚪 Log Out</Text>
           </TouchableOpacity>
         </View>
+    </>
+  );
+
+  if (isDesktopStatic) {
+    return (
+      <View style={[styles.drawer, { width: '100%' }]}>
+        {drawerContent}
+      </View>
+    );
+  }
+
+  return (
+    <View style={styles.overlay}>
+      <Animated.View style={[styles.backdrop, { opacity: fadeAnim }]}>
+        <TouchableOpacity
+          style={StyleSheet.absoluteFillObject}
+          activeOpacity={1}
+          onPress={onClose}
+        />
+      </Animated.View>
+      <Animated.View
+        style={[
+          styles.drawer,
+          { transform: [{ translateX: slideAnim }] },
+        ]}
+      >
+        {drawerContent}
       </Animated.View>
     </View>
   );

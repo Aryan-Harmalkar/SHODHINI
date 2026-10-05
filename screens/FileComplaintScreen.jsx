@@ -444,7 +444,7 @@ export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar 
                     activeOpacity={0.8}
                   >
                     {capturingPhoto ? (
-                      <ActivityIndicator size="small" color="#ffffff" />
+                      <ActivityIndicator size="small" color={isDark ? '#000' : '#fff'} />
                     ) : (
                       <Text style={styles.captureBtnText}>📷 Open Live Camera & Geotag</Text>
                     )}
@@ -628,7 +628,7 @@ export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar 
                   onPress={handleTakeLivePhoto}
                   activeOpacity={0.8}
                 >
-                  <Text style={[styles.captureBtnText, { color: '#ffffff' }]}>📷 Retake Photo of Larger Waste</Text>
+                  <Text style={[styles.captureBtnText, { color: isDark ? '#000' : '#fff' }]}>📷 Retake Photo of Larger Waste</Text>
                 </TouchableOpacity>
               </View>
             ) : (
@@ -643,7 +643,7 @@ export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar 
                 activeOpacity={0.8}
               >
                 {loading ? (
-                  <ActivityIndicator color="#ffffff" />
+                  <ActivityIndicator color={isDark ? '#000' : '#fff'} />
                 ) : aiResult?.confidence < 20 ? (
                   <Text style={styles.submitBtnText}>
                     🛡️ Submit for Admin Cross-Verification (&lt;20% Sureness)
@@ -757,11 +757,11 @@ const getStyles = (colors, isDark) =>
     menuIcon: {
       fontSize: tokens.typography.size.lg,
       color: colors.text,
-      fontWeight: tokens.typography.weight.bold,
+      fontFamily: tokens.typography.family.bold,
     },
     title: {
       fontSize: tokens.typography.size.base,
-      fontWeight: tokens.typography.weight.bold,
+      fontFamily: tokens.typography.family.bold,
       color: colors.text,
     },
     homeBtn: {
@@ -777,9 +777,12 @@ const getStyles = (colors, isDark) =>
     homeBtnText: {
       color: colors.accent,
       fontSize: tokens.typography.size.sm,
-      fontWeight: tokens.typography.weight.bold,
+      fontFamily: tokens.typography.family.bold,
     },
     scrollContent: {
+    maxWidth: 720,
+    width: '100%',
+    alignSelf: 'center',
       padding: tokens.spacing.md,
       paddingBottom: tokens.spacing.xxl,
       alignItems: 'center',
@@ -789,14 +792,14 @@ const getStyles = (colors, isDark) =>
     maxWidth: 600,
     backgroundColor: colors.card,
     borderRadius: tokens.radius.xl,
-    padding: tokens.spacing.lg,
+    padding: tokens.spacing.md,
     borderWidth: 1,
     borderColor: colors.border,
     ...tokens.shadow.sm,
   },
   formHeader: {
     fontSize: tokens.typography.size.lg,
-    fontWeight: tokens.typography.weight.bold,
+    fontFamily: tokens.typography.family.bold,
     color: colors.text,
     marginBottom: 4,
   },
@@ -810,14 +813,14 @@ const getStyles = (colors, isDark) =>
     backgroundColor: isDark ? 'rgba(239, 68, 68, 0.15)' : '#fef2f2',
     borderWidth: 1,
     borderColor: colors.danger,
-    borderRadius: tokens.radius.md,
+    borderRadius: tokens.radius.lg,
     padding: tokens.spacing.sm,
     marginBottom: tokens.spacing.md,
   },
   errorText: {
     color: colors.danger,
     fontSize: tokens.typography.size.xs,
-    fontWeight: tokens.typography.weight.semibold,
+    fontFamily: tokens.typography.family.semibold,
   },
   sectionCard: {
     marginBottom: tokens.spacing.md,
@@ -835,16 +838,16 @@ const getStyles = (colors, isDark) =>
     height: 22,
     borderRadius: 11,
     backgroundColor: colors.accent,
-    color: '#ffffff',
+    color: isDark ? '#000' : '#fff',
     textAlign: 'center',
     lineHeight: 22,
     fontSize: 11,
-    fontWeight: tokens.typography.weight.bold,
+    fontFamily: tokens.typography.family.bold,
     marginRight: 8,
   },
   sectionTitle: {
     fontSize: tokens.typography.size.sm,
-    fontWeight: tokens.typography.weight.bold,
+    fontFamily: tokens.typography.family.bold,
     color: colors.text,
   },
   cameraPlaceholderBox: {
@@ -853,7 +856,7 @@ const getStyles = (colors, isDark) =>
     borderStyle: 'dashed',
     borderColor: colors.border,
     borderRadius: tokens.radius.lg,
-    padding: tokens.spacing.lg,
+    padding: tokens.spacing.md,
     alignItems: 'center',
   },
   cameraIcon: {
@@ -862,7 +865,7 @@ const getStyles = (colors, isDark) =>
   },
   cameraPromptTitle: {
     fontSize: tokens.typography.size.sm,
-    fontWeight: tokens.typography.weight.bold,
+    fontFamily: tokens.typography.family.bold,
     color: colors.text,
     marginBottom: 4,
   },
@@ -877,16 +880,16 @@ const getStyles = (colors, isDark) =>
   captureBtn: {
     backgroundColor: colors.accent,
     paddingVertical: 10,
-    paddingHorizontal: tokens.spacing.lg,
-    borderRadius: tokens.radius.md,
+    paddingHorizontal: tokens.spacing.md,
+    borderRadius: tokens.radius.lg,
     minHeight: 44,
     justifyContent: 'center',
     alignItems: 'center',
   },
   captureBtnText: {
-    color: '#ffffff',
+    color: isDark ? '#000' : '#fff',
     fontSize: tokens.typography.size.xs,
-    fontWeight: tokens.typography.weight.bold,
+    fontFamily: tokens.typography.family.bold,
   },
   photoContainer: {
     position: 'relative',
@@ -915,7 +918,7 @@ const getStyles = (colors, isDark) =>
   },
   geotagLiveDot: {
     fontSize: 10,
-    fontWeight: tokens.typography.weight.bold,
+    fontFamily: tokens.typography.family.bold,
     color: '#10b981',
     letterSpacing: 0.5,
   },
@@ -925,8 +928,8 @@ const getStyles = (colors, isDark) =>
   },
   geotagAddress: {
     fontSize: 11,
-    color: '#ffffff',
-    fontWeight: tokens.typography.weight.bold,
+    color: isDark ? '#000' : '#fff',
+    fontFamily: tokens.typography.family.bold,
     marginVertical: 1,
   },
   geotagMetaRow: {
@@ -942,7 +945,7 @@ const getStyles = (colors, isDark) =>
   geotagAccuracy: {
     fontSize: 10,
     color: '#34d399',
-    fontWeight: tokens.typography.weight.semibold,
+    fontFamily: tokens.typography.family.semibold,
   },
   retakeBtn: {
     position: 'absolute',
@@ -954,9 +957,9 @@ const getStyles = (colors, isDark) =>
     borderRadius: tokens.radius.full,
   },
   retakeBtnText: {
-    color: '#ffffff',
+    color: isDark ? '#000' : '#fff',
     fontSize: 11,
-    fontWeight: tokens.typography.weight.semibold,
+    fontFamily: tokens.typography.family.semibold,
   },
   locCard: {
     marginTop: tokens.spacing.md,
@@ -975,7 +978,7 @@ const getStyles = (colors, isDark) =>
   },
   locTitle: {
     fontSize: tokens.typography.size.sm,
-    fontWeight: tokens.typography.weight.bold,
+    fontFamily: tokens.typography.family.bold,
     color: colors.text,
   },
   accuracyPill: {
@@ -991,7 +994,7 @@ const getStyles = (colors, isDark) =>
   },
   accuracyPillText: {
     fontSize: 12,
-    fontWeight: tokens.typography.weight.bold,
+    fontFamily: tokens.typography.family.bold,
     color: colors.text,
   },
   locBodyText: {
@@ -1020,7 +1023,7 @@ const getStyles = (colors, isDark) =>
   },
   pinConfirmedText: {
     fontSize: 12,
-    fontWeight: tokens.typography.weight.bold,
+    fontFamily: tokens.typography.family.bold,
     color: colors.accent,
   },
   recalibrateBtn: {
@@ -1030,14 +1033,14 @@ const getStyles = (colors, isDark) =>
     backgroundColor: colors.card,
     paddingVertical: 8,
     paddingHorizontal: 12,
-    borderRadius: tokens.radius.md,
+    borderRadius: tokens.radius.lg,
     borderWidth: 1,
     borderColor: colors.border,
   },
   recalibrateBtnText: {
     fontSize: 12,
     color: colors.accent,
-    fontWeight: tokens.typography.weight.semibold,
+    fontFamily: tokens.typography.family.semibold,
   },
   coarseNoticeBox: {
     backgroundColor: isDark ? 'rgba(245, 158, 11, 0.15)' : '#fffbeb',
@@ -1061,13 +1064,13 @@ const getStyles = (colors, isDark) =>
   },
   aiScanningBox: {
     backgroundColor: colors.surface,
-    borderRadius: tokens.radius.md,
-    padding: tokens.spacing.lg,
+    borderRadius: tokens.radius.lg,
+    padding: tokens.spacing.md,
     alignItems: 'center',
   },
   aiScanningTitle: {
     fontSize: tokens.typography.size.sm,
-    fontWeight: tokens.typography.weight.bold,
+    fontFamily: tokens.typography.family.bold,
     color: colors.text,
     marginTop: tokens.spacing.sm,
   },
@@ -1111,14 +1114,14 @@ const getStyles = (colors, isDark) =>
   },
   aiTagLabel: {
     fontSize: 10,
-    fontWeight: tokens.typography.weight.bold,
+    fontFamily: tokens.typography.family.bold,
     letterSpacing: 0.5,
     color: colors.muted,
     marginBottom: 2,
   },
   aiClassificationTitle: {
     fontSize: tokens.typography.size.sm,
-    fontWeight: tokens.typography.weight.bold,
+    fontFamily: tokens.typography.family.bold,
     color: colors.text,
   },
   confidencePill: {
@@ -1137,7 +1140,7 @@ const getStyles = (colors, isDark) =>
   },
   confidencePillText: {
     fontSize: 10,
-    fontWeight: tokens.typography.weight.bold,
+    fontFamily: tokens.typography.family.bold,
     color: colors.text,
   },
   rejectionNoticeBox: {
@@ -1189,7 +1192,7 @@ const getStyles = (colors, isDark) =>
   },
   specValue: {
     fontSize: 11,
-    fontWeight: tokens.typography.weight.bold,
+    fontFamily: tokens.typography.family.bold,
     color: colors.text,
   },
   specBiohazard: {
@@ -1219,7 +1222,7 @@ const getStyles = (colors, isDark) =>
   },
   toolsTitle: {
     fontSize: 10,
-    fontWeight: tokens.typography.weight.bold,
+    fontFamily: tokens.typography.family.bold,
     color: colors.muted,
     marginBottom: 4,
   },
@@ -1236,7 +1239,7 @@ const getStyles = (colors, isDark) =>
   },
   toolChipText: {
     fontSize: 10,
-    fontWeight: tokens.typography.weight.medium,
+    fontFamily: tokens.typography.family.medium,
     color: colors.text,
   },
   areaSelectBtn: {
@@ -1246,7 +1249,7 @@ const getStyles = (colors, isDark) =>
     backgroundColor: colors.card,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: tokens.radius.md,
+    borderRadius: tokens.radius.lg,
     paddingHorizontal: tokens.spacing.md,
     paddingVertical: 10,
     minHeight: 44,
@@ -1254,18 +1257,18 @@ const getStyles = (colors, isDark) =>
   areaSelectBtnText: {
     fontSize: tokens.typography.size.sm,
     color: colors.text,
-    fontWeight: tokens.typography.weight.medium,
+    fontFamily: tokens.typography.family.medium,
   },
   areaSelectBtnArrow: {
     fontSize: 10,
     color: colors.muted,
-    fontWeight: tokens.typography.weight.bold,
+    fontFamily: tokens.typography.family.bold,
   },
   textArea: {
     backgroundColor: colors.inputBg || colors.card,
     borderWidth: 1,
     borderColor: colors.border,
-    borderRadius: tokens.radius.md,
+    borderRadius: tokens.radius.lg,
     paddingHorizontal: tokens.spacing.md,
     paddingVertical: tokens.spacing.sm,
     fontSize: tokens.typography.size.sm,
@@ -1283,7 +1286,7 @@ const getStyles = (colors, isDark) =>
   },
   blockedSubmitBox: {
     backgroundColor: isDark ? 'rgba(239, 68, 68, 0.15)' : '#fef2f2',
-    borderRadius: tokens.radius.md,
+    borderRadius: tokens.radius.lg,
     padding: tokens.spacing.md,
     alignItems: 'center',
     borderWidth: 1,
@@ -1291,7 +1294,7 @@ const getStyles = (colors, isDark) =>
   },
   blockedSubmitTitle: {
     fontSize: tokens.typography.size.sm,
-    fontWeight: tokens.typography.weight.bold,
+    fontFamily: tokens.typography.family.bold,
     color: isDark ? '#f87171' : '#b91c1c',
     marginBottom: 4,
   },
@@ -1304,7 +1307,7 @@ const getStyles = (colors, isDark) =>
   },
   submitBtn: {
     backgroundColor: colors.accent,
-    borderRadius: tokens.radius.md,
+    borderRadius: tokens.radius.lg,
     paddingVertical: tokens.spacing.md,
     alignItems: 'center',
     ...tokens.shadow.sm,
@@ -1319,9 +1322,9 @@ const getStyles = (colors, isDark) =>
     opacity: 0.5,
   },
   submitBtnText: {
-    color: '#ffffff',
+    color: isDark ? '#000' : '#fff',
     fontSize: tokens.typography.size.sm,
-    fontWeight: tokens.typography.weight.bold,
+    fontFamily: tokens.typography.family.bold,
   },
   successCard: {
     width: '100%',
@@ -1340,7 +1343,7 @@ const getStyles = (colors, isDark) =>
   },
   successTitle: {
     fontSize: tokens.typography.size.base,
-    fontWeight: tokens.typography.weight.bold,
+    fontFamily: tokens.typography.family.bold,
     color: colors.text,
     marginBottom: tokens.spacing.xs,
     textAlign: 'center',
@@ -1355,7 +1358,7 @@ const getStyles = (colors, isDark) =>
   successAddressText: {
     fontSize: 11,
     color: colors.accent,
-    fontWeight: tokens.typography.weight.semibold,
+    fontFamily: tokens.typography.family.semibold,
     marginBottom: tokens.spacing.sm,
   },
   successBadge: {
@@ -1366,7 +1369,7 @@ const getStyles = (colors, isDark) =>
   },
   successBadgeText: {
     fontSize: 11,
-    fontWeight: tokens.typography.weight.bold,
+    fontFamily: tokens.typography.family.bold,
     color: colors.text,
   },
   modalOverlay: {
@@ -1379,7 +1382,7 @@ const getStyles = (colors, isDark) =>
     borderTopLeftRadius: tokens.radius.xl,
     borderTopRightRadius: tokens.radius.xl,
     maxHeight: '60%',
-    padding: tokens.spacing.lg,
+    padding: tokens.spacing.md,
     borderWidth: 1,
     borderColor: colors.border,
   },
@@ -1394,7 +1397,7 @@ const getStyles = (colors, isDark) =>
   },
   modalTitle: {
     fontSize: tokens.typography.size.base,
-    fontWeight: tokens.typography.weight.bold,
+    fontFamily: tokens.typography.family.bold,
     color: colors.text,
   },
   modalCloseBtn: {
@@ -1417,7 +1420,7 @@ const getStyles = (colors, isDark) =>
     alignItems: 'center',
     paddingVertical: tokens.spacing.md,
     paddingHorizontal: tokens.spacing.md,
-    borderRadius: tokens.radius.md,
+    borderRadius: tokens.radius.lg,
     marginBottom: tokens.spacing.xs,
     backgroundColor: colors.surface,
     minHeight: 48,
@@ -1433,11 +1436,11 @@ const getStyles = (colors, isDark) =>
   },
   areaOptionTextSelected: {
     color: colors.accent,
-    fontWeight: tokens.typography.weight.bold,
+    fontFamily: tokens.typography.family.bold,
   },
   areaCheck: {
     color: colors.accent,
-    fontWeight: tokens.typography.weight.bold,
+    fontFamily: tokens.typography.family.bold,
     fontSize: tokens.typography.size.base,
   },
 });

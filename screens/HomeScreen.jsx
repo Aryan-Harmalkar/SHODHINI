@@ -8,6 +8,8 @@ import {
   ActivityIndicator,
   Alert,
   Image,
+  useWindowDimensions,
+  Platform,
 } from 'react-native';
 import Sidebar from '../components/Sidebar';
 import FileComplaintScreen from './FileComplaintScreen';
@@ -33,6 +35,8 @@ import { tokens, useTheme } from '../lib/theme';
 
 export default function HomeScreen({ user, onLogout }) {
   const { colors, isDark, toggleTheme } = useTheme();
+  const { width } = useWindowDimensions();
+  const isDesktop = Platform.OS === 'web' && width > 768;
   const styles = useMemo(() => getStyles(colors, isDark), [colors, isDark]);
 
   const [currentScreen, setCurrentScreen] = useState('home');
@@ -313,19 +317,25 @@ export default function HomeScreen({ user, onLogout }) {
         {/* Sleek Minimal Top Bar */}
         <View style={styles.topBar}>
           <View style={styles.topLeft}>
-            <TouchableOpacity
-              style={styles.hamburgerBtn}
-              onPress={() => setSidebarVisible(true)}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.hamburgerIcon}>☰</Text>
-            </TouchableOpacity>
-            <Image
-              source={require('../assets/leaf-icon.png')}
-              style={styles.headerLogo}
-              resizeMode="contain"
-            />
-            <Text style={styles.appName}>SHODHINI</Text>
+            {!isDesktop && (
+              <TouchableOpacity
+                style={styles.hamburgerBtn}
+                onPress={() => setSidebarVisible(true)}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.hamburgerIcon}>☰</Text>
+              </TouchableOpacity>
+            )}
+            {!isDesktop && (
+              <>
+                <Image
+                  source={require('../assets/leaf-icon.png')}
+                  style={styles.headerLogo}
+                  resizeMode="contain"
+                />
+                <Text style={styles.appName}>SHODHINI</Text>
+              </>
+            )}
           </View>
 
           <View style={styles.topRight}>
@@ -366,34 +376,42 @@ export default function HomeScreen({ user, onLogout }) {
         </View>
 
         <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-          {/* Clean Greeting Header */}
-          <View style={styles.greetingHeader}>
-            <Text style={styles.greetingTitle}>Welcome, {user?.name || 'User'}</Text>
-            <Text style={styles.greetingSub}>
-              📍 {user?.area || 'Assagao - Ward 1 (Ghateshwar Nagar)'} • {isCollector ? 'Garbage Collector' : 'Citizen Resident'}
-            </Text>
-          </View>
+          {/* Desktop Dashboard Top Row */}
+          <View style={[styles.dashboardTopRow, isDesktop && { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }]}>
+            {/* Clean Greeting Header */}
+            <View style={[styles.greetingHeader, isDesktop && { flex: 1, marginBottom: 0 }]}>
+              <Text style={styles.greetingTitle}>Welcome, {user?.name || 'User'}</Text>
+              <Text style={styles.greetingSub}>
+                📍 {user?.area || 'Assagao - Ward 1 (Ghateshwar Nagar)'} • {isCollector ? 'Garbage Collector' : 'Citizen Resident'}
+              </Text>
+            </View>
 
-          {/* CITIZEN VIEW: MINIMAL, FAST & PURPOSEFUL */}
+            {/* CITIZEN VIEW: MINIMAL, FAST & PURPOSEFUL */}
+            {!isCollector && (
+              <View style={isDesktop && { width: 340, marginLeft: 20 }}>
+                {/* Primary Action Button */}
+                <TouchableOpacity
+                  style={[styles.heroReportBtn, isDesktop && { marginBottom: 0 }]}
+                  onPress={() => setCurrentScreen('complaint')}
+                  activeOpacity={0.85}
+                >
+                  <View style={styles.heroLeft}>
+                    <View style={styles.heroIconBox}>
+                      <Text style={styles.heroIcon}>📸</Text>
+                    </View>
+                    <View>
+                      <Text style={styles.heroTitle}>Report Waste Spot</Text>
+                      <Text style={styles.heroSubtitle}>Capture photo & alert area collectors</Text>
+                    </View>
+                  </View>
+                  <View style={styles.heroArrowWrap}><Text style={styles.heroArrow}>↗</Text></View>
+                </TouchableOpacity>
+              </View>
+            )}
+          </View>
+          
           {!isCollector && (
             <>
-              {/* Primary Action Button */}
-              <TouchableOpacity
-                style={styles.heroReportBtn}
-                onPress={() => setCurrentScreen('complaint')}
-                activeOpacity={0.85}
-              >
-                <View style={styles.heroLeft}>
-                  <View style={styles.heroIconBox}>
-                    <Text style={styles.heroIcon}>📸</Text>
-                  </View>
-                  <View>
-                    <Text style={styles.heroTitle}>Report Waste Spot</Text>
-                    <Text style={styles.heroSubtitle}>Capture photo & alert area collectors</Text>
-                  </View>
-                </View>
-                <Text style={styles.heroArrow}>→</Text>
-              </TouchableOpacity>
 
               {/* Clean Services Grid (No bloated multi-line text) */}
               <Text style={styles.sectionTitle}>Services</Text>
@@ -623,20 +641,41 @@ export default function HomeScreen({ user, onLogout }) {
   };
 
   return (
-    <View style={styles.rootContainer}>
-      {renderContent()}
-      <Sidebar
-        visible={sidebarVisible}
-        onClose={() => setSidebarVisible(false)}
-        currentScreen={currentScreen}
-        onNavigate={handleNavigate}
-        user={user}
-        ecoPoints={isCollector ? 0 : ecoPoints}
-        onLogout={onLogout}
-        isCollector={isCollector}
-        isDutyOnline={isDutyOnline}
-        onToggleDuty={handleToggleDuty}
-      />
+    <View style={[styles.rootContainer, isDesktop && { flexDirection: 'row' }]}>
+      {isDesktop && (
+        <View style={{ width: 280, borderRightWidth: 1, borderColor: colors.border, backgroundColor: colors.card }}>
+          <Sidebar
+            visible={true}
+            onClose={() => {}}
+            currentScreen={currentScreen}
+            onNavigate={handleNavigate}
+            user={user}
+            ecoPoints={isCollector ? 0 : ecoPoints}
+            onLogout={onLogout}
+            isCollector={isCollector}
+            isDutyOnline={isDutyOnline}
+            onToggleDuty={handleToggleDuty}
+            isDesktopStatic={true}
+          />
+        </View>
+      )}
+      <View style={{ flex: 1 }}>
+        {renderContent()}
+      </View>
+      {!isDesktop && (
+        <Sidebar
+          visible={sidebarVisible}
+          onClose={() => setSidebarVisible(false)}
+          currentScreen={currentScreen}
+          onNavigate={handleNavigate}
+          user={user}
+          ecoPoints={isCollector ? 0 : ecoPoints}
+          onLogout={onLogout}
+          isCollector={isCollector}
+          isDutyOnline={isDutyOnline}
+          onToggleDuty={handleToggleDuty}
+        />
+      )}
       {isCollector && (
         <CleanupVerifyModal
           visible={Boolean(dashboardVerifyComplaint)}
@@ -715,7 +754,7 @@ const getStyles = (colors, isDark) =>
     hamburgerIcon: {
       fontSize: tokens.typography.size.lg,
       color: colors.text,
-      fontWeight: tokens.typography.weight.bold,
+      fontFamily: tokens.typography.family.bold,
     },
     headerLogo: {
       width: 22,
@@ -724,7 +763,7 @@ const getStyles = (colors, isDark) =>
     },
     appName: {
       fontSize: tokens.typography.size.base,
-      fontWeight: tokens.typography.weight.extrabold,
+      fontFamily: tokens.typography.family.extrabold,
       color: colors.accent,
       letterSpacing: 0.5,
     },
@@ -739,7 +778,7 @@ const getStyles = (colors, isDark) =>
     topPointsText: {
       color: colors.accent,
       fontSize: tokens.typography.size.xs,
-      fontWeight: tokens.typography.weight.bold,
+      fontFamily: tokens.typography.family.bold,
     },
     topDutyPill: {
       flexDirection: 'row',
@@ -771,7 +810,7 @@ const getStyles = (colors, isDark) =>
     },
     topDutyText: {
       fontSize: tokens.typography.size.xs,
-      fontWeight: tokens.typography.weight.bold,
+      fontFamily: tokens.typography.family.bold,
     },
     topDutyTextOnline: {
       color: isDark ? '#4ade80' : '#15803d',
@@ -783,7 +822,7 @@ const getStyles = (colors, isDark) =>
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      padding: tokens.spacing.md,
+      padding: tokens.spacing.lg,
       borderRadius: tokens.radius.lg,
       borderWidth: 1,
       marginBottom: tokens.spacing.md,
@@ -813,7 +852,7 @@ const getStyles = (colors, isDark) =>
     },
     dutyCardTitle: {
       fontSize: tokens.typography.size.sm,
-      fontWeight: tokens.typography.weight.bold,
+      fontFamily: tokens.typography.family.bold,
     },
     dutyTitleOnline: {
       color: isDark ? '#4ade80' : '#166534',
@@ -841,10 +880,10 @@ const getStyles = (colors, isDark) =>
     },
     dutyToggleBtnText: {
       fontSize: tokens.typography.size.xs,
-      fontWeight: tokens.typography.weight.bold,
+      fontFamily: tokens.typography.family.bold,
     },
     dutyToggleTextOnline: {
-      color: '#ffffff',
+      color: isDark ? '#000' : '#fff',
     },
     dutyToggleTextOffline: {
       color: isDark ? '#f87171' : '#b91c1c',
@@ -852,7 +891,7 @@ const getStyles = (colors, isDark) =>
     liveAlertCard: {
       backgroundColor: isDark ? '#1e293b' : '#ffffff',
       borderRadius: tokens.radius.lg,
-      padding: tokens.spacing.md,
+      padding: tokens.spacing.lg,
       borderWidth: 2,
       borderColor: '#f59e0b',
       marginBottom: tokens.spacing.md,
@@ -874,7 +913,7 @@ const getStyles = (colors, isDark) =>
     },
     liveAlertBadgeText: {
       fontSize: 11,
-      fontWeight: tokens.typography.weight.extrabold,
+      fontFamily: tokens.typography.family.extrabold,
       color: '#b45309',
     },
     liveAlertClose: {
@@ -883,11 +922,11 @@ const getStyles = (colors, isDark) =>
     liveAlertCloseText: {
       fontSize: 14,
       color: colors.muted,
-      fontWeight: tokens.typography.weight.bold,
+      fontFamily: tokens.typography.family.bold,
     },
     liveAlertTitle: {
       fontSize: tokens.typography.size.sm,
-      fontWeight: tokens.typography.weight.bold,
+      fontFamily: tokens.typography.family.bold,
       color: colors.text,
       marginBottom: 4,
     },
@@ -905,19 +944,19 @@ const getStyles = (colors, isDark) =>
       flex: 1,
       backgroundColor: '#22c55e',
       paddingVertical: 8,
-      borderRadius: tokens.radius.md,
+      borderRadius: tokens.radius.xl,
       alignItems: 'center',
       justifyContent: 'center',
     },
     liveAlertAcceptText: {
-      color: '#ffffff',
+      color: isDark ? '#000' : '#fff',
       fontSize: tokens.typography.size.xs,
-      fontWeight: tokens.typography.weight.bold,
+      fontFamily: tokens.typography.family.bold,
     },
     liveAlertDismissBtn: {
       paddingVertical: 8,
       paddingHorizontal: 14,
-      borderRadius: tokens.radius.md,
+      borderRadius: tokens.radius.xl,
       borderWidth: 1,
       borderColor: colors.border,
       alignItems: 'center',
@@ -926,7 +965,7 @@ const getStyles = (colors, isDark) =>
     liveAlertDismissText: {
       color: colors.muted,
       fontSize: tokens.typography.size.xs,
-      fontWeight: tokens.typography.weight.medium,
+      fontFamily: tokens.typography.family.medium,
     },
     offlineNoticeBanner: {
       flexDirection: 'row',
@@ -934,8 +973,8 @@ const getStyles = (colors, isDark) =>
       backgroundColor: isDark ? 'rgba(234,179,8,0.1)' : '#fffbeb',
       borderWidth: 1,
       borderColor: isDark ? 'rgba(234,179,8,0.3)' : '#fde68a',
-      borderRadius: tokens.radius.md,
-      padding: tokens.spacing.md,
+      borderRadius: tokens.radius.xl,
+      padding: tokens.spacing.lg,
       marginBottom: tokens.spacing.md,
       gap: tokens.spacing.sm,
     },
@@ -944,7 +983,7 @@ const getStyles = (colors, isDark) =>
     },
     offlineNoticeTitle: {
       fontSize: tokens.typography.size.xs,
-      fontWeight: tokens.typography.weight.bold,
+      fontFamily: tokens.typography.family.bold,
       color: isDark ? '#facc15' : '#854d0e',
       marginBottom: 2,
     },
@@ -954,7 +993,7 @@ const getStyles = (colors, isDark) =>
       lineHeight: 16,
     },
     scrollContent: {
-      padding: tokens.spacing.md,
+      padding: tokens.spacing.lg,
       paddingBottom: tokens.spacing.xxl,
     },
     greetingHeader: {
@@ -962,7 +1001,7 @@ const getStyles = (colors, isDark) =>
     },
     greetingTitle: {
       fontSize: tokens.typography.size.lg,
-      fontWeight: tokens.typography.weight.bold,
+      fontFamily: tokens.typography.family.bold,
       color: colors.text,
     },
     greetingSub: {
@@ -975,11 +1014,11 @@ const getStyles = (colors, isDark) =>
       alignItems: 'center',
       justifyContent: 'space-between',
       backgroundColor: colors.accent,
-      paddingVertical: tokens.spacing.md,
-      paddingHorizontal: tokens.spacing.md,
-      borderRadius: tokens.radius.lg,
-      marginBottom: tokens.spacing.lg,
-      ...tokens.shadow.sm,
+      paddingVertical: 20,
+      paddingHorizontal: 24,
+      borderRadius: tokens.radius.full,
+      marginBottom: tokens.spacing.xl,
+      ...(isDark ? {} : tokens.shadow.md),
     },
     heroLeft: {
       flexDirection: 'row',
@@ -988,38 +1027,45 @@ const getStyles = (colors, isDark) =>
       flex: 1,
     },
     heroIconBox: {
-      width: 40,
-      height: 40,
-      borderRadius: tokens.radius.md,
-      backgroundColor: 'rgba(255,255,255,0.2)',
+      width: 44,
+      height: 44,
+      borderRadius: tokens.radius.full,
+      backgroundColor: isDark ? 'rgba(0,0,0,0.2)' : 'rgba(255,255,255,0.2)',
       justifyContent: 'center',
       alignItems: 'center',
     },
     heroIcon: {
-      fontSize: 20,
+      fontSize: 22,
     },
     heroTitle: {
-      color: '#ffffff',
+      color: isDark ? '#000' : '#ffffff',
       fontSize: tokens.typography.size.base,
-      fontWeight: tokens.typography.weight.bold,
+      fontFamily: tokens.typography.family.bold,
     },
     heroSubtitle: {
-      color: 'rgba(255,255,255,0.85)',
+      color: isDark ? 'rgba(0,0,0,0.6)' : 'rgba(255,255,255,0.85)',
       fontSize: tokens.typography.size.xs,
-      marginTop: 1,
+      marginTop: 2,
+    },
+    heroArrowWrap: {
+      width: 32,
+      height: 32,
+      borderRadius: 16,
+      backgroundColor: isDark ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.2)',
+      alignItems: 'center',
+      justifyContent: 'center',
     },
     heroArrow: {
-      color: '#ffffff',
-      fontSize: tokens.typography.size.lg,
-      fontWeight: tokens.typography.weight.bold,
-      marginLeft: tokens.spacing.xs,
+      color: isDark ? '#000' : '#ffffff',
+      fontSize: tokens.typography.size.sm,
+      fontFamily: tokens.typography.family.bold,
     },
     sectionTitle: {
       fontSize: tokens.typography.size.sm,
-      fontWeight: tokens.typography.weight.bold,
+      fontFamily: tokens.typography.family.bold,
       color: colors.muted,
       textTransform: 'uppercase',
-      letterSpacing: 0.5,
+      letterSpacing: 1,
       marginBottom: tokens.spacing.sm,
     },
     gridContainer: {
@@ -1028,24 +1074,24 @@ const getStyles = (colors, isDark) =>
       gap: tokens.spacing.sm,
     },
     gridCard: {
-      width: '48%',
-      backgroundColor: colors.card,
-      borderRadius: tokens.radius.lg,
-      paddingVertical: tokens.spacing.md,
-      paddingHorizontal: tokens.spacing.sm,
+      flex: 1, minWidth: 140,
+      backgroundColor: isDark ? 'rgba(255,255,255,0.02)' : colors.card,
+      borderRadius: tokens.radius.xl,
+      paddingVertical: tokens.spacing.lg,
+      paddingHorizontal: tokens.spacing.md,
       alignItems: 'center',
       justifyContent: 'center',
       borderWidth: 1,
       borderColor: colors.border,
-      minHeight: 88,
+      minHeight: 110,
     },
     gridCardIcon: {
-      fontSize: 26,
-      marginBottom: 6,
+      fontSize: 32,
+      marginBottom: tokens.spacing.sm,
     },
     gridCardTitle: {
-      fontSize: tokens.typography.size.xs,
-      fontWeight: tokens.typography.weight.bold,
+      fontSize: tokens.typography.size.sm,
+      fontFamily: tokens.typography.family.bold,
       color: colors.text,
       textAlign: 'center',
     },
@@ -1068,14 +1114,14 @@ const getStyles = (colors, isDark) =>
     },
     opsChipNumber: {
       fontSize: tokens.typography.size.lg,
-      fontWeight: tokens.typography.weight.extrabold,
+      fontFamily: tokens.typography.family.extrabold,
       color: isDark ? '#38bdf8' : '#0284c7',
     },
     opsChipLabel: {
       fontSize: 11,
       color: colors.muted,
       marginTop: 2,
-      fontWeight: tokens.typography.weight.medium,
+      fontFamily: tokens.typography.family.medium,
     },
     opsChipDivider: {
       width: 1,
@@ -1102,11 +1148,11 @@ const getStyles = (colors, isDark) =>
     collectorPillText: {
       fontSize: tokens.typography.size.xs,
       color: colors.muted,
-      fontWeight: tokens.typography.weight.medium,
+      fontFamily: tokens.typography.family.medium,
     },
     collectorPillTextActive: {
-      color: '#ffffff',
-      fontWeight: tokens.typography.weight.bold,
+      color: isDark ? '#000' : '#fff',
+      fontFamily: tokens.typography.family.bold,
     },
     loadingBox: {
       alignItems: 'center',
@@ -1135,7 +1181,7 @@ const getStyles = (colors, isDark) =>
     },
     emptyCollectorTitle: {
       fontSize: tokens.typography.size.base,
-      fontWeight: tokens.typography.weight.bold,
+      fontFamily: tokens.typography.family.bold,
       color: colors.text,
     },
     emptyCollectorDesc: {

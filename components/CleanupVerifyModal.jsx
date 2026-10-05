@@ -411,7 +411,7 @@ const getStyles = (colors, isDark) =>
     },
     modalTitle: {
       fontSize: tokens.typography.size.base,
-      fontWeight: tokens.typography.weight.bold,
+      fontFamily: tokens.typography.family.bold,
       color: colors.text,
     },
     modalCloseBtn: {
@@ -454,7 +454,7 @@ const getStyles = (colors, isDark) =>
       backgroundColor: isDark ? '#0284c7' : '#0284c7',
       paddingVertical: 6,
       paddingHorizontal: 12,
-      borderRadius: tokens.radius.sm,
+      borderRadius: tokens.radius.lg,
       alignSelf: 'flex-start',
     },
     reportNavText: {
@@ -480,13 +480,13 @@ const getStyles = (colors, isDark) =>
     compareImage: {
       width: '100%',
       height: 120,
-      borderRadius: tokens.radius.md,
+      borderRadius: tokens.radius.xl,
       backgroundColor: colors.surface,
     },
     captureBtn: {
       width: '100%',
       height: 120,
-      borderRadius: tokens.radius.md,
+      borderRadius: tokens.radius.xl,
       backgroundColor: colors.surface,
       borderWidth: 2,
       borderColor: colors.border,
@@ -502,7 +502,7 @@ const getStyles = (colors, isDark) =>
     gpsBox: {
       marginTop: 12,
       padding: 10,
-      borderRadius: tokens.radius.md,
+      borderRadius: tokens.radius.xl,
       backgroundColor: colors.surface,
       borderWidth: 1,
       borderColor: colors.border,
@@ -531,7 +531,7 @@ const getStyles = (colors, isDark) =>
       justifyContent: 'center',
       padding: 12,
       backgroundColor: isDark ? 'rgba(14, 165, 233, 0.2)' : '#e0f2fe',
-      borderRadius: tokens.radius.md,
+      borderRadius: tokens.radius.xl,
     },
     verifyingText: {
       marginLeft: 8,
@@ -541,7 +541,7 @@ const getStyles = (colors, isDark) =>
     successBox: {
       padding: 12,
       backgroundColor: isDark ? 'rgba(34, 197, 94, 0.2)' : '#dcfce7',
-      borderRadius: tokens.radius.md,
+      borderRadius: tokens.radius.xl,
       alignItems: 'center',
     },
     successBoxText: {
@@ -551,7 +551,7 @@ const getStyles = (colors, isDark) =>
     errorBox: {
       padding: 12,
       backgroundColor: isDark ? 'rgba(239, 68, 68, 0.2)' : '#fee2e2',
-      borderRadius: tokens.radius.md,
+      borderRadius: tokens.radius.xl,
       alignItems: 'center',
     },
     errorBoxText: {
@@ -569,7 +569,7 @@ const getStyles = (colors, isDark) =>
       paddingHorizontal: 16,
       paddingVertical: 6,
       backgroundColor: '#b91c1c',
-      borderRadius: tokens.radius.sm,
+      borderRadius: tokens.radius.lg,
     },
     retryBtnText: {
       color: '#ffffff',
@@ -580,7 +580,7 @@ const getStyles = (colors, isDark) =>
       marginTop: 16,
       backgroundColor: colors.accent,
       padding: 14,
-      borderRadius: tokens.radius.md,
+      borderRadius: tokens.radius.xl,
       alignItems: 'center',
     },
     confirmDoneBtnText: {
