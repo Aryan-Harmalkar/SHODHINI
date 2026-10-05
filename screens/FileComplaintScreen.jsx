@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   StyleSheet,
   Text,
@@ -10,12 +10,23 @@ import {
   Modal,
   Image,
   Alert,
+  Linking,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { fileComplaint, getAreas, getCurrentUser } from '../db/database';
 import { tokens } from '../lib/theme';
 import { analyzeWasteImageWithGemini } from '../lib/aiVision';
-import { getHighAccuracyLocation, getReadableAddress } from '../lib/locationHelper';
+import {
+  IS_WEB,
+  LOCATION_ERROR,
+  REQUIRED_ACCURACY_M,
+  ensureForegroundPermission,
+  geocodeAddress,
+  getReadableAddress,
+  hasForegroundPermission,
+  watchPreciseLocation,
+} from '../lib/locationHelper';
+import LocationPinMap from '../components/LocationPinMap';
 
 export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar }) {
   const [currentUser, setCurrentUser] = useState(user || null);
@@ -24,16 +35,26 @@ export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar 
   const [selectedAreaName, setSelectedAreaName] = useState('');
   const [areaModalVisible, setAreaModalVisible] = useState(false);
 
-  // Live Photo & Live Geotag States
+  // Live Photo States
   const [photoUri, setPhotoUri] = useState(null);
   const [photoTimestamp, setPhotoTimestamp] = useState(null);
-  const [locationCoords, setLocationCoords] = useState(null);
-  const [locationAccuracy, setLocationAccuracy] = useState(null);
-  const [isCoarseLocation, setIsCoarseLocation] = useState(false);
   const [readableAddress, setReadableAddress] = useState(null);
   const [capturingPhoto, setCapturingPhoto] = useState(false);
-  const [recalibratingLocation, setRecalibratingLocation] = useState(false);
-  const [locationError, setLocationError] = useState('');
+
+  // Precise Location States
+  // locStatus: 'checking' | 'explain' | 'searching' | 'ready' | 'imprecise' | 'denied'
+  const [locStatus, setLocStatus] = useState('checking');
+  const [liveAccuracy, setLiveAccuracy] = useState(null); // best accuracy while searching
+  const [gpsFix, setGpsFix] = useState(null); // { accuracy, source: 'gps' | 'web' | 'address' }
+  const [pinCoords, setPinCoords] = useState(null); // final coordinates the user confirms
+  const [pinConfirmed, setPinConfirmed] = useState(false);
+  const [locMessage, setLocMessage] = useState('');
+  const [permBlocked, setPermBlocked] = useState(false);
+  const [manualAddress, setManualAddress] = useState('');
+  const [geocodingAddress, setGeocodingAddress] = useState(false);
+  const watchRef = useRef(null);
+  const reverseTimerRef = useRef(null);
+  const locationCoords = pinCoords;
 
   // AI Analysis States
   const [analyzingAi, setAnalyzingAi] = useState(false);
@@ -66,54 +87,131 @@ export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar 
         setSelectedAreaName(list[0].name);
       }
 
-      // Pre-warm accurate GPS in the background
-      handleAcquireLocation();
+      // Only start GPS automatically if permission was already granted;
+      // otherwise explain why we need it before showing the OS prompt.
+      if (await hasForegroundPermission()) {
+        startPreciseLocation();
+      } else {
+        setLocStatus('explain');
+      }
     }
 
     init();
+
+    return () => {
+      watchRef.current?.cancel();
+      clearTimeout(reverseTimerRef.current);
+    };
   }, []);
 
-  /**
-   * Acquires fresh, high-accuracy GPS coordinates & reverse-geocodes address
-   * Throws an error if internal GPS is not available or turned off
-   */
-  const handleAcquireLocation = async () => {
-    setLocationError('');
-    try {
-      const loc = await getHighAccuracyLocation();
-      setLocationCoords({ latitude: loc.latitude, longitude: loc.longitude });
-      setLocationAccuracy(loc.accuracy);
-      setIsCoarseLocation(loc.isCoarse);
-
-      // Reverse geocode to human-readable address
-      const addr = await getReadableAddress({ latitude: loc.latitude, longitude: loc.longitude });
-      if (addr) {
-        setReadableAddress(addr);
-      }
-      return loc;
-    } catch (err) {
-      console.warn('Strict internal GPS fetch error:', err);
-      setLocationCoords(null);
-      setLocationAccuracy(null);
-      setReadableAddress(null);
-      const msg = err.message || 'Internal GPS is unavailable. Please enable device GPS.';
-      setLocationError(msg);
-      throw new Error(msg);
-    }
+  const updateAddressFor = (coord, delayMs = 0) => {
+    clearTimeout(reverseTimerRef.current);
+    reverseTimerRef.current = setTimeout(async () => {
+      const addr = await getReadableAddress(coord);
+      if (addr) setReadableAddress(addr);
+    }, delayMs);
   };
 
   /**
-   * Recalibrate GPS manually on user tap
+   * Watches GPS for up to ~15 s and keeps the most accurate reading.
+   * Native accepts only fixes with accuracy <= 30 m. Web returns its best
+   * (approximate) estimate and the user must confirm/adjust the pin.
    */
-  const handleRecalibrateLocation = async () => {
-    setRecalibratingLocation(true);
-    setErrorMessage('');
+  const startPreciseLocation = async () => {
+    watchRef.current?.cancel();
+    setLocStatus('searching');
+    setLocMessage('');
+    setLiveAccuracy(null);
+    setPinConfirmed(false);
+
+    const ctl = watchPreciseLocation({
+      onUpdate: (best) => {
+        if (watchRef.current === ctl) setLiveAccuracy(best.accuracy);
+      },
+    });
+    watchRef.current = ctl;
+
     try {
-      await handleAcquireLocation();
+      const fix = await ctl.promise;
+      if (watchRef.current !== ctl) return;
+      const coord = { latitude: fix.latitude, longitude: fix.longitude };
+      setGpsFix({ accuracy: fix.accuracy, source: IS_WEB ? 'web' : 'gps', approximate: fix.approximate });
+      setLiveAccuracy(fix.accuracy);
+      setPinCoords(coord);
+      setLocStatus('ready');
+      updateAddressFor(coord);
     } catch (err) {
-      Alert.alert('Internal GPS Error', err.message, [{ text: 'OK' }]);
+      if (watchRef.current !== ctl) return;
+      if (err.code === LOCATION_ERROR.PERMISSION_DENIED) {
+        setLocStatus('denied');
+      } else {
+        setLocStatus('imprecise');
+        if (err.best) setLiveAccuracy(err.best.accuracy);
+      }
+      setLocMessage(err.message || 'Location not precise enough, move outdoors and retry.');
+    }
+  };
+
+  /** User tapped "Allow location" after reading the explanation. */
+  const handleAllowLocation = async () => {
+    try {
+      const { granted, canAskAgain } = await ensureForegroundPermission();
+      if (granted) {
+        setPermBlocked(false);
+        startPreciseLocation();
+      } else {
+        setPermBlocked(!canAskAgain);
+        setLocStatus('denied');
+      }
+    } catch (err) {
+      setLocStatus('denied');
+      setLocMessage(err.message || 'Could not request location permission.');
+    }
+  };
+
+  /** User dragged the pin / tapped the map / nudged the pin. */
+  const handlePinChange = (coord) => {
+    if (!coord) return;
+    setPinCoords({ latitude: coord.latitude, longitude: coord.longitude });
+    setPinConfirmed(false);
+    updateAddressFor(coord, 900);
+  };
+
+  const handleConfirmPin = () => {
+    if (!pinCoords) return;
+    setPinConfirmed(true);
+    setErrorMessage('');
+    if (__DEV__) {
+      console.log('[location] user confirmed pin', {
+        latitude: pinCoords.latitude,
+        longitude: pinCoords.longitude,
+        gpsAccuracy: gpsFix?.accuracy,
+        source: gpsFix?.source,
+      });
+    }
+  };
+
+  /** Permission denied fallback: convert typed address to a pin. */
+  const handleUseManualAddress = async () => {
+    const text = manualAddress.trim();
+    if (!text) {
+      setLocMessage('Please type the address where the waste is located.');
+      return;
+    }
+    setGeocodingAddress(true);
+    setLocMessage('');
+    try {
+      const coord = await geocodeAddress(text);
+      if (coord) {
+        setPinCoords(coord);
+        setGpsFix({ accuracy: null, source: 'address' });
+        setPinConfirmed(false);
+        updateAddressFor(coord);
+      } else {
+        setLocMessage('Could not find that address on the map. It will be sent to the collector as text.');
+      }
     } finally {
-      setRecalibratingLocation(false);
+      setGeocodingAddress(false);
     }
   };
 
@@ -123,22 +221,12 @@ export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar 
    */
   const handleTakeLivePhoto = async () => {
     setErrorMessage('');
-    setLocationError('');
     setCapturingPhoto(true);
 
     try {
-      // 1. Strict Internal GPS Check: Throws an error if GPS is unavailable
-      let loc = null;
-      try {
-        loc = await handleAcquireLocation();
-      } catch (gpsErr) {
-        throw new Error(
-          `GPS Geotag Error: ${gpsErr.message}\n\nA verified live internal GPS geotag is required to report waste.`
-        );
-      }
-
-      if (!loc || typeof loc.latitude !== 'number' || typeof loc.longitude !== 'number') {
-        throw new Error('Internal GPS is unavailable. Please enable device location/GPS to geotag the complaint.');
+      // 1. Make sure a precise GPS fix is being acquired in parallel
+      if (!pinCoords && (locStatus === 'imprecise' || locStatus === 'checking')) {
+        startPreciseLocation();
       }
 
       // 2. Request Camera Permission & Launch Device Camera
@@ -165,10 +253,9 @@ export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar 
         await runGeminiAnalysis(asset.base64, asset.uri);
       }
     } catch (err) {
-      console.error('Camera/GPS capture error:', err);
-      setLocationError(err.message);
+      console.error('Camera capture error:', err);
       setErrorMessage(err.message);
-      Alert.alert('GPS Required', err.message, [{ text: 'OK' }]);
+      Alert.alert('Camera Error', err.message, [{ text: 'OK' }]);
     } finally {
       setCapturingPhoto(false);
     }
@@ -211,9 +298,17 @@ export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar 
       return;
     }
 
-    if (!locationCoords || typeof locationCoords.latitude !== 'number' || typeof locationCoords.longitude !== 'number') {
-      setErrorMessage('Cannot submit: A verified internal GPS geotag is required. Please enable device GPS and recalibrate.');
-      return;
+    const usingTypedAddressOnly = !pinCoords && locStatus === 'denied' && manualAddress.trim().length > 0;
+
+    if (!usingTypedAddressOnly) {
+      if (!pinCoords) {
+        setErrorMessage('A precise location is required. Tap "Refresh location" (move outdoors if needed) or type the address.');
+        return;
+      }
+      if (!pinConfirmed) {
+        setErrorMessage('Please check the pin on the map and tap "Confirm this location" before submitting.');
+        return;
+      }
     }
 
     // Reject non-waste items (living animals, humans, clean areas)
@@ -242,7 +337,9 @@ export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar 
       // Include reverse-geocoded address into notes if available
       const fullNotes = [
         description.trim(),
+        manualAddress.trim() && gpsFix?.source !== 'gps' ? `Typed address: ${manualAddress.trim()}` : null,
         readableAddress?.shortAddress ? `Location: ${readableAddress.shortAddress}` : null,
+        gpsFix?.accuracy ? `GPS accuracy: ${gpsFix.accuracy} m (${gpsFix.source})` : null,
       ]
         .filter(Boolean)
         .join(' | ');
@@ -252,8 +349,8 @@ export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar 
         areaId: selectedAreaId,
         category: aiResult.category,
         description: fullNotes,
-        latitude: locationCoords?.latitude || null,
-        longitude: locationCoords?.longitude || null,
+        latitude: pinCoords?.latitude ?? null,
+        longitude: pinCoords?.longitude ?? null,
         aiAnalysis: aiResult,
         imageUrl: photoUri,
         requiresAdminVerification: isLowConfidence,
@@ -378,7 +475,7 @@ export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar 
                     <View style={styles.geotagMetaRow}>
                       <Text style={styles.geotagWard}>🏛️ {selectedAreaName || 'Ward 1'}</Text>
                       <Text style={styles.geotagAccuracy}>
-                        {locationAccuracy ? `🎯 ±${locationAccuracy}m` : '🎯 High Precision'}
+                        {gpsFix?.accuracy ? `🎯 ±${gpsFix.accuracy}m` : pinCoords ? '📌 Pinned' : '⏳ Locating…'}
                       </Text>
                     </View>
                   </View>
@@ -393,40 +490,172 @@ export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar 
                 </View>
               )}
 
-              {/* Location Controls & Recalibration */}
-              <View style={styles.locationControlsRow}>
-                <TouchableOpacity
-                  style={styles.recalibrateBtn}
-                  onPress={handleRecalibrateLocation}
-                  disabled={recalibratingLocation}
-                  activeOpacity={0.7}
-                >
-                  {recalibratingLocation ? (
-                    <ActivityIndicator size="small" color={tokens.colors.accent} />
-                  ) : (
-                    <Text style={styles.recalibrateBtnText}>🎯 Recalibrate GPS</Text>
-                  )}
-                </TouchableOpacity>
-
-                {readableAddress?.shortAddress ? (
-                  <Text style={styles.detectedAddressText} numberOfLines={1}>
-                    {readableAddress.shortAddress}
-                  </Text>
-                ) : null}
-              </View>
-
-              {/* Coarse network notice (especially for desktop browsers without GPS chip) */}
-              {isCoarseLocation && (
-                <View style={styles.coarseNoticeBox}>
-                  <Text style={styles.coarseNoticeText}>
-                    ⚠️ Your browser is currently estimating location via network IP (±{locationAccuracy}m). If the detected location is off, please confirm your exact Ward below.
-                  </Text>
+              {/* PRECISE LOCATION + PIN CONFIRMATION */}
+              <View style={styles.locCard}>
+                <View style={styles.locHeaderRow}>
+                  <Text style={styles.locTitle}>📍 Exact Waste Location</Text>
+                  {(locStatus === 'searching' || gpsFix?.accuracy || liveAccuracy) && gpsFix?.source !== 'address' ? (
+                    <View
+                      style={[
+                        styles.accuracyPill,
+                        (gpsFix?.accuracy ?? liveAccuracy ?? 9999) <= REQUIRED_ACCURACY_M
+                          ? styles.accuracyPillGood
+                          : styles.accuracyPillBad,
+                      ]}
+                    >
+                      <Text style={styles.accuracyPillText}>
+                        Accuracy: {locStatus === 'ready' && gpsFix?.accuracy ? gpsFix.accuracy : liveAccuracy ?? '—'} m
+                      </Text>
+                    </View>
+                  ) : null}
                 </View>
-              )}
 
-              {locationError ? (
-                <Text style={styles.locationNotice}>{locationError}</Text>
-              ) : null}
+                {IS_WEB && (
+                  <View style={styles.coarseNoticeBox}>
+                    <Text style={styles.coarseNoticeText}>
+                      ⚠️ Location on web is approximate. Use the mobile app for precise location.
+                    </Text>
+                  </View>
+                )}
+
+                {locStatus === 'checking' && (
+                  <ActivityIndicator size="small" color={tokens.colors.accent} />
+                )}
+
+                {locStatus === 'explain' && (
+                  <View>
+                    <Text style={styles.locBodyText}>
+                      SHODHINI needs your location to tag the exact spot of the waste, so the garbage collector of your area can find and clean it. Location is used only while you file this complaint.
+                    </Text>
+                    <TouchableOpacity
+                      nativeID="allow-location-btn"
+                      style={styles.captureBtn}
+                      onPress={handleAllowLocation}
+                      activeOpacity={0.8}
+                    >
+                      <Text style={styles.captureBtnText}>📍 Allow Location Access</Text>
+                    </TouchableOpacity>
+                  </View>
+                )}
+
+                {locStatus === 'searching' && (
+                  <View style={styles.locSearchingRow}>
+                    <ActivityIndicator size="small" color={tokens.colors.accent} />
+                    <Text style={styles.locBodyText}>
+                      {'  '}Getting a precise GPS fix (need ≤ {REQUIRED_ACCURACY_M} m)…
+                    </Text>
+                  </View>
+                )}
+
+                {locStatus === 'imprecise' && locMessage ? (
+                  <Text style={styles.locationNotice}>⚠️ {locMessage}</Text>
+                ) : null}
+
+                {locStatus === 'denied' && (
+                  <View>
+                    <Text style={styles.locationNotice}>
+                      🚫 Location permission is off.{' '}
+                      {IS_WEB
+                        ? 'Click the lock icon next to the address bar, set Location to "Allow", then reload the page.'
+                        : 'Open Settings → Apps → SHODHINI → Permissions → Location and choose "Allow while using the app" (and turn on "Use precise location").'}
+                    </Text>
+                    {!IS_WEB && (
+                      <TouchableOpacity
+                        nativeID="open-settings-btn"
+                        style={styles.recalibrateBtn}
+                        onPress={() => Linking.openSettings()}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={styles.recalibrateBtnText}>⚙️ Open Settings</Text>
+                      </TouchableOpacity>
+                    )}
+                    {!permBlocked && (
+                      <TouchableOpacity
+                        nativeID="retry-permission-btn"
+                        style={[styles.recalibrateBtn, { marginTop: 8 }]}
+                        onPress={handleAllowLocation}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={styles.recalibrateBtnText}>🔁 Ask for permission again</Text>
+                      </TouchableOpacity>
+                    )}
+
+                    <Text style={[styles.locBodyText, { marginTop: 12 }]}>Or type the address instead:</Text>
+                    <TextInput
+                      nativeID="manual-address-input"
+                      style={[styles.textArea, { minHeight: 48 }, focusedInput === 'addr' && styles.inputFocused]}
+                      placeholder="e.g. Near Shivaji Park gate 2, Dadar West, Mumbai"
+                      value={manualAddress}
+                      onChangeText={setManualAddress}
+                      onFocus={() => setFocusedInput('addr')}
+                      onBlur={() => setFocusedInput(null)}
+                    />
+                    <TouchableOpacity
+                      nativeID="use-address-btn"
+                      style={[styles.recalibrateBtn, { marginTop: 8 }]}
+                      onPress={handleUseManualAddress}
+                      disabled={geocodingAddress}
+                      activeOpacity={0.7}
+                    >
+                      {geocodingAddress ? (
+                        <ActivityIndicator size="small" color={tokens.colors.accent} />
+                      ) : (
+                        <Text style={styles.recalibrateBtnText}>🔎 Find this address on map</Text>
+                      )}
+                    </TouchableOpacity>
+                    {locMessage ? <Text style={styles.fieldHint}>{locMessage}</Text> : null}
+                  </View>
+                )}
+
+                {pinCoords && (
+                  <View style={{ marginTop: 10 }}>
+                    <LocationPinMap
+                      coordinate={pinCoords}
+                      accuracy={gpsFix?.accuracy ?? undefined}
+                      onChange={handlePinChange}
+                    />
+                    <Text style={styles.fieldHint}>
+                      {IS_WEB
+                        ? 'Check the pin. Use the arrows to move it to the exact spot of the waste.'
+                        : 'Check the pin. Drag it (or tap the map) to the exact spot of the waste.'}
+                    </Text>
+                    <Text style={styles.locCoordsText}>
+                      {pinCoords.latitude.toFixed(6)}, {pinCoords.longitude.toFixed(6)}
+                      {readableAddress?.shortAddress ? `  •  ${readableAddress.shortAddress}` : ''}
+                    </Text>
+                    {pinConfirmed ? (
+                      <View style={styles.pinConfirmedBadge}>
+                        <Text style={styles.pinConfirmedText}>✅ Location confirmed</Text>
+                      </View>
+                    ) : (
+                      <TouchableOpacity
+                        nativeID="confirm-pin-btn"
+                        style={styles.captureBtn}
+                        onPress={handleConfirmPin}
+                        activeOpacity={0.8}
+                      >
+                        <Text style={styles.captureBtnText}>📌 Confirm this location</Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+                )}
+
+                {(locStatus === 'ready' || locStatus === 'imprecise' || locStatus === 'searching') && (
+                  <TouchableOpacity
+                    nativeID="refresh-location-btn"
+                    style={[styles.recalibrateBtn, { marginTop: 10 }]}
+                    onPress={startPreciseLocation}
+                    disabled={locStatus === 'searching'}
+                    activeOpacity={0.7}
+                  >
+                    {locStatus === 'searching' ? (
+                      <ActivityIndicator size="small" color={tokens.colors.accent} />
+                    ) : (
+                      <Text style={styles.recalibrateBtnText}>🔄 Refresh location</Text>
+                    )}
+                  </TouchableOpacity>
+                )}
+              </View>
             </View>
 
             {/* STEP 2: AI VISION ANALYSIS */}
@@ -926,29 +1155,86 @@ const styles = StyleSheet.create({
     fontSize: 11,
     fontWeight: tokens.typography.weight.semibold,
   },
-  locationControlsRow: {
+  locCard: {
+    marginTop: tokens.spacing.md,
+    padding: tokens.spacing.md,
+    borderRadius: tokens.radius.lg,
+    borderWidth: 1,
+    borderColor: tokens.colors.border,
+    backgroundColor: tokens.colors.surface,
+  },
+  locHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 8,
+    justifyContent: 'space-between',
+    marginBottom: 8,
     gap: 8,
   },
-  recalibrateBtn: {
-    backgroundColor: tokens.colors.surface,
-    paddingVertical: 6,
+  locTitle: {
+    fontSize: tokens.typography.size.sm,
+    fontWeight: tokens.typography.weight.bold,
+    color: tokens.colors.text,
+  },
+  accuracyPill: {
+    paddingVertical: 4,
     paddingHorizontal: 10,
-    borderRadius: tokens.radius.sm,
+    borderRadius: tokens.radius.full,
+  },
+  accuracyPillGood: {
+    backgroundColor: '#dcfce7',
+  },
+  accuracyPillBad: {
+    backgroundColor: '#fef3c7',
+  },
+  accuracyPillText: {
+    fontSize: 12,
+    fontWeight: tokens.typography.weight.bold,
+    color: tokens.colors.text,
+  },
+  locBodyText: {
+    fontSize: tokens.typography.size.xs,
+    color: tokens.colors.muted,
+    lineHeight: 18,
+  },
+  locSearchingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 6,
+  },
+  locCoordsText: {
+    fontSize: 11,
+    color: tokens.colors.text,
+    marginTop: 4,
+    marginBottom: 4,
+  },
+  pinConfirmedBadge: {
+    marginTop: 8,
+    alignSelf: 'flex-start',
+    backgroundColor: '#dcfce7',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: tokens.radius.full,
+  },
+  pinConfirmedText: {
+    fontSize: 12,
+    fontWeight: tokens.typography.weight.bold,
+    color: '#15803d',
+  },
+  recalibrateBtn: {
+    alignSelf: 'flex-start',
+    minHeight: 40,
+    justifyContent: 'center',
+    backgroundColor: tokens.colors.background,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: tokens.radius.md,
     borderWidth: 1,
     borderColor: tokens.colors.border,
   },
   recalibrateBtnText: {
-    fontSize: 11,
+    fontSize: 12,
     color: tokens.colors.accent,
     fontWeight: tokens.typography.weight.semibold,
-  },
-  detectedAddressText: {
-    flex: 1,
-    fontSize: 11,
-    color: tokens.colors.muted,
   },
   coarseNoticeBox: {
     backgroundColor: '#fffbeb',
@@ -959,14 +1245,16 @@ const styles = StyleSheet.create({
     borderLeftColor: '#f59e0b',
   },
   coarseNoticeText: {
-    fontSize: 10,
+    fontSize: 12,
     color: '#92400e',
-    lineHeight: 14,
+    lineHeight: 16,
   },
   locationNotice: {
-    fontSize: 11,
-    color: '#d97706',
+    fontSize: 12,
+    color: '#b45309',
+    lineHeight: 17,
     marginTop: 6,
+    marginBottom: 6,
   },
   aiScanningBox: {
     backgroundColor: tokens.colors.surface,
