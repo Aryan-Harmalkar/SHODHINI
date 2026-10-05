@@ -90,14 +90,6 @@ export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar 
         setSelectedAreaId(list[0].id);
         setSelectedAreaName(list[0].name);
       }
-
-      // Only start GPS automatically if permission was already granted;
-      // otherwise explain why we need it before showing the OS prompt.
-      if (await hasForegroundPermission()) {
-        startPreciseLocation();
-      } else {
-        setLocStatus('explain');
-      }
     }
 
     init();
@@ -228,12 +220,7 @@ export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar 
     setCapturingPhoto(true);
 
     try {
-      // 1. Make sure a precise GPS fix is being acquired in parallel
-      if (!pinCoords && (locStatus === 'imprecise' || locStatus === 'checking')) {
-        startPreciseLocation();
-      }
-
-      // 2. Request Camera Permission & Launch Device Camera
+      // 1. Request Camera Permission & Launch Device Camera
       const cameraPerm = await ImagePicker.requestCameraPermissionsAsync();
       if (cameraPerm.status !== 'granted') {
         throw new Error('Camera permission denied. Camera access is required to capture live geotagged waste photos.');
@@ -308,19 +295,6 @@ export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar 
       return;
     }
 
-    const usingTypedAddressOnly = !pinCoords && locStatus === 'denied' && manualAddress.trim().length > 0;
-
-    if (!usingTypedAddressOnly) {
-      if (!pinCoords) {
-        setErrorMessage('A precise location is required. Tap "Refresh location" (move outdoors if needed) or type the address.');
-        return;
-      }
-      if (!pinConfirmed) {
-        setErrorMessage('Please check the pin on the map and tap "Confirm this location" before submitting.');
-        return;
-      }
-    }
-
     // Reject non-waste items (living animals, humans, clean areas)
     if (!aiResult.isWaste) {
       setErrorMessage(
@@ -350,12 +324,9 @@ export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar 
 
     setLoading(true);
     try {
-      // Include reverse-geocoded address into notes if available
       const fullNotes = [
         description.trim(),
-        manualAddress.trim() && gpsFix?.source !== 'gps' ? `Typed address: ${manualAddress.trim()}` : null,
-        readableAddress?.shortAddress ? `Location: ${readableAddress.shortAddress}` : null,
-        gpsFix?.accuracy ? `GPS accuracy: ${gpsFix.accuracy} m (${gpsFix.source})` : null,
+        manualAddress.trim() ? `Address: ${manualAddress.trim()}` : null,
       ]
         .filter(Boolean)
         .join(' | ');
@@ -364,7 +335,7 @@ export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar 
         citizenId,
         areaId: selectedAreaId,
         category: 'Roadside waste',
-        description: fullNotes,
+        description: fullNotes || `Waste report in ${selectedAreaName || 'Assagao'}`,
         latitude: pinCoords?.latitude ?? null,
         longitude: pinCoords?.longitude ?? null,
         aiAnalysis: aiResult,
@@ -373,7 +344,7 @@ export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar 
 
       setSuccessData({
         areaName: selectedAreaName,
-        address: readableAddress?.shortAddress || '',
+        address: selectedAreaName || '',
       });
 
       setTimeout(() => {
@@ -483,23 +454,15 @@ export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar 
                 <View style={styles.photoContainer}>
                   <Image source={{ uri: photoUri }} style={styles.photoPreview} />
 
-                  {/* Geotag Watermark Badge Overlaid on Live Photo */}
+                  {/* Live Photo Verification Badge */}
                   <View style={styles.geotagBadge}>
                     <View style={styles.geotagHeader}>
-                      <Text style={styles.geotagLiveDot}>● LIVE GEOTAG</Text>
+                      <Text style={styles.geotagLiveDot}>● LIVE VERIFIED PHOTO</Text>
                       <Text style={styles.geotagTime}>{photoTimestamp || 'Just now'}</Text>
                     </View>
 
-                    {/* Human-readable street address */}
-                    <Text style={styles.geotagAddress} numberOfLines={1}>
-                      📍 {readableAddress?.shortAddress || (locationCoords ? `${locationCoords.latitude.toFixed(4)}° N, ${locationCoords.longitude.toFixed(4)}° E` : 'GPS Acquired')}
-                    </Text>
-
                     <View style={styles.geotagMetaRow}>
                       <Text style={styles.geotagWard}>🏛️ {selectedAreaName || 'Assagao - Ward 1 (Munang Waddo)'}</Text>
-                      <Text style={styles.geotagAccuracy}>
-                        {gpsFix?.accuracy ? `🎯 ±${gpsFix.accuracy}m` : pinCoords ? '📌 Pinned' : '⏳ Locating…'}
-                      </Text>
                     </View>
                   </View>
 
@@ -512,174 +475,6 @@ export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar 
                   </TouchableOpacity>
                 </View>
               )}
-
-              {/* PRECISE LOCATION + PIN CONFIRMATION */}
-              <View style={styles.locCard}>
-                <View style={styles.locHeaderRow}>
-                  <Text style={styles.locTitle}>📍 Exact Waste Location</Text>
-                  {(locStatus === 'searching' || gpsFix?.accuracy || liveAccuracy) && gpsFix?.source !== 'address' ? (
-                    <View
-                      style={[
-                        styles.accuracyPill,
-                        (gpsFix?.accuracy ?? liveAccuracy ?? 9999) <= REQUIRED_ACCURACY_M
-                          ? styles.accuracyPillGood
-                          : styles.accuracyPillBad,
-                      ]}
-                    >
-                      <Text style={styles.accuracyPillText}>
-                        Accuracy: {locStatus === 'ready' && gpsFix?.accuracy ? gpsFix.accuracy : liveAccuracy ?? '—'} m
-                      </Text>
-                    </View>
-                  ) : null}
-                </View>
-
-                {IS_WEB && (
-                  <View style={styles.coarseNoticeBox}>
-                    <Text style={styles.coarseNoticeText}>
-                      ⚠️ Location on web is approximate. Use the mobile app for precise location.
-                    </Text>
-                  </View>
-                )}
-
-                {locStatus === 'checking' && (
-                  <ActivityIndicator size="small" color={colors.accent} />
-                )}
-
-                {locStatus === 'explain' && (
-                  <View>
-                    <Text style={styles.locBodyText}>
-                      SHODHINI needs your location to tag the exact spot of the waste, so the garbage collector of your area can find and clean it. Location is used only while you file this complaint.
-                    </Text>
-                    <TouchableOpacity
-                      nativeID="allow-location-btn"
-                      style={styles.captureBtn}
-                      onPress={handleAllowLocation}
-                      activeOpacity={0.8}
-                    >
-                      <Text style={styles.captureBtnText}>📍 Allow Location Access</Text>
-                    </TouchableOpacity>
-                  </View>
-                )}
-
-                {locStatus === 'searching' && (
-                  <View style={styles.locSearchingRow}>
-                    <ActivityIndicator size="small" color={colors.accent} />
-                    <Text style={styles.locBodyText}>
-                      {'  '}Getting a precise GPS fix (need ≤ {REQUIRED_ACCURACY_M} m)…
-                    </Text>
-                  </View>
-                )}
-
-                {locStatus === 'imprecise' && locMessage ? (
-                  <Text style={styles.locationNotice}>⚠️ {locMessage}</Text>
-                ) : null}
-
-                {locStatus === 'denied' && (
-                  <View>
-                    <Text style={styles.locationNotice}>
-                      🚫 Location permission is off.{' '}
-                      {IS_WEB
-                        ? 'Click the lock icon next to the address bar, set Location to "Allow", then reload the page.'
-                        : 'Open Settings → Apps → SHODHINI → Permissions → Location and choose "Allow while using the app" (and turn on "Use precise location").'}
-                    </Text>
-                    {!IS_WEB && (
-                      <TouchableOpacity
-                        nativeID="open-settings-btn"
-                        style={styles.recalibrateBtn}
-                        onPress={() => Linking.openSettings()}
-                        activeOpacity={0.7}
-                      >
-                        <Text style={styles.recalibrateBtnText}>⚙️ Open Settings</Text>
-                      </TouchableOpacity>
-                    )}
-                    {!permBlocked && (
-                      <TouchableOpacity
-                        nativeID="retry-permission-btn"
-                        style={[styles.recalibrateBtn, { marginTop: 8 }]}
-                        onPress={handleAllowLocation}
-                        activeOpacity={0.7}
-                      >
-                        <Text style={styles.recalibrateBtnText}>🔁 Ask for permission again</Text>
-                      </TouchableOpacity>
-                    )}
-
-                    <Text style={[styles.locBodyText, { marginTop: 12 }]}>Or type the address instead:</Text>
-                    <TextInput
-                      nativeID="manual-address-input"
-                      style={[styles.textArea, { minHeight: 48 }, focusedInput === 'addr' && styles.inputFocused]}
-                      placeholder="e.g. Near Shivaji Park gate 2, Dadar West, Mumbai"
-                      placeholderTextColor={colors.muted}
-                      value={manualAddress}
-                      onChangeText={setManualAddress}
-                      onFocus={() => setFocusedInput('addr')}
-                      onBlur={() => setFocusedInput(null)}
-                    />
-                    <TouchableOpacity
-                      nativeID="use-address-btn"
-                      style={[styles.recalibrateBtn, { marginTop: 8 }]}
-                      onPress={handleUseManualAddress}
-                      disabled={geocodingAddress}
-                      activeOpacity={0.7}
-                    >
-                      {geocodingAddress ? (
-                        <ActivityIndicator size="small" color={colors.accent} />
-                      ) : (
-                        <Text style={styles.recalibrateBtnText}>🔎 Find this address on map</Text>
-                      )}
-                    </TouchableOpacity>
-                    {locMessage ? <Text style={styles.fieldHint}>{locMessage}</Text> : null}
-                  </View>
-                )}
-
-                {pinCoords && (
-                  <View style={{ marginTop: 10 }}>
-                    <LocationPinMap
-                      coordinate={pinCoords}
-                      accuracy={gpsFix?.accuracy ?? undefined}
-                      onChange={handlePinChange}
-                    />
-                    <Text style={styles.fieldHint}>
-                      {IS_WEB
-                        ? 'Check the pin. Use the arrows to move it to the exact spot of the waste.'
-                        : 'Check the pin. Drag it (or tap the map) to the exact spot of the waste.'}
-                    </Text>
-                    <Text style={styles.locCoordsText}>
-                      {pinCoords.latitude.toFixed(6)}, {pinCoords.longitude.toFixed(6)}
-                      {readableAddress?.shortAddress ? `  •  ${readableAddress.shortAddress}` : ''}
-                    </Text>
-                    {pinConfirmed ? (
-                      <View style={styles.pinConfirmedBadge}>
-                        <Text style={styles.pinConfirmedText}>✅ Location confirmed</Text>
-                      </View>
-                    ) : (
-                      <TouchableOpacity
-                        nativeID="confirm-pin-btn"
-                        style={styles.captureBtn}
-                        onPress={handleConfirmPin}
-                        activeOpacity={0.8}
-                      >
-                        <Text style={styles.captureBtnText}>📌 Confirm this location</Text>
-                      </TouchableOpacity>
-                    )}
-                  </View>
-                )}
-
-                {(locStatus === 'ready' || locStatus === 'imprecise' || locStatus === 'searching') && (
-                  <TouchableOpacity
-                    nativeID="refresh-location-btn"
-                    style={[styles.recalibrateBtn, { marginTop: 10 }]}
-                    onPress={startPreciseLocation}
-                    disabled={locStatus === 'searching'}
-                    activeOpacity={0.7}
-                  >
-                    {locStatus === 'searching' ? (
-                      <ActivityIndicator size="small" color={colors.accent} />
-                    ) : (
-                      <Text style={styles.recalibrateBtnText}>🔄 Refresh location</Text>
-                    )}
-                  </TouchableOpacity>
-                )}
-              </View>
             </View>
 
             {/* STEP 2: AI VISION ANALYSIS */}

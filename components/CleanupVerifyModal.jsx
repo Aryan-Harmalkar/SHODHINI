@@ -117,47 +117,14 @@ export default function CleanupVerifyModal({
 
   if (!visible || !complaint) return null;
 
-  const locationVerified =
-    distanceMeters === null
-      ? null
-      : distanceMeters <= MAX_DISTANCE_METERS;
-
   const handleTakeAfterPhoto = async () => {
     try {
-      setLocMessage('Requesting camera permissions...');
       const cameraPerm = await ImagePicker.requestCameraPermissionsAsync();
       if (cameraPerm.status !== 'granted') {
-        throw new Error('Camera permission is required to verify cleanup.');
+        throw new Error('Camera permission is required to take photo.');
       }
 
-      setLocMessage('Getting precise GPS location (please wait)...');
-      const hasLocPerm = await ensureForegroundPermission();
-      if (!hasLocPerm) {
-        throw new Error('Location permission is required to verify cleanup location.');
-      }
-
-      const locCtl = watchPreciseLocation({ onUpdate: () => {} });
-      const locFix = await locCtl.promise;
-      setCollectorLocation({ latitude: locFix.latitude, longitude: locFix.longitude });
-
-      // GPS verification against citizen's reported coordinates
-      const srcLat = Number(citizenDetails?.latitude ?? complaint?.latitude);
-      const srcLng = Number(citizenDetails?.longitude ?? complaint?.longitude);
-      if (Number.isFinite(srcLat) && Number.isFinite(srcLng) && (srcLat !== 0 || srcLng !== 0)) {
-        const dist = getDistanceMeters(srcLat, srcLng, locFix.latitude, locFix.longitude);
-        setDistanceMeters(dist);
-        if (dist > MAX_DISTANCE_METERS) {
-          setLocMessage('');
-          Alert.alert(
-            'Location Mismatch',
-            `You are ${Math.round(dist)} m away from the reported spot. Please move within ${MAX_DISTANCE_METERS} m of the spot and try again.`
-          );
-          return;
-        }
-      } else {
-        setDistanceMeters(null);
-      }
-      setLocMessage('Location verified. Ready for photo.');
+      setLocMessage('');
 
       const result = await ImagePicker.launchCameraAsync({
         mediaTypes: ['images'],
@@ -224,10 +191,6 @@ export default function CleanupVerifyModal({
   };
 
   const handleConfirm = async () => {
-    if (locationVerified === false) {
-      Alert.alert('Location Mismatch', 'You must be at the reported location to complete this job.');
-      return;
-    }
     if (
       verificationResult &&
       (!verificationResult.isCleaned || !verificationResult.isSameLocation) &&
@@ -334,7 +297,7 @@ export default function CleanupVerifyModal({
                     />
                   ) : (
                     <TouchableOpacity style={styles.captureBtn} onPress={handleTakeAfterPhoto} activeOpacity={0.8}>
-                      <Text style={styles.captureBtnText}>📷 Capture & Locate</Text>
+                      <Text style={styles.captureBtnText}>📷 Take Cleaned Photo</Text>
                     </TouchableOpacity>
                   )}
                 </View>
@@ -344,30 +307,6 @@ export default function CleanupVerifyModal({
                 <Text style={{ textAlign: 'center', marginTop: 10, color: colors.muted, fontSize: 12 }}>
                   {locMessage}
                 </Text>
-              )}
-
-              {collectorLocation && (
-                <View
-                  style={[
-                    styles.gpsBox,
-                    locationVerified === true && styles.gpsBoxOk,
-                    locationVerified === false && styles.gpsBoxBad,
-                  ]}
-                >
-                  <Text style={styles.gpsTitle}>
-                    {locationVerified === true
-                      ? `✅ Location Verified (${Math.round(distanceMeters)} m from report)`
-                      : locationVerified === false
-                      ? `❌ Too Far (${Math.round(distanceMeters)} m — max ${MAX_DISTANCE_METERS} m)`
-                      : '⚠️ Citizen GPS missing — distance not verifiable'}
-                  </Text>
-                  <Text style={styles.gpsSub}>
-                    Your GPS: {collectorLocation.latitude.toFixed(5)}, {collectorLocation.longitude.toFixed(5)}
-                  </Text>
-                  {afterCapturedAt && (
-                    <Text style={styles.gpsSub}>🕒 Captured: {formatTimestamp(afterCapturedAt)}</Text>
-                  )}
-                </View>
               )}
 
               {afterImageUri && (
@@ -420,11 +359,11 @@ export default function CleanupVerifyModal({
                   <TouchableOpacity
                     style={[
                       styles.confirmDoneBtn,
-                      (!afterImageUri || isVerifying || submitting || locationVerified === false) && {
+                      (!afterImageUri || isVerifying || submitting) && {
                         opacity: 0.5,
                       },
                     ]}
-                    disabled={!afterImageUri || isVerifying || submitting || locationVerified === false}
+                    disabled={!afterImageUri || isVerifying || submitting}
                     onPress={handleConfirm}
                     activeOpacity={0.8}
                   >
