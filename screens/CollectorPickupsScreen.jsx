@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   StyleSheet,
   Text,
@@ -10,7 +10,7 @@ import {
   Alert,
 } from 'react-native';
 import { tokens, useTheme } from '../lib/theme';
-// CleanupVerifyModal not needed for Doorstep Pickups
+import { rejectComplaint } from '../db/database';
 
 // Max allowed distance (metres) between citizen's reported GPS and collector's live GPS
 const MAX_DISTANCE_METERS = 100;
@@ -34,6 +34,43 @@ function formatTimestamp(iso) {
   } catch {
     return iso;
   }
+}
+
+function CountdownTimer({ startTimeIso, durationMinutes = 3, onExpire, styles }) {
+  const [timeLeft, setTimeLeft] = useState(0);
+
+  useEffect(() => {
+    if (!startTimeIso) return;
+    const startMs = new Date(startTimeIso).getTime();
+    const endMs = startMs + durationMinutes * 60 * 1000;
+
+    const updateTimer = () => {
+      const now = Date.now();
+      const diff = endMs - now;
+      if (diff <= 0) {
+        setTimeLeft(0);
+        if (onExpire) onExpire();
+      } else {
+        setTimeLeft(Math.floor(diff / 1000));
+      }
+    };
+
+    updateTimer();
+    const interval = setInterval(updateTimer, 1000);
+    return () => clearInterval(interval);
+  }, [startTimeIso, durationMinutes]);
+
+  const m = Math.floor(timeLeft / 60);
+  const s = timeLeft % 60;
+  const expired = timeLeft <= 0;
+
+  return (
+    <View style={[styles.timerBadge, expired && styles.timerBadgeExpired]}>
+      <Text style={[styles.timerText, expired && styles.timerTextExpired]}>
+        {expired ? 'EXPIRED' : `⏱ ${m}:${s.toString().padStart(2, '0')}`}
+      </Text>
+    </View>
+  );
 }
 
 export default function CollectorPickupsScreen({
@@ -76,6 +113,32 @@ export default function CollectorPickupsScreen({
 
   const handleVerifyClick = (complaint) => {
     setVerifyingComplaint(complaint);
+  };
+
+  const handleRejectClick = (complaintId) => {
+    // We could build a full modal, but React Native's Alert has limited inputs.
+    // We'll use a basic Alert with predefined reasons since standard Alerts don't support radio buttons on all platforms well.
+    Alert.alert(
+      'Reject Pickup',
+      'Select a reason for rejection:',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        { text: 'Vehicle Full', onPress: () => processReject(complaintId, 'Vehicle Full') },
+        { text: 'Out of Shift', onPress: () => processReject(complaintId, 'Out of Shift') },
+        { text: 'Too Far', onPress: () => processReject(complaintId, 'Too Far') },
+      ],
+      { cancelable: true }
+    );
+  };
+
+  const processReject = async (complaintId, reason) => {
+    if (onRefresh) onRefresh(); // Temporary optimistic update
+    try {
+      await rejectComplaint({ complaintId, reason });
+      if (onRefresh) onRefresh();
+    } catch (err) {
+      Alert.alert('Error', err.message);
+    }
   };
 
   const handleOpenMaps = (lat, lng, address) => {
@@ -233,10 +296,10 @@ export default function CollectorPickupsScreen({
                 return (
                   <View key={item.id} style={styles.taskCard}>
                     <View style={styles.cardTop}>
-                      <Text style={styles.categoryTitle}>{item.category || 'General Waste'}</Text>
-                      <Text style={styles.cardTime}>
-                        {item.created_at ? new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'New'}
-                      </Text>
+                      <View style={{flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flex: 1}}>
+                        <Text style={styles.categoryTitle}>{item.category || 'General Waste'}</Text>
+                        <CountdownTimer startTimeIso={item.created_at} durationMinutes={3} styles={styles} />
+                      </View>
                     </View>
 
                     <Text style={styles.descriptionText}>{item.description}</Text>
@@ -256,8 +319,17 @@ export default function CollectorPickupsScreen({
                         {isUpdating ? (
                           <ActivityIndicator size="small" color={isDark ? '#000' : '#fff'} />
                         ) : (
-                          <Text style={styles.primaryActionText}>Accept Job</Text>
+                          <Text style={styles.primaryActionText}>✅ Accept</Text>
                         )}
+                      </TouchableOpacity>
+
+                      <TouchableOpacity
+                        style={[styles.rejectBtn, isUpdating && styles.btnDisabled]}
+                        onPress={() => handleRejectClick(item.id)}
+                        disabled={isUpdating}
+                        activeOpacity={0.8}
+                      >
+                        <Text style={styles.rejectBtnText}>❌ Reject</Text>
                       </TouchableOpacity>
 
                       <TouchableOpacity
@@ -301,8 +373,13 @@ export default function CollectorPickupsScreen({
                   <View key={item.id} style={styles.taskCard}>
                     <View style={styles.cardTop}>
                       <Text style={styles.categoryTitle}>{item.category || 'Waste Clearing'}</Text>
-                      <View style={styles.pendingPill}>
-                        <Text style={styles.pendingPillText}>IN PROGRESS</Text>
+                      <View style={{flexDirection: 'row', alignItems: 'center', gap: 6}}>
+                        {item.accepted_at && (
+                           <CountdownTimer startTimeIso={item.accepted_at} durationMinutes={60} styles={styles} />
+                        )}
+                        <View style={styles.pendingPill}>
+                          <Text style={styles.pendingPillText}>IN PROGRESS</Text>
+                        </View>
                       </View>
                     </View>
 
@@ -703,6 +780,42 @@ const getStyles = (colors, isDark) =>
       color: isDark ? '#000' : '#fff',
       fontSize: tokens.typography.size.xs,
       fontFamily: tokens.typography.family.bold,
+    },
+    rejectBtn: {
+      flex: 1,
+      backgroundColor: 'transparent',
+      paddingVertical: 10,
+      paddingHorizontal: tokens.spacing.sm,
+      borderRadius: tokens.radius.md,
+      alignItems: 'center',
+      borderWidth: 1,
+      borderColor: '#ff4444',
+      marginHorizontal: 4,
+    },
+    rejectBtnText: {
+      color: '#ff4444',
+      fontFamily: tokens.typography.family.bold,
+      fontSize: tokens.typography.size.xs,
+    },
+    timerBadge: {
+      paddingHorizontal: 6,
+      paddingVertical: 2,
+      borderRadius: 12,
+      backgroundColor: 'rgba(50, 205, 50, 0.1)',
+      borderWidth: 1,
+      borderColor: 'rgba(50, 205, 50, 0.3)',
+    },
+    timerBadgeExpired: {
+      backgroundColor: 'rgba(255, 68, 68, 0.1)',
+      borderColor: 'rgba(255, 68, 68, 0.3)',
+    },
+    timerText: {
+      fontSize: 10,
+      color: '#2e8b57',
+      fontFamily: tokens.typography.family.bold,
+    },
+    timerTextExpired: {
+      color: '#ff4444',
     },
     secondaryActionBtn: {
       backgroundColor: colors.surface,

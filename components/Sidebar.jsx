@@ -194,6 +194,28 @@ export default function Sidebar({
                   Ward Scoreboard
                 </Text>
               </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.menuItem, currentScreen === 'supervisor_dashboard' && styles.activeMenuItem]}
+                onPress={() => { onNavigate('supervisor_dashboard'); onClose(); }}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.menuIcon}>📊</Text>
+                <Text style={[styles.menuText, currentScreen === 'supervisor_dashboard' && styles.activeMenuText]}>
+                  ROI & Supervisor
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.menuItem, currentScreen === 'training' && styles.activeMenuItem]}
+                onPress={() => { onNavigate('training'); onClose(); }}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.menuIcon}>📚</Text>
+                <Text style={[styles.menuText, currentScreen === 'training' && styles.activeMenuText]}>
+                  Training Hub
+                </Text>
+              </TouchableOpacity>
             </>
           ) : (
             /* CITIZEN MENU */

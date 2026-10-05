@@ -721,6 +721,9 @@ export async function updateComplaintStatus({ complaintId, status, workerId, col
   if (workerId) {
     updatePayload.assigned_worker_id = workerId;
   }
+  if (status === 'In Progress') {
+    updatePayload.accepted_at = new Date().toISOString();
+  }
   if (collectorImageBase64) {
     updatePayload.collector_image_base64 = collectorImageBase64;
   }
@@ -743,6 +746,27 @@ export async function updateComplaintStatus({ complaintId, status, workerId, col
 
   if (error) {
     throw new Error(error.message || 'Failed to update complaint status.');
+  }
+
+  return data;
+}
+
+/**
+ * Reject a complaint (GC action)
+ */
+export async function rejectComplaint({ complaintId, reason }) {
+  const { data, error } = await supabase
+    .from('complaints')
+    .update({ 
+      status: 'Rejected',
+      rejection_reason: reason
+    })
+    .eq('id', complaintId)
+    .select()
+    .single();
+
+  if (error) {
+    throw new Error(error.message || 'Failed to reject complaint.');
   }
 
   return data;

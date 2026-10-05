@@ -20,6 +20,8 @@ import ScoreboardScreen from './ScoreboardScreen';
 import RewardsScreen from './RewardsScreen';
 import CollectorTasksScreen from './CollectorTasksScreen';
 import CollectorPickupsScreen from './CollectorPickupsScreen';
+import SupervisorDashboardScreen from './SupervisorDashboardScreen';
+import TrainingScreen from './TrainingScreen';
 import ComplaintCard from '../components/ComplaintCard';
 import CleanupVerifyModal from '../components/CleanupVerifyModal';
 import {
@@ -324,6 +326,24 @@ export default function HomeScreen({ user, onLogout }) {
             onBackToHome={() => setCurrentScreen('home')}
             onOpenSidebar={() => setSidebarVisible(true)}
             isCollector={true}
+          />
+        );
+      }
+      if (currentScreen === 'training') {
+        return (
+          <TrainingScreen
+            onBackToHome={() => setCurrentScreen('home')}
+            onOpenSidebar={() => setSidebarVisible(true)}
+          />
+        );
+      }
+      if (currentScreen === 'supervisor_dashboard') {
+        return (
+          <SupervisorDashboardScreen
+            complaints={collectorComplaints}
+            onUpdateStatus={handleStatusUpdate}
+            onBackToHome={() => setCurrentScreen('home')}
+            onOpenSidebar={() => setSidebarVisible(true)}
           />
         );
       }
