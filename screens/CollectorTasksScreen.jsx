@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   StyleSheet,
   Text,
@@ -15,7 +15,31 @@ import * as ImagePicker from 'expo-image-picker';
 import { tokens } from '../lib/theme';
 import { verifyCleanupWithGemini } from '../lib/aiVision';
 import { getComplaintDetails } from '../db/database';
-import { ensureForegroundPermission, watchPreciseLocation, getReadableAddress } from '../lib/locationHelper';
+import { ensureForegroundPermission, watchPreciseLocation } from '../lib/locationHelper';
+
+// Max allowed distance (metres) between citizen's reported GPS and collector's live GPS
+const MAX_DISTANCE_METERS = 100;
+
+// Haversine great-circle distance in metres
+function getDistanceMeters(lat1, lon1, lat2, lon2) {
+  const toRad = (d) => (d * Math.PI) / 180;
+  const R = 6371000;
+  const dLat = toRad(lat2 - lat1);
+  const dLon = toRad(lon2 - lon1);
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+  return 2 * R * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function formatTimestamp(iso) {
+  if (!iso) return '—';
+  try {
+    return new Date(iso).toLocaleString();
+  } catch {
+    return iso;
+  }
+}
 
 export default function CollectorTasksScreen({
   user,
@@ -40,12 +64,18 @@ export default function CollectorTasksScreen({
   const [isFetchingDetails, setIsFetchingDetails] = useState(false);
   const [collectorLocation, setCollectorLocation] = useState(null);
   const [locMessage, setLocMessage] = useState('');
+  const [citizenDetails, setCitizenDetails] = useState(null);
+  const [distanceMeters, setDistanceMeters] = useState(null);
+  const [afterCapturedAt, setAfterCapturedAt] = useState(null);
 
-  useEffect(() => {
-    if (initialTab) {
-      setActiveTab(initialTab);
-    }
-  }, [initialTab]);
+  const locationVerified =
+    distanceMeters === null ? null : distanceMeters <= MAX_DISTANCE_METERS;
+
+  const [prevInitialTab, setPrevInitialTab] = useState(initialTab);
+  if (initialTab !== prevInitialTab) {
+    setPrevInitialTab(initialTab);
+    if (initialTab) setActiveTab(initialTab);
+  }
 
   const availableTasks = complaints.filter(
     (c) => !c.status || c.status === 'Submitted'
@@ -65,10 +95,14 @@ export default function CollectorTasksScreen({
     setVerificationResult(null);
     setCollectorLocation(null);
     setLocMessage('');
+    setCitizenDetails(null);
+    setDistanceMeters(null);
+    setAfterCapturedAt(null);
     setIsFetchingDetails(true);
 
     try {
       const details = await getComplaintDetails(complaint.id);
+      setCitizenDetails(details || complaint);
       if (details?.citizen_image_base64) {
         setBeforeImageBase64(details.citizen_image_base64);
       } else {
@@ -98,7 +132,25 @@ export default function CollectorTasksScreen({
       const locCtl = watchPreciseLocation({ onUpdate: () => {} });
       const locFix = await locCtl.promise;
       setCollectorLocation({ latitude: locFix.latitude, longitude: locFix.longitude });
-      setLocMessage('Location acquired. Ready for photo.');
+
+      // Strict GPS verification against citizen's reported location
+      const srcLat = Number(citizenDetails?.latitude ?? verifyingComplaint?.latitude);
+      const srcLng = Number(citizenDetails?.longitude ?? verifyingComplaint?.longitude);
+      if (Number.isFinite(srcLat) && Number.isFinite(srcLng) && (srcLat !== 0 || srcLng !== 0)) {
+        const dist = getDistanceMeters(srcLat, srcLng, locFix.latitude, locFix.longitude);
+        setDistanceMeters(dist);
+        if (dist > MAX_DISTANCE_METERS) {
+          setLocMessage('');
+          Alert.alert(
+            'Location Mismatch',
+            `You are ${Math.round(dist)} m away from the reported spot. Move within ${MAX_DISTANCE_METERS} m of the citizen's location and try again.`
+          );
+          return;
+        }
+      } else {
+        setDistanceMeters(null);
+      }
+      setLocMessage('Location verified. Ready for photo.');
 
       const result = await ImagePicker.launchCameraAsync({
         mediaTypes: ['images'],
@@ -111,6 +163,7 @@ export default function CollectorTasksScreen({
         const asset = result.assets[0];
         setAfterImageUri(asset.uri);
         setAfterImageBase64(asset.base64);
+        setAfterCapturedAt(new Date().toISOString());
 
         if (beforeImageBase64) {
           setIsVerifying(true);
@@ -139,12 +192,16 @@ export default function CollectorTasksScreen({
   };
 
   const handleConfirmDone = async () => {
+    if (locationVerified === false) {
+      Alert.alert('Location Mismatch', 'You must be at the reported location to complete this job.');
+      return;
+    }
     if (verificationResult && !verificationResult.isCleaned) {
       Alert.alert('Verification Failed', 'AI detected that the area is not fully clean or is the wrong location. Please re-clean and capture again.');
       return;
     }
     setVerifyModalVisible(false);
-    const resolvedAt = new Date().toISOString();
+    const resolvedAt = afterCapturedAt || new Date().toISOString();
     await onUpdateStatus(
       verifyingComplaint.id,
       'Completed',
@@ -476,6 +533,34 @@ export default function CollectorTasksScreen({
                   </View>
                 ) : (
                   <>
+                    {/* Citizen report details */}
+                    <View style={styles.reportPanel}>
+                      <Text style={styles.reportPanelTitle}>📋 Citizen Report</Text>
+                      <Text style={styles.reportRow}>
+                        📍 {citizenDetails?.location || verifyingComplaint?.location || 'Unknown address'}
+                      </Text>
+                      <Text style={styles.reportRow}>
+                        🛰️ GPS:{' '}
+                        {citizenDetails?.latitude != null && citizenDetails?.longitude != null
+                          ? `${Number(citizenDetails.latitude).toFixed(5)}, ${Number(citizenDetails.longitude).toFixed(5)}`
+                          : 'Not available'}
+                      </Text>
+                      <Text style={styles.reportRow}>
+                        🕒 Reported: {formatTimestamp(citizenDetails?.created_at || verifyingComplaint?.created_at)}
+                      </Text>
+                      {!!citizenDetails?.description && (
+                        <Text style={styles.reportRow}>📝 {citizenDetails.description}</Text>
+                      )}
+                      {citizenDetails?.latitude != null && citizenDetails?.longitude != null && (
+                        <TouchableOpacity
+                          style={styles.reportNavBtn}
+                          onPress={() => handleOpenMaps(citizenDetails.latitude, citizenDetails.longitude, citizenDetails.location)}
+                        >
+                          <Text style={styles.reportNavText}>Navigate to Spot 🗺️</Text>
+                        </TouchableOpacity>
+                      )}
+                    </View>
+
                     <View style={styles.compareRow}>
                       <View style={styles.compareCol}>
                         <Text style={styles.compareLabel}>Before</Text>
@@ -513,10 +598,26 @@ export default function CollectorTasksScreen({
                     )}
 
                     {collectorLocation && (
-                      <View style={{ marginTop: 10, backgroundColor: '#f1f5f9', padding: 8, borderRadius: 8 }}>
-                        <Text style={{ fontSize: 10, color: '#475569', textAlign: 'center' }}>
-                          Verified Collector GPS: {collectorLocation.latitude.toFixed(5)}, {collectorLocation.longitude.toFixed(5)}
+                      <View
+                        style={[
+                          styles.gpsBox,
+                          locationVerified === true && styles.gpsBoxOk,
+                          locationVerified === false && styles.gpsBoxBad,
+                        ]}
+                      >
+                        <Text style={styles.gpsTitle}>
+                          {locationVerified === true
+                            ? `✅ Location Verified (${Math.round(distanceMeters)} m from report)`
+                            : locationVerified === false
+                            ? `❌ Too Far (${Math.round(distanceMeters)} m — max ${MAX_DISTANCE_METERS} m)`
+                            : '⚠️ Citizen GPS missing — distance not verifiable'}
                         </Text>
+                        <Text style={styles.gpsSub}>
+                          Your GPS: {collectorLocation.latitude.toFixed(5)}, {collectorLocation.longitude.toFixed(5)}
+                        </Text>
+                        {afterCapturedAt && (
+                          <Text style={styles.gpsSub}>🕒 Captured: {formatTimestamp(afterCapturedAt)}</Text>
+                        )}
                       </View>
                     )}
 
@@ -546,9 +647,9 @@ export default function CollectorTasksScreen({
                         <TouchableOpacity
                           style={[
                             styles.confirmDoneBtn,
-                            (!afterImageUri || isVerifying || (verificationResult && !verificationResult.isCleaned)) && { opacity: 0.5 }
+                            (!afterImageUri || isVerifying || locationVerified === false || (verificationResult && !verificationResult.isCleaned)) && { opacity: 0.5 }
                           ]}
-                          disabled={!afterImageUri || isVerifying || (verificationResult && !verificationResult.isCleaned && !!beforeImageBase64)}
+                          disabled={!afterImageUri || isVerifying || locationVerified === false || (verificationResult && !verificationResult.isCleaned && !!beforeImageBase64)}
                           onPress={handleConfirmDone}
                         >
                           <Text style={styles.confirmDoneBtnText}>Submit & Complete Job</Text>
@@ -566,6 +667,66 @@ export default function CollectorTasksScreen({
 }
 
 const styles = StyleSheet.create({
+  reportPanel: {
+    backgroundColor: '#f0f9ff',
+    borderWidth: 1,
+    borderColor: '#bae6fd',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 14,
+  },
+  reportPanelTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#0c4a6e',
+    marginBottom: 6,
+  },
+  reportRow: {
+    fontSize: 12,
+    color: '#334155',
+    marginTop: 3,
+  },
+  reportNavBtn: {
+    marginTop: 10,
+    alignSelf: 'flex-start',
+    backgroundColor: '#0ea5e9',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 999,
+  },
+  reportNavText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  gpsBox: {
+    marginTop: 12,
+    backgroundColor: '#f1f5f9',
+    padding: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
+  },
+  gpsBoxOk: {
+    backgroundColor: '#ecfdf5',
+    borderColor: '#6ee7b7',
+  },
+  gpsBoxBad: {
+    backgroundColor: '#fef2f2',
+    borderColor: '#fca5a5',
+  },
+  gpsTitle: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#0f172a',
+    textAlign: 'center',
+  },
+  gpsSub: {
+    fontSize: 10,
+    color: '#475569',
+    textAlign: 'center',
+    marginTop: 2,
+  },
   container: {
     flex: 1,
     backgroundColor: tokens.colors.surface,
