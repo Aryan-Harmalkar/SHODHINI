@@ -17,6 +17,7 @@ import ScoreboardScreen from './ScoreboardScreen';
 import RewardsScreen from './RewardsScreen';
 import CollectorTasksScreen from './CollectorTasksScreen';
 import ComplaintCard from '../components/ComplaintCard';
+import CleanupVerifyModal from '../components/CleanupVerifyModal';
 import {
   getUserEcoPoints,
   getAreaComplaints,
@@ -74,6 +75,7 @@ export default function HomeScreen({ user, onLogout }) {
   const [collectorLoading, setCollectorLoading] = useState(true);
   const [updatingId, setUpdatingId] = useState(null);
   const [collectorFilter, setCollectorFilter] = useState('ALL');
+  const [dashboardVerifyComplaint, setDashboardVerifyComplaint] = useState(null);
 
   useEffect(() => {
     if (user?.id && !isCollector) {
@@ -487,6 +489,7 @@ export default function HomeScreen({ user, onLogout }) {
                     item={item}
                     updatingId={updatingId}
                     onUpdateStatus={handleStatusUpdate}
+                    onVerifyCleanup={setDashboardVerifyComplaint}
                   />
                 ))
               )}
@@ -510,6 +513,23 @@ export default function HomeScreen({ user, onLogout }) {
         onLogout={onLogout}
         isCollector={isCollector}
       />
+      {isCollector && (
+        <CleanupVerifyModal
+          visible={Boolean(dashboardVerifyComplaint)}
+          complaint={dashboardVerifyComplaint}
+          onClose={() => setDashboardVerifyComplaint(null)}
+          onConfirmDone={async ({ complaintId, afterImageBase64, resolvedAt, latitude, longitude }) => {
+            await handleStatusUpdate(
+              complaintId,
+              'Completed',
+              afterImageBase64,
+              resolvedAt,
+              latitude,
+              longitude
+            );
+          }}
+        />
+      )}
     </View>
   );
 }

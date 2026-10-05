@@ -2,7 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, ActivityIndicator, StyleSheet } from 'react-native';
 import { tokens } from '../lib/theme';
 
-export default function ComplaintCard({ item, updatingId, onUpdateStatus }) {
+export default function ComplaintCard({ item, updatingId, onUpdateStatus, onVerifyCleanup }) {
   const isCompleted = item.status === 'Completed';
   const isInProgress = item.status === 'In Progress' || item.status === 'Assigned';
   const isUpdating = updatingId === item.id;
@@ -83,13 +83,19 @@ export default function ComplaintCard({ item, updatingId, onUpdateStatus }) {
             <TouchableOpacity
               style={[styles.doneBtn, isUpdating && styles.btnDisabled]}
               disabled={isUpdating}
-              onPress={() => onUpdateStatus(item.id, 'Completed')}
+              onPress={() => {
+                if (onVerifyCleanup) {
+                  onVerifyCleanup(item);
+                } else {
+                  onUpdateStatus(item.id, 'Completed');
+                }
+              }}
               activeOpacity={0.8}
             >
               {isUpdating ? (
                 <ActivityIndicator size="small" color="#ffffff" />
               ) : (
-                <Text style={styles.doneBtnText}>✅ Mark Cleaned & Done</Text>
+                <Text style={styles.doneBtnText}>📸 Verify Cleanup</Text>
               )}
             </TouchableOpacity>
           )}
