@@ -246,6 +246,18 @@ export default function HomeScreen({ user, onLogout }) {
   });
 
   const renderContent = () => {
+    if (currentScreen === 'scoreboard') {
+      return (
+        <ScoreboardScreen
+          user={user}
+          ecoPoints={ecoPoints}
+          onBackToHome={() => setCurrentScreen('home')}
+          onOpenSidebar={() => setSidebarVisible(true)}
+          isCollector={isCollector}
+        />
+      );
+    }
+
     if (!isCollector) {
       if (currentScreen === 'complaint') {
         return (
