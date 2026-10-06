@@ -16,14 +16,6 @@ import * as Location from 'expo-location';
 import { tokens, useTheme } from '../lib/theme';
 import { getComplaintDetails } from '../db/database';
 
-function formatTimestamp(iso) {
-  if (!iso) return '—';
-  try {
-    return new Date(iso).toLocaleString();
-  } catch {
-    return iso;
-  }
-}
 
 // Haversine great-circle distance in metres
 function getDistanceMeters(lat1, lon1, lat2, lon2) {
