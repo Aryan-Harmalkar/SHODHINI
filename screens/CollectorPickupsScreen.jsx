@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { tokens, useTheme } from '../lib/theme';
 import { rejectComplaint } from '../db/database';
-
+import PickupVerifyModal from '../components/PickupVerifyModal';
 // Max allowed distance (metres) between citizen's reported GPS and collector's live GPS
 const MAX_DISTANCE_METERS = 100;
 
@@ -396,10 +396,7 @@ export default function CollectorPickupsScreen({
                       <TouchableOpacity
                         style={[styles.doneBtn, isUpdating && styles.btnDisabled]}
                         onPress={() => {
-                          Alert.alert('Confirm Pickup', 'Have you collected this doorstep pickup?', [
-                            { text: 'Cancel', style: 'cancel' },
-                            { text: 'Yes, Collected', onPress: () => onUpdateStatus(item.id, 'Completed') }
-                          ]);
+                          setVerifyingComplaint(item);
                         }}
                         disabled={isUpdating}
                         activeOpacity={0.8}
@@ -495,8 +492,16 @@ export default function CollectorPickupsScreen({
         )}
       </ScrollView>
 
-      {/* VERIFICATION MODAL OVERLAY (Removed for pickups) */}
-      </View>
+      {/* VERIFICATION MODAL OVERLAY */}
+      <PickupVerifyModal
+        visible={!!verifyingComplaint}
+        complaint={verifyingComplaint}
+        onClose={() => setVerifyingComplaint(null)}
+        onConfirmDone={async (res) => {
+          await onUpdateStatus(res.complaintId, 'Completed', res.afterImageBase64, res.resolvedAt);
+        }}
+      />
+    </View>
   );
 }
 
