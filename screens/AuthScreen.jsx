@@ -318,13 +318,13 @@ const styles = StyleSheet.create({
 
 const getStyles = (colors, isDark) => StyleSheet.create({
   keyboardContainer: { flex: 1, backgroundColor: colors.background },
-  scrollContainer: { flexGrow: 1, padding: tokens.spacing.lg, paddingBottom: tokens.spacing.xxl, justifyContent: 'center' },
-  eyebrowWrap: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: tokens.spacing.xl, width: '100%', maxWidth: 440, alignSelf: 'center' },
+  scrollContainer: { flexGrow: 1, padding: tokens.spacing.sm, paddingBottom: tokens.spacing.xxl, justifyContent: 'center' },
+  eyebrowWrap: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: tokens.spacing.lg, width: '100%', maxWidth: 440, alignSelf: 'center' },
   eyebrowBadge: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 9999, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
   eyebrowText: { fontFamily: tokens.typography.family.semibold, fontSize: 10, letterSpacing: 2, color: colors.muted },
   themeToggleBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, alignItems: 'center', justifyContent: 'center' },
   themeToggleIcon: { fontSize: 18 },
-  header: { marginBottom: tokens.spacing.xl, width: '100%', maxWidth: 440, alignSelf: 'center' },
+  header: { marginBottom: tokens.spacing.lg, width: '100%', maxWidth: 440, alignSelf: 'center' },
   brandTitle: { fontFamily: tokens.typography.family.extrabold, fontSize: tokens.typography.size.xxxl, color: colors.text, letterSpacing: -1, lineHeight: 52 },
   brandSubtitle: { fontFamily: tokens.typography.family.medium, fontSize: tokens.typography.size.base, color: colors.muted, marginTop: tokens.spacing.xs },
   
@@ -332,7 +332,7 @@ const getStyles = (colors, isDark) => StyleSheet.create({
     width: '100%', maxWidth: 440, alignSelf: 'center',
     backgroundColor: colors.card,
     borderRadius: 32,
-    padding: tokens.spacing.xl,
+    padding: tokens.spacing.md,
     borderWidth: 1,
     borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)',
     ...(isDark ? {} : tokens.shadow.xl),
@@ -376,7 +376,7 @@ const getStyles = (colors, isDark) => StyleSheet.create({
   areaPickerArrow: { fontSize: 10, color: colors.muted },
 
   modalOverlay: { flex: 1, backgroundColor: colors.modalOverlay, justifyContent: 'flex-end', padding: tokens.spacing.sm },
-  modalCard: { backgroundColor: colors.card, borderTopLeftRadius: 32, borderTopRightRadius: 32, maxHeight: '80%', padding: tokens.spacing.xl, paddingBottom: 0 },
+  modalCard: { backgroundColor: colors.card, borderTopLeftRadius: 32, borderTopRightRadius: 32, maxHeight: '80%', padding: tokens.spacing.lg, paddingBottom: 0 },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: tokens.spacing.xl },
   modalTitle: { fontFamily: tokens.typography.family.bold, fontSize: tokens.typography.size.lg, color: colors.text },
   modalCloseBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center' },

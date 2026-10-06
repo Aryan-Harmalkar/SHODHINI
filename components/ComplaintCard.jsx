@@ -134,7 +134,7 @@ const getStyles = (colors, isDark) =>
       marginBottom: tokens.spacing.sm,
       borderTopLeftRadius: tokens.radius.lg,
       borderTopRightRadius: tokens.radius.lg,
-      padding: tokens.spacing.lg,
+      padding: tokens.spacing.md,
       paddingBottom: tokens.spacing.xs,
     },
     headerText: {
@@ -195,7 +195,7 @@ const getStyles = (colors, isDark) =>
       paddingTop: tokens.spacing.sm,
       borderBottomLeftRadius: tokens.radius.lg,
       borderBottomRightRadius: tokens.radius.lg,
-      padding: tokens.spacing.lg,
+      padding: tokens.spacing.md,
     },
     primaryBtn: {
       backgroundColor: colors.accent,
@@ -230,7 +230,7 @@ const getStyles = (colors, isDark) =>
       paddingTop: tokens.spacing.xs,
       borderBottomLeftRadius: tokens.radius.lg,
       borderBottomRightRadius: tokens.radius.lg,
-      padding: tokens.spacing.lg,
+      padding: tokens.spacing.md,
     },
     completedBadgeText: {
       fontSize: tokens.typography.size.sm,

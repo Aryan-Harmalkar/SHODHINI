@@ -337,7 +337,7 @@ const getStyles = (colors, isDark) => StyleSheet.create({
     alignItems: 'center',
     backgroundColor: colors.card,
     borderRadius: tokens.radius.lg,
-    padding: tokens.spacing.lg,
+    padding: tokens.spacing.md,
     marginBottom: tokens.spacing.md,
     borderWidth: 1,
     borderColor: colors.border,

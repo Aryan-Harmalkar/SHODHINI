@@ -760,7 +760,7 @@ const getStyles = (colors, isDark) =>
     taskCard: {
       backgroundColor: colors.card,
       borderRadius: tokens.radius.lg,
-      padding: tokens.spacing.lg,
+      padding: tokens.spacing.md,
       borderWidth: 1,
       borderColor: colors.border,
     },
@@ -870,7 +870,7 @@ const getStyles = (colors, isDark) =>
       justifyContent: 'space-between',
       backgroundColor: colors.card,
       borderRadius: tokens.radius.lg,
-      padding: tokens.spacing.lg,
+      padding: tokens.spacing.md,
       borderWidth: 1,
       borderColor: colors.border,
     },

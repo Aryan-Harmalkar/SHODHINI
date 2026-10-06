@@ -322,7 +322,7 @@ const getStyles = (colors, isDark) =>
     summaryCard: {
       backgroundColor: colors.card,
       borderRadius: tokens.radius.xl,
-      padding: tokens.spacing.lg,
+      padding: tokens.spacing.md,
       marginBottom: tokens.spacing.md,
       borderWidth: 1,
       borderColor: colors.border,
@@ -460,7 +460,7 @@ const getStyles = (colors, isDark) =>
     complaintCard: {
       backgroundColor: colors.card,
       borderRadius: tokens.radius.lg,
-      padding: tokens.spacing.lg,
+      padding: tokens.spacing.md,
       marginBottom: tokens.spacing.sm,
       borderWidth: 1,
       borderColor: colors.border,

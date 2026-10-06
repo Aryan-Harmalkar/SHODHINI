@@ -343,7 +343,7 @@ const getStyles = (colors, isDark) =>
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
-      padding: tokens.spacing.lg,
+      padding: tokens.spacing.md,
       borderBottomWidth: 1,
       borderBottomColor: colors.border,
     },
@@ -364,7 +364,7 @@ const getStyles = (colors, isDark) =>
       flex: 1,
     },
     modalScrollContent: {
-      padding: tokens.spacing.lg,
+      padding: tokens.spacing.md,
       paddingBottom: tokens.spacing.xxl,
     },
     reportPanel: {
@@ -479,7 +479,7 @@ const getStyles = (colors, isDark) =>
       lineHeight: 18,
     },
     modalFooter: {
-      padding: tokens.spacing.lg,
+      padding: tokens.spacing.md,
       borderTopWidth: 1,
       borderTopColor: colors.border,
       backgroundColor: colors.surface,

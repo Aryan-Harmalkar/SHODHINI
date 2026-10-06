@@ -95,7 +95,7 @@ const getStyles = (colors, isDark) => StyleSheet.create({
   themeToggleIcon: { fontSize: 16 },
   backHomeBtn: { paddingVertical: 6, paddingHorizontal: tokens.spacing.sm, borderRadius: tokens.radius.lg, backgroundColor: colors.card, borderWidth: 1, borderColor: colors.border },
   backHomeText: { color: colors.text, fontSize: tokens.typography.size.xs, fontFamily: tokens.typography.family.semibold },
-  scrollContent: { padding: tokens.spacing.lg, paddingBottom: tokens.spacing.xxl },
+  scrollContent: { padding: tokens.spacing.md, paddingBottom: tokens.spacing.xxl },
   loaderContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   loaderText: { marginTop: 12, color: colors.muted, fontSize: tokens.typography.size.sm },
   sectionTitle: { fontSize: tokens.typography.size.md, fontFamily: tokens.typography.family.extrabold, color: colors.text, marginTop: tokens.spacing.xl, marginBottom: tokens.spacing.sm },

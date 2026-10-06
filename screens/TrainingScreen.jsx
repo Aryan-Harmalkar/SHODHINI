@@ -80,7 +80,7 @@ const getStyles = (colors, isDark) => StyleSheet.create({
   headerSubtitle: { fontSize: tokens.typography.size.sm, color: colors.muted, marginBottom: tokens.spacing.xl },
   card: {
     backgroundColor: colors.surface,
-    padding: tokens.spacing.lg,
+    padding: tokens.spacing.md,
     borderRadius: tokens.radius.xl,
     marginBottom: tokens.spacing.md,
     borderWidth: 1,
