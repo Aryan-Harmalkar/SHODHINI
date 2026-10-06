@@ -205,7 +205,7 @@ const getStyles = (colors, isDark) => StyleSheet.create({
     fontFamily: tokens.typography.family.semibold,
   },
   scrollContent: {
-    padding: tokens.spacing.lg,
+    padding: tokens.spacing.md,
     paddingBottom: tokens.spacing.xxl,
   },
   balanceCard: {

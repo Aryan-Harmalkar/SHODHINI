@@ -316,7 +316,7 @@ const getStyles = (colors, isDark) =>
       fontFamily: tokens.typography.family.bold,
     },
     scrollContent: {
-      padding: tokens.spacing.lg,
+      padding: tokens.spacing.md,
       paddingBottom: tokens.spacing.xxl,
     },
     summaryCard: {

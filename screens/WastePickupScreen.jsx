@@ -131,7 +131,7 @@ export default function WastePickupScreen({
           </View>
         </View>
 
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: tokens.spacing.xl }}>
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: tokens.spacing.md }}>
           <Text style={{ fontSize: 64, marginBottom: tokens.spacing.md }}>✅</Text>
           <Text style={[styles.heroTitle, { color: colors.text, textAlign: 'center' }]}>Pickup Booked!</Text>
           <Text style={[styles.heroDesc, { color: colors.muted, textAlign: 'center', marginTop: tokens.spacing.sm, fontSize: tokens.typography.size.base }]}>

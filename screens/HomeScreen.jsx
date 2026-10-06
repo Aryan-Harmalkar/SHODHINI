@@ -1047,7 +1047,7 @@ const getStyles = (colors, isDark) =>
       lineHeight: 16,
     },
     scrollContent: {
-      padding: tokens.spacing.lg,
+      padding: tokens.spacing.md,
       paddingBottom: tokens.spacing.xxl,
     },
     greetingHeader: {
