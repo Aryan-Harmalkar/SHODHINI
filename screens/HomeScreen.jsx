@@ -768,7 +768,7 @@ export default function HomeScreen({ user, onLogout }) {
         <View style={styles.adModalContainer}>
           <View style={styles.adContent}>
             <Image
-              source={{ uri: 'https://images.unsplash.com/photo-1544510807-c81b67f139fb?w=800&q=80' }}
+              source={require('../assets/chole-bhature.jpg')}
               style={styles.adImage}
               resizeMode="cover"
             />
@@ -1299,8 +1299,9 @@ const getStyles = (colors, isDark) =>
     },
     adContent: {
       width: '100%',
-      maxWidth: 400,
-      aspectRatio: 1,
+      maxWidth: 380,
+      aspectRatio: 834 / 1024,
+      maxHeight: '80%',
       backgroundColor: colors.card,
       borderRadius: tokens.radius.xl,
       overflow: 'hidden',
