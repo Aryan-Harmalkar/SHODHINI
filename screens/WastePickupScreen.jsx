@@ -29,6 +29,7 @@ export default function WastePickupScreen({
   const [note, setNote] = useState('');
   const [userPoints, setUserPoints] = useState(ecoPoints);
   const [submitting, setSubmitting] = useState(false);
+  const [isSuccess, setIsSuccess] = useState(false);
 
   // Sync points from props or fetch freshly from database
   useEffect(() => {
@@ -96,25 +97,63 @@ export default function WastePickupScreen({
         });
       }
 
-      if (paymentChoice === 'points') {
-        Alert.alert(
-          'Pickup Booked with Eco Points! 🌱',
-          `Successfully redeemed ${costPoints} Eco Points for your ${selectedPlan === 'standard' ? 'Standard' : 'Bulk'} doorstep pickup. A sanitation worker will arrive at your address. No cash payment needed!`,
-          [{ text: 'OK', onPress: () => onBackToHome() }]
-        );
-      } else {
-        Alert.alert(
-          'Pickup Requested ✅',
-          `A collection partner will be assigned to your address for ${timeSlot} pickup. Please pay ₹${costMoney} directly via Cash or UPI upon arrival.`,
-          [{ text: 'OK', onPress: () => onBackToHome() }]
-        );
-      }
+      setIsSuccess(true);
     } catch (err) {
       Alert.alert('Error', err.message || 'Could not process pickup request.');
     } finally {
       setSubmitting(false);
     }
   };
+
+  if (isSuccess) {
+    return (
+      <View style={styles.container}>
+        <View style={styles.topBar}>
+          <View style={styles.topLeft}>
+            <TouchableOpacity style={styles.menuBtn} onPress={onOpenSidebar} activeOpacity={0.7}>
+              <Text style={styles.menuIcon}>☰</Text>
+            </TouchableOpacity>
+            <Text style={styles.screenTitle}>Doorstep Pickup</Text>
+          </View>
+
+          <View style={styles.topRight}>
+            <TouchableOpacity
+              style={styles.themeToggleBtn}
+              onPress={toggleTheme}
+              activeOpacity={0.7}
+              accessibilityLabel={isDark ? "Switch to Day Mode" : "Switch to Night Mode"}
+            >
+              <Text style={styles.themeToggleIcon}>{isDark ? '☀️' : '🌙'}</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.backHomeBtn} onPress={onBackToHome} activeOpacity={0.7}>
+              <Text style={styles.backHomeText}>Home</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', padding: tokens.spacing.xl }}>
+          <Text style={{ fontSize: 64, marginBottom: tokens.spacing.md }}>✅</Text>
+          <Text style={[styles.heroTitle, { color: colors.text, textAlign: 'center' }]}>Pickup Booked!</Text>
+          <Text style={[styles.heroDesc, { color: colors.muted, textAlign: 'center', marginTop: tokens.spacing.sm, fontSize: tokens.typography.size.base }]}>
+            {paymentChoice === 'points'
+              ? `Successfully redeemed ${costPoints} Eco Points for your ${selectedPlan === 'standard' ? 'Standard' : 'Bulk'} doorstep pickup.\n\nA sanitation worker will arrive at your address. No cash payment needed!`
+              : `A collection partner will be assigned to your address for ${timeSlot} pickup.\n\nPlease pay ₹${costMoney} directly via Cash or UPI upon arrival.`}
+          </Text>
+          <TouchableOpacity
+            style={[styles.submitBtn, { marginTop: tokens.spacing.xxl, paddingHorizontal: tokens.spacing.xl, minWidth: 200 }]}
+            onPress={() => {
+              setIsSuccess(false);
+              setAddress('');
+              setNote('');
+            }}
+            activeOpacity={0.8}
+          >
+            <Text style={styles.submitBtnText}>Book Another Pickup</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>

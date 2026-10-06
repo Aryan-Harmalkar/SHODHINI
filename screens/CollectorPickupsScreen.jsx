@@ -115,26 +115,28 @@ export default function CollectorPickupsScreen({
     setVerifyingComplaint(complaint);
   };
 
-  const handleRejectClick = (complaintId) => {
-    // We could build a full modal, but React Native's Alert has limited inputs.
-    // We'll use a basic Alert with predefined reasons since standard Alerts don't support radio buttons on all platforms well.
+  const handleRejectClick = (complaint) => {
     Alert.alert(
       'Reject Pickup',
       'Select a reason for rejection:',
       [
         { text: 'Cancel', style: 'cancel' },
-        { text: 'Vehicle Full', onPress: () => processReject(complaintId, 'Vehicle Full') },
-        { text: 'Out of Shift', onPress: () => processReject(complaintId, 'Out of Shift') },
-        { text: 'Too Far', onPress: () => processReject(complaintId, 'Too Far') },
+        { text: 'Vehicle Full', onPress: () => processReject(complaint, 'Vehicle Full') },
+        { text: 'Out of Shift', onPress: () => processReject(complaint, 'Out of Shift') },
+        { text: 'Too Far', onPress: () => processReject(complaint, 'Too Far') },
       ],
       { cancelable: true }
     );
   };
 
-  const processReject = async (complaintId, reason) => {
+  const processReject = async (complaint, reason) => {
     if (onRefresh) onRefresh(); // Temporary optimistic update
     try {
-      await rejectComplaint({ complaintId, reason });
+      await rejectComplaint({ 
+        complaintId: complaint.id, 
+        reason,
+        currentQueue: complaint.gc_queue || []
+      });
       if (onRefresh) onRefresh();
     } catch (err) {
       Alert.alert('Error', err.message);
@@ -325,7 +327,7 @@ export default function CollectorPickupsScreen({
 
                       <TouchableOpacity
                         style={[styles.rejectBtn, isUpdating && styles.btnDisabled]}
-                        onPress={() => handleRejectClick(item.id)}
+                        onPress={() => handleRejectClick(item)}
                         disabled={isUpdating}
                         activeOpacity={0.8}
                       >

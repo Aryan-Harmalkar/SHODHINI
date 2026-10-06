@@ -214,6 +214,9 @@ export default function HomeScreen({ user, onLogout }) {
             : c
         )
       );
+    } catch (err) {
+      console.warn('Status update failed', err);
+      Alert.alert('Update Failed', err.message || 'Could not update status');
     } finally {
       setUpdatingId(null);
     }
