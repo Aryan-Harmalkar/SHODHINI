@@ -204,7 +204,7 @@ export default function CollectorPickupsScreen({
         <View style={styles.workerHeader}>
           <View>
             <Text style={styles.workerName}>👷 {user?.name || 'Sanitation Team'}</Text>
-            <Text style={styles.workerArea}>📍 {user?.area || 'Assagao - Ward 1 (Ghateshwar Nagar)'}</Text>
+
           </View>
           <TouchableOpacity
             style={[
@@ -440,7 +440,7 @@ export default function CollectorPickupsScreen({
               <View style={styles.emptyBox}>
                 <Text style={styles.emptyIcon}>🎉</Text>
                 <Text style={styles.emptyTitle}>All Spots Cleared</Text>
-                <Text style={styles.emptySub}>No active hotspots to route to in your ward.</Text>
+                <Text style={styles.emptySub}>No active pickups right now.</Text>
               </View>
             ) : (
               activeGeoTasks.map((item, idx) => (

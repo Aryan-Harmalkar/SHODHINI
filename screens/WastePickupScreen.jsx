@@ -520,7 +520,7 @@ const getStyles = (colors, isDark) =>
     },
     heroDesc: {
       fontSize: tokens.typography.size.xs,
-      color: 'rgba(255,255,255,0.92)',
+      color: isDark ? 'rgba(0,0,0,0.7)' : 'rgba(255,255,255,0.92)',
       lineHeight: 18,
     },
     sectionLabel: {

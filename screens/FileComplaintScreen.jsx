@@ -301,10 +301,7 @@ export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar 
       return;
     }
 
-    if (!selectedAreaId) {
-      setErrorMessage('Please select the ward or area where the waste is located.');
-      return;
-    }
+
 
     const citizenId = currentUser?.id;
     if (!citizenId) {
@@ -463,9 +460,7 @@ export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar 
                       <Text style={styles.geotagTime}>{photoTimestamp || 'Just now'}</Text>
                     </View>
 
-                    <View style={styles.geotagMetaRow}>
-                      <Text style={styles.geotagWard}>🏛️ {selectedAreaName || 'Assagao - Ward 1 (Ghateshwar Nagar)'}</Text>
-                    </View>
+
                     
                     <View style={[styles.geotagMetaRow, { marginTop: 4 }]}>
                       <Text style={styles.geotagWard}>
@@ -558,33 +553,10 @@ export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar 
               </View>
             )}
 
-            {/* STEP 3: AREA / WARD LOCATION */}
+            {/* STEP 3: DESCRIPTION (STRICTLY OPTIONAL) */}
             <View style={styles.sectionCard}>
               <View style={styles.sectionHeaderRow}>
                 <Text style={styles.sectionNumber}>3</Text>
-                <Text style={styles.sectionTitle}>Area / Ward Location</Text>
-              </View>
-              <TouchableOpacity
-                style={styles.areaSelectBtn}
-                onPress={() => setAreaModalVisible(true)}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.areaSelectBtnText}>
-                  📍 {selectedAreaName || 'Select Ward'}
-                </Text>
-                <Text style={styles.areaSelectBtnArrow}>Change ▼</Text>
-              </TouchableOpacity>
-              {readableAddress?.shortAddress ? (
-                <Text style={styles.fieldHint}>
-                  Detected nearby: {readableAddress.shortAddress}
-                </Text>
-              ) : null}
-            </View>
-
-            {/* STEP 4: DESCRIPTION (STRICTLY OPTIONAL) */}
-            <View style={styles.sectionCard}>
-              <View style={styles.sectionHeaderRow}>
-                <Text style={styles.sectionNumber}>4</Text>
                 <Text style={styles.sectionTitle}>Description (Optional)</Text>
               </View>
               <TextInput
@@ -604,7 +576,7 @@ export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar 
               </Text>
             </View>
 
-            {/* STEP 5: SMART SUBMIT BUTTON */}
+            {/* STEP 4: SMART SUBMIT BUTTON */}
             {aiResult && !aiResult.isWaste ? (
               <View style={styles.blockedSubmitBox}>
                 <Text style={styles.blockedSubmitTitle}>🚫 Submission Disabled</Text>
@@ -672,51 +644,7 @@ export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar 
         )}
       </ScrollView>
 
-      {/* Ward Selection Modal */}
-      <Modal
-        visible={areaModalVisible}
-        transparent
-        animationType="slide"
-        onRequestClose={() => setAreaModalVisible(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalCard}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Select Assagao Ward (7 Wards)</Text>
-              <TouchableOpacity
-                onPress={() => setAreaModalVisible(false)}
-                style={styles.modalCloseBtn}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.modalCloseText}>✕</Text>
-              </TouchableOpacity>
-            </View>
 
-            <ScrollView style={styles.modalList}>
-              {areas.map((a) => {
-                const isSelected = a.id === selectedAreaId;
-                return (
-                  <TouchableOpacity
-                    key={a.id}
-                    style={[styles.areaOption, isSelected && styles.areaOptionSelected]}
-                    onPress={() => {
-                      setSelectedAreaId(a.id);
-                      setSelectedAreaName(a.name);
-                      setAreaModalVisible(false);
-                    }}
-                    activeOpacity={0.7}
-                  >
-                    <Text style={[styles.areaOptionText, isSelected && styles.areaOptionTextSelected]}>
-                      📍 {a.name}
-                    </Text>
-                    {isSelected && <Text style={styles.areaCheck}>✓</Text>}
-                  </TouchableOpacity>
-                );
-              })}
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
     </View>
   );
 }

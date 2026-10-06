@@ -247,7 +247,7 @@ export default function CollectorTasksScreen({
                 </View>
               )}
             </View>
-            <Text style={styles.workerArea}>📍 {user?.area || 'Assagao - Ward 1 (Ghateshwar Nagar)'}</Text>
+
           </View>
           <TouchableOpacity
             style={[
@@ -475,7 +475,7 @@ export default function CollectorTasksScreen({
               <View style={styles.emptyBox}>
                 <Text style={styles.emptyIcon}>🎉</Text>
                 <Text style={styles.emptyTitle}>All Spots Cleared</Text>
-                <Text style={styles.emptySub}>No active hotspots to route to in your ward.</Text>
+                <Text style={styles.emptySub}>No active hotspots to route to right now.</Text>
               </View>
             ) : (
               activeGeoTasks.map((item, idx) => (

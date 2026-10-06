@@ -286,17 +286,6 @@ export default function HomeScreen({ user, onLogout }) {
           />
         );
       }
-      if (currentScreen === 'scoreboard') {
-        return (
-          <ScoreboardScreen
-            user={user}
-            ecoPoints={ecoPoints}
-            onBackToHome={() => setCurrentScreen('home')}
-            onOpenSidebar={() => setSidebarVisible(true)}
-            isCollector={false}
-          />
-        );
-      }
 
       if (currentScreen === 'supervisor_dashboard') {
         return (
@@ -343,14 +332,12 @@ export default function HomeScreen({ user, onLogout }) {
           />
         );
       }
-      if (currentScreen === 'scoreboard') {
+
+      if (currentScreen === 'supervisor_dashboard') {
         return (
-          <ScoreboardScreen
-            user={user}
-            ecoPoints={0}
+          <SupervisorDashboardScreen
             onBackToHome={() => setCurrentScreen('home')}
             onOpenSidebar={() => setSidebarVisible(true)}
-            isCollector={true}
           />
         );
       }
@@ -434,7 +421,7 @@ export default function HomeScreen({ user, onLogout }) {
             <View style={[styles.greetingHeader, isDesktop && { flex: 1, marginBottom: 0 }]}>
               <Text style={styles.greetingTitle}>Welcome, {user?.name || 'User'}</Text>
               <Text style={styles.greetingSub}>
-                📍 {user?.area || 'Assagao - Ward 1 (Ghateshwar Nagar)'} • {isCollector ? 'Garbage Collector' : 'Citizen Resident'}
+                {isCollector ? 'Garbage Collector' : 'Citizen Resident'}
               </Text>
             </View>
 
@@ -531,10 +518,10 @@ export default function HomeScreen({ user, onLogout }) {
                     </TouchableOpacity>
                   </View>
                   <Text style={styles.liveAlertTitle}>
-                    {liveAlert.category || 'General Waste'} • {user?.area || 'Assagao - Ward 1 (Ghateshwar Nagar)'}
+                    {liveAlert.category || 'General Waste'}
                   </Text>
                   <Text style={styles.liveAlertDesc} numberOfLines={2}>
-                    {liveAlert.description || 'New waste issue filed in your ward.'}
+                    {liveAlert.description || 'New waste issue filed in your area.'}
                   </Text>
                   <View style={styles.liveAlertActions}>
                     <TouchableOpacity
@@ -568,7 +555,7 @@ export default function HomeScreen({ user, onLogout }) {
                     </Text>
                     <Text style={styles.dutyCardSubtitle}>
                       {isDutyOnline
-                        ? `Live alerts active for ${user?.area || 'Assagao - Ward 1 (Ghateshwar Nagar)'}`
+                        ? `Live alerts active`
                         : 'Complaints & notifications paused while off duty.'}
                     </Text>
                   </View>
@@ -590,7 +577,7 @@ export default function HomeScreen({ user, onLogout }) {
                   <View style={{ flex: 1 }}>
                     <Text style={styles.offlineNoticeTitle}>You are currently Off Duty</Text>
                     <Text style={styles.offlineNoticeDesc}>
-                      Switch to Online mode to receive realtime complaint dispatches and push notifications in your ward.
+                      Switch to Online mode to receive realtime complaint dispatches and push notifications.
                     </Text>
                   </View>
                 </View>

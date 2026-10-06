@@ -64,7 +64,7 @@ export default function Sidebar({
             <View style={styles.userInfo}>
               <Text style={styles.userName}>{user?.name || 'User'}</Text>
               <Text style={styles.userRole}>
-                {isWorker ? 'Sanitation Worker' : 'Citizen'} • {user?.area || 'Assagao - Ward 1 (Ghateshwar Nagar)'}
+                {isWorker ? 'Sanitation Worker' : 'Citizen'}
               </Text>
             </View>
           </View>
@@ -152,17 +152,6 @@ export default function Sidebar({
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={[styles.menuItem, currentScreen === 'scoreboard' && styles.activeMenuItem]}
-                onPress={() => { onNavigate('scoreboard'); onClose(); }}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.menuIcon}>🏆</Text>
-                <Text style={[styles.menuText, currentScreen === 'scoreboard' && styles.activeMenuText]}>
-                  Ward Scoreboard
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
                 style={[styles.menuItem, currentScreen === 'supervisor_dashboard' && styles.activeMenuItem]}
                 onPress={() => { onNavigate('supervisor_dashboard'); onClose(); }}
                 activeOpacity={0.7}
@@ -218,16 +207,6 @@ export default function Sidebar({
                 </Text>
               </TouchableOpacity>
 
-              <TouchableOpacity
-                style={[styles.menuItem, currentScreen === 'scoreboard' && styles.activeMenuItem]}
-                onPress={() => { onNavigate('scoreboard'); onClose(); }}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.menuIcon}>🏆</Text>
-                <Text style={[styles.menuText, currentScreen === 'scoreboard' && styles.activeMenuText]}>
-                  Scoreboard
-                </Text>
-              </TouchableOpacity>
 
               <TouchableOpacity
                 style={[styles.menuItem, currentScreen === 'supervisor_dashboard' && styles.activeMenuItem]}

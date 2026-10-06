@@ -17,7 +17,7 @@ import { signUpUser, loginUser, getAreas } from '../db/database';
 import { tokens, useTheme } from '../lib/theme';
 
 function NestedButton({ onPress, title, loading, disabled, isDark, colors }) {
-  const scaleValue = useRef(new Animated.Value(1)).current;
+  const [scaleValue] = useState(() => new Animated.Value(1));
 
   const handlePressIn = () => {
     Animated.spring(scaleValue, {
@@ -140,10 +140,7 @@ export default function AuthScreen({ onAuthSuccess }) {
       setErrorMessage('Please enter your full name.');
       return;
     }
-    if (mode === 'signup' && !selectedAreaId) {
-      setErrorMessage('Please select your area/ward.');
-      return;
-    }
+
 
     setErrorMessage('');
     setLoading(true);
@@ -211,8 +208,7 @@ export default function AuthScreen({ onAuthSuccess }) {
           <Text style={dynamicStyles.brandSubtitle}>Village Panchayat Assagao • Clean Waste</Text>
         </View>
 
-        <View style={dynamicStyles.doubleBezelShell}>
-          <View style={dynamicStyles.doubleBezelCore}>
+        <View style={dynamicStyles.authCard}>
             <View style={dynamicStyles.roleSelector}>
               <TouchableOpacity style={[dynamicStyles.roleTab, role === 'citizen' && dynamicStyles.activeRoleTab]} onPress={() => handleRoleChange('citizen')} activeOpacity={0.8}>
                 <Text style={[dynamicStyles.roleTabText, role === 'citizen' && dynamicStyles.activeRoleTabText]}>Citizen</Text>
@@ -245,24 +241,7 @@ export default function AuthScreen({ onAuthSuccess }) {
                   autoCapitalize: 'words',
                   placeholder: 'Enter your full name',
                 })}
-                <View style={dynamicStyles.inputGroup}>
-                  <Text style={dynamicStyles.label}>
-                    {role === 'worker' ? 'Assigned Ward' : 'Residential Ward'}
-                  </Text>
-                  <TouchableOpacity
-                    style={[dynamicStyles.areaPickerBtn, areasLoading && dynamicStyles.areaPickerBtnDisabled]}
-                    onPress={() => setAreaModalVisible(true)}
-                    disabled={areasLoading}
-                    activeOpacity={0.8}
-                  >
-                    <Text style={[dynamicStyles.areaPickerText, !selectedAreaName && { color: colors.muted }]}>
-                      {areasLoading ? 'Loading wards...' : selectedAreaName ? selectedAreaName : 'Select Assagao Ward'}
-                    </Text>
-                    <View style={dynamicStyles.areaPickerIconWrap}>
-                      <Text style={dynamicStyles.areaPickerArrow}>▼</Text>
-                    </View>
-                  </TouchableOpacity>
-                </View>
+
               </>
             )}
 
@@ -299,44 +278,9 @@ export default function AuthScreen({ onAuthSuccess }) {
               colors={colors}
             />
           </View>
-        </View>
       </ScrollView>
 
-      <Modal visible={areaModalVisible} transparent animationType="slide" onRequestClose={() => setAreaModalVisible(false)}>
-        <View style={dynamicStyles.modalOverlay}>
-          <View style={dynamicStyles.modalDoubleBezelShell}>
-            <View style={dynamicStyles.modalDoubleBezelCore}>
-              <View style={dynamicStyles.modalHeader}>
-                <Text style={dynamicStyles.modalTitle}>Select Ward</Text>
-                <TouchableOpacity onPress={() => setAreaModalVisible(false)} style={dynamicStyles.modalCloseBtn}>
-                  <Text style={dynamicStyles.modalCloseText}>✕</Text>
-                </TouchableOpacity>
-              </View>
-              <ScrollView style={dynamicStyles.modalList}>
-                {areas.map((a) => {
-                  const isSelected = a.id === selectedAreaId;
-                  return (
-                    <TouchableOpacity
-                      key={a.id}
-                      style={[dynamicStyles.areaOption, isSelected && dynamicStyles.areaOptionSelected]}
-                      onPress={() => {
-                        setSelectedAreaId(a.id);
-                        setSelectedAreaName(a.name);
-                        setAreaModalVisible(false);
-                      }}
-                      activeOpacity={0.8}
-                    >
-                      <Text style={[dynamicStyles.areaOptionText, isSelected && dynamicStyles.areaOptionTextSelected]}>{a.name}</Text>
-                      {isSelected && <Text style={dynamicStyles.areaCheck}>✓</Text>}
-                    </TouchableOpacity>
-                  );
-                })}
-                <View style={{ height: tokens.spacing.xl }} />
-              </ScrollView>
-            </View>
-          </View>
-        </View>
-      </Modal>
+
     </KeyboardAvoidingView>
   );
 }
@@ -384,24 +328,19 @@ const getStyles = (colors, isDark) => StyleSheet.create({
   brandTitle: { fontFamily: tokens.typography.family.extrabold, fontSize: tokens.typography.size.xxxl, color: colors.text, letterSpacing: -1, lineHeight: 52 },
   brandSubtitle: { fontFamily: tokens.typography.family.medium, fontSize: tokens.typography.size.base, color: colors.muted, marginTop: tokens.spacing.xs },
   
-  doubleBezelShell: {
+  authCard: {
     width: '100%', maxWidth: 440, alignSelf: 'center',
-    backgroundColor: isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)',
-    padding: 8,
-    borderRadius: 40,
-    borderWidth: 1,
-    borderColor: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
-  },
-  doubleBezelCore: {
     backgroundColor: colors.card,
     borderRadius: 32,
-    padding: tokens.spacing.lg,
-    ...(isDark ? {} : tokens.shadow.lg),
+    padding: tokens.spacing.xl,
+    borderWidth: 1,
+    borderColor: isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.05)',
+    ...(isDark ? {} : tokens.shadow.xl),
   },
 
   roleSelector: { flexDirection: 'row', backgroundColor: colors.background, padding: 4, borderRadius: tokens.radius.full, marginBottom: tokens.spacing.xl },
   roleTab: { flex: 1, paddingVertical: 12, alignItems: 'center', borderRadius: tokens.radius.full },
-  activeRoleTab: { backgroundColor: colors.card, ...(isDark ? { borderWidth: 1, borderColor: colors.border } : tokens.shadow.sm) },
+  activeRoleTab: { backgroundColor: colors.card, ...(isDark ? {} : tokens.shadow.sm) },
   roleTabText: { fontFamily: tokens.typography.family.medium, fontSize: tokens.typography.size.sm, color: colors.muted },
   activeRoleTabText: { fontFamily: tokens.typography.family.bold, color: colors.text },
   
@@ -437,8 +376,7 @@ const getStyles = (colors, isDark) => StyleSheet.create({
   areaPickerArrow: { fontSize: 10, color: colors.muted },
 
   modalOverlay: { flex: 1, backgroundColor: colors.modalOverlay, justifyContent: 'flex-end', padding: tokens.spacing.sm },
-  modalDoubleBezelShell: { backgroundColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.05)', padding: 8, borderRadius: 40, paddingBottom: 0 },
-  modalDoubleBezelCore: { backgroundColor: colors.card, borderTopLeftRadius: 32, borderTopRightRadius: 32, maxHeight: '80%', padding: tokens.spacing.lg, paddingBottom: 0 },
+  modalCard: { backgroundColor: colors.card, borderTopLeftRadius: 32, borderTopRightRadius: 32, maxHeight: '80%', padding: tokens.spacing.xl, paddingBottom: 0 },
   modalHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: tokens.spacing.xl },
   modalTitle: { fontFamily: tokens.typography.family.bold, fontSize: tokens.typography.size.lg, color: colors.text },
   modalCloseBtn: { width: 44, height: 44, borderRadius: 22, backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center' },
@@ -448,5 +386,5 @@ const getStyles = (colors, isDark) => StyleSheet.create({
   areaOptionSelected: { backgroundColor: isDark ? 'rgba(255,255,255,0.05)' : '#000' },
   areaOptionText: { fontFamily: tokens.typography.family.medium, fontSize: tokens.typography.size.base, color: colors.text },
   areaOptionTextSelected: { color: isDark ? '#fff' : '#fff', fontFamily: tokens.typography.family.bold },
-  areaCheck: { fontFamily: tokens.typography.family.bold, color: isDark ? '#000' : '#fff', fontSize: tokens.typography.size.base },
+  areaCheck: { fontFamily: tokens.typography.family.bold, color: isDark ? '#fff' : '#fff', fontSize: tokens.typography.size.base },
 });
