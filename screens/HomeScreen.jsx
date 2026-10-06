@@ -10,6 +10,7 @@ import {
   Image,
   useWindowDimensions,
   Platform,
+  Modal,
 } from 'react-native';
 import Sidebar from '../components/Sidebar';
 import FileComplaintScreen from './FileComplaintScreen';
@@ -49,6 +50,17 @@ export default function HomeScreen({ user, onLogout }) {
   const [ecoPoints, setEcoPoints] = useState(0);
   const [rewardsTab, setRewardsTab] = useState('redeem');
   const [collectorTasksTab, setCollectorTasksTab] = useState('available');
+  const [showAdPopup, setShowAdPopup] = useState(true);
+  const [adCanClose, setAdCanClose] = useState(false);
+
+  useEffect(() => {
+    if (showAdPopup) {
+      const timer = setTimeout(() => {
+        setAdCanClose(true);
+      }, 5000);
+      return () => clearTimeout(timer);
+    }
+  }, [showAdPopup]);
 
   const isCollector = user?.role === 'worker';
 
@@ -746,6 +758,41 @@ export default function HomeScreen({ user, onLogout }) {
           }}
         />
       )}
+
+      {/* Ad Popup */}
+      <Modal
+        visible={showAdPopup && currentScreen === 'home'}
+        transparent={true}
+        animationType="fade"
+      >
+        <View style={styles.adModalContainer}>
+          <View style={styles.adContent}>
+            <Image
+              source={{ uri: 'https://images.unsplash.com/photo-1544510807-c81b67f139fb?w=800&q=80' }}
+              style={styles.adImage}
+              resizeMode="cover"
+            />
+            <View style={styles.adOverlay}>
+              <Text style={styles.adTitle}>Break! Chole Batura</Text>
+              <Text style={styles.adSubtitle}>Pangat Pure-Veg Restaurant</Text>
+            </View>
+            {adCanClose ? (
+              <TouchableOpacity
+                style={styles.adCloseButton}
+                onPress={() => setShowAdPopup(false)}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.adCloseText}>✕</Text>
+              </TouchableOpacity>
+            ) : (
+              <View style={styles.adCloseButtonDisabled}>
+                <ActivityIndicator size="small" color="#fff" />
+              </View>
+            )}
+          </View>
+        </View>
+      </Modal>
+
     </View>
   );
 }
@@ -1242,5 +1289,73 @@ const getStyles = (colors, isDark) =>
       color: colors.muted,
       textAlign: 'center',
       marginTop: 2,
+    },
+    adModalContainer: {
+      flex: 1,
+      backgroundColor: 'rgba(0,0,0,0.7)',
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: tokens.spacing.xl,
+    },
+    adContent: {
+      width: '100%',
+      maxWidth: 400,
+      aspectRatio: 1,
+      backgroundColor: colors.card,
+      borderRadius: tokens.radius.xl,
+      overflow: 'hidden',
+      position: 'relative',
+      ...tokens.shadow.lg,
+    },
+    adImage: {
+      width: '100%',
+      height: '100%',
+    },
+    adOverlay: {
+      position: 'absolute',
+      bottom: 0,
+      left: 0,
+      right: 0,
+      padding: tokens.spacing.md,
+      backgroundColor: 'rgba(0,0,0,0.6)',
+    },
+    adTitle: {
+      color: '#fff',
+      fontSize: tokens.typography.size.lg,
+      fontFamily: tokens.typography.family.extrabold,
+    },
+    adSubtitle: {
+      color: '#ddd',
+      fontSize: tokens.typography.size.sm,
+      marginTop: 4,
+    },
+    adCloseButton: {
+      position: 'absolute',
+      top: tokens.spacing.sm,
+      right: tokens.spacing.sm,
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      backgroundColor: 'rgba(0,0,0,0.5)',
+      justifyContent: 'center',
+      alignItems: 'center',
+      borderWidth: 1,
+      borderColor: 'rgba(255,255,255,0.2)',
+    },
+    adCloseButtonDisabled: {
+      position: 'absolute',
+      top: tokens.spacing.sm,
+      right: tokens.spacing.sm,
+      width: 36,
+      height: 36,
+      borderRadius: 18,
+      backgroundColor: 'rgba(0,0,0,0.3)',
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    adCloseText: {
+      color: '#fff',
+      fontSize: 16,
+      fontFamily: tokens.typography.family.bold,
     },
   });
