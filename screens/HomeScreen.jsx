@@ -21,6 +21,7 @@ import ScoreboardScreen from './ScoreboardScreen';
 import RewardsScreen from './RewardsScreen';
 import CollectorTasksScreen from './CollectorTasksScreen';
 import CollectorPickupsScreen from './CollectorPickupsScreen';
+import ClassificationScreen from './ClassificationScreen';
 import SupervisorDashboardScreen from './SupervisorDashboardScreen';
 import TrainingScreen from './TrainingScreen';
 import ComplaintCard from '../components/ComplaintCard';
@@ -290,6 +291,15 @@ export default function HomeScreen({ user, onLogout }) {
           />
         );
       }
+      if (currentScreen === 'classification') {
+        return (
+          <ClassificationScreen
+            onBackToHome={() => setCurrentScreen('home')}
+            onOpenSidebar={() => setSidebarVisible(true)}
+          />
+        );
+      }
+
       if (currentScreen === 'waste_pickup') {
         return (
           <WastePickupScreen
@@ -323,6 +333,15 @@ export default function HomeScreen({ user, onLogout }) {
     }
 
     if (isCollector) {
+      if (currentScreen === 'classification') {
+        return (
+          <ClassificationScreen
+            onBackToHome={() => setCurrentScreen('home')}
+            onOpenSidebar={() => setSidebarVisible(true)}
+          />
+        );
+      }
+
       if (currentScreen === 'collector_tasks') {
         return (
           <CollectorTasksScreen

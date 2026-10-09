@@ -163,6 +163,17 @@ export default function Sidebar({
               </TouchableOpacity>
 
               <TouchableOpacity
+                style={[styles.menuItem, currentScreen === 'classification' && styles.activeMenuItem]}
+                onPress={() => { onNavigate('classification'); onClose(); }}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.menuIcon}>🔍</Text>
+                <Text style={[styles.menuText, currentScreen === 'classification' && styles.activeMenuText]}>
+                  AI Classification
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
                 style={[styles.menuItem, currentScreen === 'training' && styles.activeMenuItem]}
                 onPress={() => { onNavigate('training'); onClose(); }}
                 activeOpacity={0.7}
@@ -229,6 +240,17 @@ export default function Sidebar({
                 <Text style={styles.menuIcon}>🚚</Text>
                 <Text style={[styles.menuText, currentScreen === 'waste_pickup' && styles.activeMenuText]}>
                   Doorstep Pickup
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.menuItem, currentScreen === 'classification' && styles.activeMenuItem]}
+                onPress={() => { onNavigate('classification'); onClose(); }}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.menuIcon}>🤖</Text>
+                <Text style={[styles.menuText, currentScreen === 'classification' && styles.activeMenuText]}>
+                  AI Classification
                 </Text>
               </TouchableOpacity>
 
