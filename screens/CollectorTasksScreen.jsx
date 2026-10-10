@@ -77,7 +77,7 @@ export default function CollectorTasksScreen({
     (c) => c.status === 'Pending GC' && c.assigned_worker_id === user?.id
   );
 
-  const [now, setNow] = useState(Date.now());
+  const [now, setNow] = useState(() => Date.now());
   const autoRejectedRef = useRef(new Set());
   const [rejectingId, setRejectingId] = useState(null);
 
@@ -168,7 +168,7 @@ export default function CollectorTasksScreen({
       {priorityTasks.length > 0 && isDutyOnline && (
         <View style={{ paddingHorizontal: 16, paddingTop: 16 }}>
           {priorityTasks.map((pt) => {
-            const diffMs = Date.now() - new Date(pt.assigned_at).getTime();
+            const diffMs = now - new Date(pt.assigned_at).getTime();
             const remaining = Math.max(0, 180 - Math.floor(diffMs / 1000));
             const mins = Math.floor(remaining / 60);
             const secs = remaining % 60;
@@ -414,7 +414,7 @@ export default function CollectorTasksScreen({
                       </View>
                     </View>
 
-                    {item.accepted_at && (Date.now() - new Date(item.accepted_at).getTime()) > 3600000 && (
+                    {item.accepted_at && (now - new Date(item.accepted_at).getTime()) > 3600000 && (
                       <View style={{ backgroundColor: '#fef2f2', padding: 8, borderRadius: 6, marginBottom: 8, borderWidth: 1, borderColor: '#ef4444' }}>
                         <Text style={{ color: '#b91c1c', fontWeight: 'bold', fontSize: 13 }}>
                           ⚠️ SLA Warning: You accepted this over 1 hour ago. Please arrive immediately.
@@ -488,7 +488,7 @@ export default function CollectorTasksScreen({
                     </View>
                   </View>
                   
-                  {item.accepted_at && (Date.now() - new Date(item.accepted_at).getTime()) > 3600000 && (
+                  {item.accepted_at && (now - new Date(item.accepted_at).getTime()) > 3600000 && (
                     <Text style={{ color: '#b91c1c', fontWeight: 'bold', fontSize: 12, marginTop: 4, marginLeft: 36 }}>
                       ⚠️ SLA Missed! (Over 1 hr)
                     </Text>

@@ -22,10 +22,6 @@ export default function RewardsScreen({
 
   const [activeTab, setActiveTab] = useState('history');
 
-  useEffect(() => {
-    setActiveTab('history');
-  }, [initialTab]);
-
   // Redemption and coupons removed for now
 
   const pointsHistory = [

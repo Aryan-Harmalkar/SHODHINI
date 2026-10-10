@@ -185,7 +185,7 @@ export default function HomeScreen({ user, onLogout }) {
     };
   }, [isCollector, user?.area_id]);
 
-  const loadEcoPoints = async () => {
+  async function loadEcoPoints() {
     if (!user?.id || isCollector) return;
     try {
       const points = await getUserEcoPoints(user.id);
@@ -195,7 +195,7 @@ export default function HomeScreen({ user, onLogout }) {
     }
   };
 
-  const loadCollectorData = async () => {
+  async function loadCollectorData() {
     if (!user?.area_id) return;
     try {
       const list = await getAreaComplaints(user.area_id);

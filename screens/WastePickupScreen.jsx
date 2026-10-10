@@ -31,10 +31,9 @@ export default function WastePickupScreen({
   const [submitting, setSubmitting] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
 
-  // Sync points from props or fetch freshly from database
-  useEffect(() => {
-    setUserPoints(ecoPoints);
-  }, [ecoPoints]);
+  // We use userPoints in state so we can deduct it instantly upon success,
+  // but we also sync if the parent passes a new value (handled outside useEffect if necessary,
+  // or we just rely on the fetch below).
 
   useEffect(() => {
     if (user?.id) {
@@ -45,7 +44,7 @@ export default function WastePickupScreen({
         }
       });
     }
-  }, [user?.id]);
+  }, [user?.id, onPointsUpdated]);
 
   const costMoney = selectedPlan === 'standard' ? 40 : 120;
   const costPoints = selectedPlan === 'standard' ? 40 : 120;

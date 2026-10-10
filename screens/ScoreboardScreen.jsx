@@ -36,48 +36,67 @@ export default function ScoreboardScreen({
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  const loadData = useCallback(async () => {
-    try {
-      const [citizenList, wardList, collectorData] = await Promise.all([
-        getCitizenLeaderboard(),
-        getWardLeaderboard(),
-        isWorker ? getCollectorCleanupStats(user?.id, user?.area_id) : Promise.resolve({ completed: 0, active: 0 }),
-      ]);
+  const fetchLeaderboardData = async () => {
+    const [citizenList, wardList, collectorData] = await Promise.all([
+      getCitizenLeaderboard(),
+      getWardLeaderboard(),
+      isWorker ? getCollectorCleanupStats(user?.id, user?.area_id) : Promise.resolve({ completed: 0, active: 0 }),
+    ]);
 
-      let finalCitizens = citizenList || [];
-      if (!isWorker && user?.id) {
-        const found = finalCitizens.some((c) => c.id === user.id);
-        if (!found) {
-          finalCitizens = [
-            ...finalCitizens,
-            {
-              id: user.id,
-              name: user.name || 'Citizen',
-              ward: userWardName,
-              points: Number(ecoPoints || 0),
-            },
-          ].sort((a, b) => b.points - a.points).map((item, idx) => ({ ...item, rank: idx + 1 }));
+    let finalCitizens = citizenList || [];
+    if (!isWorker && user?.id) {
+      const found = finalCitizens.some((c) => c.id === user.id);
+      if (!found) {
+        finalCitizens = [
+          ...finalCitizens,
+          {
+            id: user.id,
+            name: user.name || 'Citizen',
+            ward: userWardName,
+            points: Number(ecoPoints || 0),
+          },
+        ].sort((a, b) => b.points - a.points).map((item, idx) => ({ ...item, rank: idx + 1 }));
+      }
+    }
+
+    return { finalCitizens, wardList, collectorData };
+  };
+
+  useEffect(() => {
+    let mounted = true;
+    const load = async () => {
+      try {
+        const { finalCitizens, wardList, collectorData } = await fetchLeaderboardData();
+        if (mounted) {
+          setCitizens(finalCitizens);
+          setWards(wardList || []);
+          setWorkerStats(collectorData || { completed: 0, active: 0 });
+        }
+      } catch (err) {
+        console.warn('Error loading scoreboard data:', err);
+      } finally {
+        if (mounted) {
+          setLoading(false);
+          setRefreshing(false);
         }
       }
+    };
+    load();
+    return () => { mounted = false; };
+  }, [user?.id, user?.area_id, isWorker, userWardName, ecoPoints]);
 
+  const onRefresh = async () => {
+    setRefreshing(true);
+    try {
+      const { finalCitizens, wardList, collectorData } = await fetchLeaderboardData();
       setCitizens(finalCitizens);
       setWards(wardList || []);
       setWorkerStats(collectorData || { completed: 0, active: 0 });
     } catch (err) {
-      console.warn('Error loading scoreboard data:', err);
+      console.warn('Error refreshing scoreboard:', err);
     } finally {
-      setLoading(false);
       setRefreshing(false);
     }
-  }, [user?.id, user?.name, user?.area_id, isWorker, userWardName, ecoPoints]);
-
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
-
-  const onRefresh = () => {
-    setRefreshing(true);
-    loadData();
   };
 
   const currentCitizenEntry = !isWorker && user?.id ? citizens.find((c) => c.id === user.id) : null;

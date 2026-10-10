@@ -760,6 +760,13 @@ export async function getAreaComplaints(areaId) {
  * Update complaint status (collector action)
  */
 export async function updateComplaintStatus({ complaintId, status, workerId, collectorImageBase64 = null, resolvedAt = null, collectorLatitude = null, collectorLongitude = null }) {
+  // Check the old status and get citizen_id
+  const { data: oldData } = await supabase
+    .from('complaints')
+    .select('status, citizen_id, eco_points')
+    .eq('id', complaintId)
+    .single();
+
   const updatePayload = { status };
   if (workerId) {
     updatePayload.assigned_worker_id = workerId;
@@ -780,6 +787,13 @@ export async function updateComplaintStatus({ complaintId, status, workerId, col
     updatePayload.collector_longitude = collectorLongitude;
   }
 
+  // Award points if transitioning to Completed
+  let pointsAwarded = 0;
+  if (status === 'Completed' && oldData?.status !== 'Completed' && !oldData?.eco_points) {
+    updatePayload.eco_points = 15;
+    pointsAwarded = 15;
+  }
+
   const { data, error } = await supabase
     .from('complaints')
     .update(updatePayload)
@@ -789,6 +803,22 @@ export async function updateComplaintStatus({ complaintId, status, workerId, col
 
   if (error) {
     throw new Error(error.message || 'Failed to update complaint status.');
+  }
+
+  // If points were awarded, update the citizen's profile
+  if (pointsAwarded > 0 && oldData?.citizen_id) {
+    const { data: profile } = await supabase
+      .from('profiles')
+      .select('eco_points')
+      .eq('id', oldData.citizen_id)
+      .single();
+    
+    if (profile) {
+      await supabase
+        .from('profiles')
+        .update({ eco_points: (profile.eco_points || 0) + pointsAwarded })
+        .eq('id', oldData.citizen_id);
+    }
   }
 
   return data;
