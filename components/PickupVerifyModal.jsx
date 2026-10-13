@@ -12,9 +12,9 @@ import {
   Modal,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import * as Location from 'expo-location';
 import { tokens, useTheme } from '../lib/theme';
 import { getComplaintDetails } from '../db/database';
+import { extractLocationFromPhoto, getImmediateDeviceLocation } from '../lib/geotag';
 
 
 // Haversine great-circle distance in metres
@@ -56,6 +56,7 @@ export default function PickupVerifyModal({
   const [citizenDetails, setCitizenDetails] = useState(null);
   const [garbageImageUri, setGarbageImageUri] = useState(null);
   const [garbageImageBase64, setGarbageImageBase64] = useState(null);
+  const [collectorLoc, setCollectorLoc] = useState(null);
   const [locMessage, setLocMessage] = useState('');
   const [isFetchingDetails, setIsFetchingDetails] = useState(false);
   const [isVerifyingLoc, setIsVerifyingLoc] = useState(false);
@@ -66,6 +67,7 @@ export default function PickupVerifyModal({
   const handleClose = () => {
     setGarbageImageUri(null);
     setGarbageImageBase64(null);
+    setCollectorLoc(null);
     setLocMessage('');
     setCitizenDetails(null);
     setCapturedAt(null);
@@ -108,19 +110,18 @@ export default function PickupVerifyModal({
         throw new Error('Camera permission is required to take photo.');
       }
 
-      const { status: locStatus } = await Location.requestForegroundPermissionsAsync();
-      if (locStatus !== 'granted') {
-        throw new Error('Location permission is required to verify pickup.');
-      }
-
-      setLocMessage('');
+      setLocMessage('Opening camera & extracting location...');
       setIsVerifyingLoc(true);
+
+      // Prewarm GPS in parallel
+      const prewarmedLocPromise = getImmediateDeviceLocation({ timeoutMs: 10000 });
 
       const result = await ImagePicker.launchCameraAsync({
         mediaTypes: ['images'],
         allowsEditing: false,
-        quality: 0.35,
+        quality: 0.6,
         base64: true,
+        exif: true,
       });
 
       if (!result.canceled && result.assets && result.assets.length > 0) {
@@ -129,29 +130,31 @@ export default function PickupVerifyModal({
         setGarbageImageBase64(asset.base64);
         setCapturedAt(new Date().toISOString());
 
-        setLocMessage('Verifying your location against pickup address...');
-        const location = await Location.getCurrentPositionAsync({
-          accuracy: Location.Accuracy.Balanced,
-        });
+        setLocMessage('Extracting location directly from photo...');
+        const loc = await extractLocationFromPhoto(asset, prewarmedLocPromise);
+        if (loc) {
+          setCollectorLoc(loc);
+          const cLat = loc.latitude;
+          const cLon = loc.longitude;
+          const targetLat = citizenDetails?.latitude || complaint?.latitude;
+          const targetLon = citizenDetails?.longitude || complaint?.longitude;
 
-        const cLat = location.coords.latitude;
-        const cLon = location.coords.longitude;
-        const targetLat = citizenDetails?.latitude || complaint?.latitude;
-        const targetLon = citizenDetails?.longitude || complaint?.longitude;
-
-        if (targetLat && targetLon) {
-          const dist = getDistanceMeters(cLat, cLon, targetLat, targetLon);
-          if (dist <= 150) { // allow 150m radius
-            setLocationValid(true);
-            setLocMessage(`Location verified! You are ${Math.round(dist)}m away.`);
+          if (targetLat && targetLon) {
+            const dist = getDistanceMeters(cLat, cLon, targetLat, targetLon);
+            if (dist <= 250) {
+              setLocationValid(true);
+              setLocMessage(`Location verified! You are ${Math.round(dist)}m from the pickup site.`);
+            } else {
+              setLocationValid(false);
+              setLocMessage(`Location warning: You are ${Math.round(dist)}m away from target. Expected < 250m.`);
+            }
           } else {
-            setLocationValid(false);
-            setLocMessage(`Location mismatch: You are ${Math.round(dist)}m away. Expected < 150m.`);
+            setLocationValid(true);
+            setLocMessage(`Location acquired from photo: ${cLat.toFixed(4)}°, ${cLon.toFixed(4)}°`);
           }
         } else {
-          // If the doorstep pickup didn't have GPS coordinates (legacy data), just bypass
           setLocationValid(true);
-          setLocMessage('Location verified (no target coordinates on record).');
+          setLocMessage('Photo captured (proceeding with pickup verification).');
         }
       }
     } catch (err) {
@@ -170,6 +173,8 @@ export default function PickupVerifyModal({
         complaintId: complaint.id,
         afterImageBase64: garbageImageBase64,
         resolvedAt,
+        latitude: collectorLoc?.latitude || null,
+        longitude: collectorLoc?.longitude || null,
       });
       handleClose();
     } catch (err) {

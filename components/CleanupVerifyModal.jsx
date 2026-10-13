@@ -14,6 +14,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { tokens, useTheme } from '../lib/theme';
 import { verifyCleanupWithGemini } from '../lib/aiVision';
 import { getComplaintDetails } from '../db/database';
+import { extractLocationFromPhoto, getImmediateDeviceLocation } from '../lib/geotag';
 
 function formatTimestamp(iso) {
   if (!iso) return '—';
@@ -52,6 +53,7 @@ export default function CleanupVerifyModal({
   const [beforeImageBase64, setBeforeImageBase64] = useState(null);
   const [afterImageUri, setAfterImageUri] = useState(null);
   const [afterImageBase64, setAfterImageBase64] = useState(null);
+  const [collectorLocation, setCollectorLocation] = useState(null);
   const [verificationResult, setVerificationResult] = useState(null);
   const [locMessage, setLocMessage] = useState('');
   const [isFetchingDetails, setIsFetchingDetails] = useState(false);
@@ -63,6 +65,7 @@ export default function CleanupVerifyModal({
     setBeforeImageBase64(null);
     setAfterImageUri(null);
     setAfterImageBase64(null);
+    setCollectorLocation(null);
     setVerificationResult(null);
     setLocMessage('');
     setCitizenDetails(null);
@@ -112,11 +115,15 @@ export default function CleanupVerifyModal({
 
       setLocMessage('');
 
+      // Prewarm GPS in parallel with camera launch
+      const prewarmedLocPromise = getImmediateDeviceLocation({ timeoutMs: 10000 });
+
       const result = await ImagePicker.launchCameraAsync({
         mediaTypes: ['images'],
         allowsEditing: false,
-        quality: 0.35,
+        quality: 0.6,
         base64: true,
+        exif: true,
       });
 
       if (!result.canceled && result.assets && result.assets.length > 0) {
@@ -124,6 +131,15 @@ export default function CleanupVerifyModal({
         setAfterImageUri(asset.uri);
         setAfterImageBase64(asset.base64);
         setAfterCapturedAt(new Date().toISOString());
+
+        // Extract location directly from photo EXIF or prewarmed device GPS
+        extractLocationFromPhoto(asset, prewarmedLocPromise)
+          .then((loc) => {
+            if (loc) {
+              setCollectorLocation(loc);
+            }
+          })
+          .catch((err) => console.warn('Collector photo geotag note:', err));
 
         if (asset.base64) {
           setIsVerifying(true);
@@ -166,6 +182,8 @@ export default function CleanupVerifyModal({
         complaintId: complaint.id,
         afterImageBase64,
         resolvedAt,
+        latitude: collectorLocation?.latitude || null,
+        longitude: collectorLocation?.longitude || null,
       });
       handleClose();
     } catch (err) {

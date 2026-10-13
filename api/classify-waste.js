@@ -4,29 +4,61 @@ export const CANDIDATE_MODELS = [
   'gemini-3.1-flash-lite-preview',
 ];
 
-const CLASSIFICATION_PROMPT = `You are an expert civic waste management and recycling assistant.
-A user has uploaded a photo of some waste or an item they want to throw away, recycle, or dispose of.
-Your job is to thoroughly analyze the photo and provide exact, actionable disposal instructions.
+const CLASSIFICATION_PROMPT = `You are an expert AI waste detection, identification, and classification assistant.
+A user has uploaded a photo. Your job is to detect and identify EVERY distinct object/item visible in the image — whether it is waste or not — and provide a comprehensive classification report.
 
-EVALUATION RULES:
-1. Identify the primary item(s) visible in the photo.
-2. Determine the core material (e.g., Plastic type, Glass, Cardboard, E-Waste, Organic matter).
-3. Assign it to one of the standard municipal dustbin colors:
-   - "Blue" (Dry Waste: Plastic, Paper, Metal, Glass)
-   - "Green" (Wet/Organic Waste: Food scraps, plant matter)
-   - "Red" (Hazardous/Sanitary Waste: Batteries, medical waste, diapers, chemicals)
-   - "Black" or "Grey" (E-Waste or General/Mixed Waste)
-4. Determine if it is recyclable. (e.g., Clean plastics, glass, metals, and cardboard are recyclable. Food-soiled paper or complex mixed materials are usually not).
-5. Provide detailed instructions on how to prepare the item (e.g., "Rinse out the milk residue", "Crush the bottle and cap it", "Remove tape from the box").
+INSTRUCTIONS (follow in order):
+
+STEP 1 — SCENE OVERVIEW:
+Briefly describe what the photo shows overall.
+
+STEP 2 — DETECT ALL ITEMS:
+List EVERY distinct item you can identify in the photo. Be thorough — even if 10+ items are visible, list them all. For each item:
+
+a) Name: Give a specific, detailed name (e.g., "Crushed PET Plastic Water Bottle", "Banana Peel", "Broken Samsung Phone Screen", "Cardboard Amazon Box").
+
+b) Is it waste? Determine if this item is waste/trash/something to dispose of, OR if it is a normal usable non-waste item.
+   - If NOT waste: mark isWaste=false. Still identify what it is, but skip disposal details.
+   - If IS waste: mark isWaste=true and continue classification.
+
+c) For waste items, classify:
+   - material: The core material (e.g., "PET Plastic (#1)", "Organic Matter", "Lithium-ion Battery", "Mixed Paper/Cardboard", "Aluminium", "Glass", "Polystyrene Foam", "Textile/Fabric", "Rubber")
+   - wasteType: One of: "Dry Waste", "Wet/Organic Waste", "Hazardous Waste", "E-Waste", "Sanitary Waste", "Construction & Demolition", "Biomedical Waste"
+   - dustbinColor: Which color-coded bin it goes into:
+     • "🔵 Blue Bin" — Dry recyclables (clean plastic, paper, metal, glass)
+     • "🟢 Green Bin" — Wet/organic waste (food scraps, garden waste, plant matter)
+     • "🔴 Red Bin" — Hazardous & sanitary (batteries, chemicals, medical waste, diapers, sanitary pads)
+     • "⚫ Black Bin" — E-waste & general non-recyclable (electronics, composite materials, soiled items)
+   - isRecyclable: boolean
+   - recyclingTip: If recyclable, HOW to recycle. If not recyclable, null.
+   - disposalSteps: 2-4 specific actionable steps to prepare this item for disposal
+   - harmLevel: "None", "Low", "Medium", or "High" — environmental/health harm if improperly disposed
+   - harmDetails: Brief explanation of environmental impact if disposed incorrectly
+
+STEP 3 — SUMMARY:
+Provide counts: how many waste items vs non-waste items detected, and an overall recommendation.
 
 Return strictly a valid JSON object matching this schema:
 {
-  "item": string, // Detailed name of the item (e.g., "PET Plastic Water Bottle")
-  "category": string, // General category (e.g., "Dry Waste - Plastic", "Organic - Food Waste")
-  "dustbinColor": string, // The specific dustbin color and type (e.g., "Blue Bin (Dry Waste)")
-  "instructions": string, // 1-2 sentences of specific disposal preparation instructions
-  "isRecyclable": boolean,
-  "recyclingDetails": string | null // If recyclable, how/where to recycle. If not, null.
+  "sceneDescription": string,
+  "totalItemsDetected": number,
+  "wasteItemsCount": number,
+  "nonWasteItemsCount": number,
+  "overallRecommendation": string,
+  "items": [
+    {
+      "name": string,
+      "isWaste": boolean,
+      "material": string | null,
+      "wasteType": string | null,
+      "dustbinColor": string | null,
+      "isRecyclable": boolean | null,
+      "recyclingTip": string | null,
+      "disposalSteps": string[] | null,
+      "harmLevel": "None" | "Low" | "Medium" | "High" | null,
+      "harmDetails": string | null
+    }
+  ]
 }`;
 
 function parseModelJson(raw) {
@@ -80,11 +112,15 @@ export default async function handler(req, res) {
 
   for (const model of CANDIDATE_MODELS) {
     try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
+
       const response = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
+          signal: controller.signal,
           body: JSON.stringify({
             contents: [
               {
@@ -101,18 +137,21 @@ export default async function handler(req, res) {
             ],
             generationConfig: {
               response_mime_type: 'application/json',
-              temperature: 0.1,
+              temperature: 0.15,
             },
           }),
         }
       );
+      clearTimeout(timeoutId);
 
       if (response.ok) {
         const data = await response.json();
         const rawJson = data?.candidates?.[0]?.content?.parts?.[0]?.text;
         if (rawJson) {
           const parsed = parseModelJson(rawJson);
-          if (parsed) return res.status(200).json(parsed);
+          if (parsed && parsed.items && Array.isArray(parsed.items)) {
+            return res.status(200).json(parsed);
+          }
         }
       }
     } catch (err) {
@@ -121,11 +160,11 @@ export default async function handler(req, res) {
   }
 
   return res.status(502).json({
-    item: 'Unknown Item',
-    category: 'Unknown',
-    dustbinColor: 'Mixed Waste',
-    instructions: 'Could not classify. Please sort according to local guidelines.',
-    isRecyclable: false,
-    recyclingDetails: null
+    sceneDescription: 'Could not analyze image.',
+    totalItemsDetected: 0,
+    wasteItemsCount: 0,
+    nonWasteItemsCount: 0,
+    overallRecommendation: 'AI service unavailable. Please try again later.',
+    items: [],
   });
 }
