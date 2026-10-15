@@ -85,7 +85,7 @@ export default function ScoreboardScreen({
     };
     load();
     return () => { mounted = false; };
-  }, [user?.id, user?.area_id, isWorker, userWardName, ecoPoints]);
+  }, [user?.id, user?.area_id, isWorker]);
 
   const onRefresh = async () => {
     setRefreshing(true);

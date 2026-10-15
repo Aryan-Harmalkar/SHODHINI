@@ -105,10 +105,18 @@ export function formatWardName(areaId, fallback = null) {
   return fallback || (numId ? `Ward ${numId}` : 'General Locality');
 }
 
+let cachedAreas = null;
+let cachedAreasTimestamp = 0;
+
 /**
- * Get all available areas for assignment & selection dynamically
+ * Get all available areas for assignment & selection dynamically (cached for 10 mins)
  */
 export async function getAreas() {
+  const now = Date.now();
+  if (cachedAreas && now - cachedAreasTimestamp < 10 * 60 * 1000) {
+    return cachedAreas;
+  }
+
   try {
     const { data, error } = await supabase
       .from('areas')
@@ -116,13 +124,17 @@ export async function getAreas() {
       .order('id', { ascending: true });
 
     if (error || !data || data.length === 0) {
-      return ASSAGAO_WARDS.map((w) => ({ id: w.id, name: w.name }));
+      cachedAreas = ASSAGAO_WARDS.map((w) => ({ id: w.id, name: w.name }));
+      cachedAreasTimestamp = now;
+      return cachedAreas;
     }
 
-    return data.map((a) => ({
+    cachedAreas = data.map((a) => ({
       id: a.id,
       name: a.name || `Ward ${a.id}`,
     }));
+    cachedAreasTimestamp = now;
+    return cachedAreas;
   } catch (err) {
     console.warn('Error in getAreas:', err);
     return ASSAGAO_WARDS.map((w) => ({ id: w.id, name: w.name }));
@@ -505,7 +517,8 @@ export async function getUserComplaints(userId) {
         'id, citizen_id, area_id, category, description, latitude, longitude, status, assigned_worker_id, eco_points, created_at, gc_queue, assigned_at, accepted_at, sla_warning_issued, areas(name)'
       )
       .eq('citizen_id', userId)
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .limit(50);
 
     if (error) {
       console.error('Error fetching user complaints:', error.message);
@@ -600,13 +613,20 @@ export async function getCitizenLeaderboard() {
       return [];
     }
 
-    // Fetch complaints with live geotags to extract real reporting locations
-    const { data: complaintsData } = await supabase
-      .from('complaints')
-      .select('citizen_id, latitude, longitude, geo_source, description, created_at')
-      .not('latitude', 'is', null)
-      .not('longitude', 'is', null)
-      .order('created_at', { ascending: false });
+    // Fetch complaints with live geotags ONLY for top citizens on the leaderboard (fast targeted query)
+    const citizenIds = (data || []).map((p) => p.id);
+    let complaintsData = [];
+    if (citizenIds.length > 0) {
+      const { data: cData } = await supabase
+        .from('complaints')
+        .select('citizen_id, latitude, longitude, geo_source, description, created_at')
+        .in('citizen_id', citizenIds)
+        .not('latitude', 'is', null)
+        .not('longitude', 'is', null)
+        .order('created_at', { ascending: false })
+        .limit(100);
+      complaintsData = cData || [];
+    }
 
     const citizenGeoMap = {};
     const citizenCountMap = {};
@@ -681,7 +701,8 @@ export async function getWardLeaderboard() {
     const { data: complaintsData } = await supabase
       .from('complaints')
       .select('id, area_id, status, latitude, longitude, geo_source, created_at')
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .limit(150);
 
     const complaints = complaintsData || [];
     const wardMap = {};
@@ -796,7 +817,8 @@ export async function getAreaComplaints(areaId) {
         'id, citizen_id, area_id, category, description, latitude, longitude, status, assigned_worker_id, eco_points, created_at, gc_queue, assigned_at, accepted_at, sla_warning_issued, areas(name), profiles:citizen_id(name, phone)'
       )
       .eq('area_id', areaId)
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .limit(50);
 
     if (error) {
       console.error('Error fetching area complaints:', error.message);

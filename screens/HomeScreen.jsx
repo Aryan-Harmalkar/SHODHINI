@@ -51,17 +51,8 @@ export default function HomeScreen({ user, onLogout }) {
   const [ecoPoints, setEcoPoints] = useState(0);
   const [rewardsTab, setRewardsTab] = useState('redeem');
   const [collectorTasksTab, setCollectorTasksTab] = useState('available');
-  const [showAdPopup, setShowAdPopup] = useState(true);
-  const [adCanClose, setAdCanClose] = useState(false);
-
-  useEffect(() => {
-    if (showAdPopup) {
-      const timer = setTimeout(() => {
-        setAdCanClose(true);
-      }, 5000);
-      return () => clearTimeout(timer);
-    }
-  }, [showAdPopup]);
+  const [showAdPopup, setShowAdPopup] = useState(false);
+  const [adCanClose, setAdCanClose] = useState(true);
 
   const isCollector = user?.role === 'worker';
 

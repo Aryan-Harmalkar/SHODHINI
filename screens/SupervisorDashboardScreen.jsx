@@ -16,10 +16,7 @@ export default function SupervisorDashboardScreen({ onBackToHome, onOpenSidebar 
   });
 
   useEffect(() => {
-    // Mock the dashboard data for demonstration
-    setTimeout(() => {
-      setLoading(false);
-    }, 1000);
+    setLoading(false);
   }, []);
 
   return (
