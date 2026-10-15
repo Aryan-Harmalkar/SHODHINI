@@ -266,7 +266,7 @@ export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar 
         citizenId,
         areaId: selectedAreaId,
         category: 'Roadside waste',
-        description: fullNotes || `Waste report in ${selectedAreaName || 'Assagao'}`,
+        description: fullNotes || (selectedAreaName ? `Waste report in ${selectedAreaName}` : (geotag?.latitude ? `Waste report at ${geotag.latitude.toFixed(4)}°N, ${geotag.longitude.toFixed(4)}°E` : 'Waste report filed')),
         latitude: geotag.latitude,
         longitude: geotag.longitude,
         geoAccuracyM: geotag?.accuracy_m ? Math.round(geotag.accuracy_m) : null,

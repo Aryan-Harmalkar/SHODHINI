@@ -102,11 +102,11 @@ export function formatWardName(areaId, fallback = null) {
     }
     return fallback;
   }
-  return 'Assagao - Ward 1 (Ghateshwar Nagar)';
+  return fallback || (numId ? `Ward ${numId}` : 'General Locality');
 }
 
 /**
- * Get all available areas for assignment & selection (Assagao Village - 7 Wards)
+ * Get all available areas for assignment & selection dynamically
  */
 export async function getAreas() {
   try {
@@ -119,14 +119,9 @@ export async function getAreas() {
       return ASSAGAO_WARDS.map((w) => ({ id: w.id, name: w.name }));
     }
 
-    const filtered = data.filter((a) => a.id <= 7);
-    if (filtered.length === 0) {
-      return ASSAGAO_WARDS.map((w) => ({ id: w.id, name: w.name }));
-    }
-
-    return filtered.map((a) => ({
+    return data.map((a) => ({
       id: a.id,
-      name: formatWardName(a.id, a.name),
+      name: a.name || `Ward ${a.id}`,
     }));
   } catch (err) {
     console.warn('Error in getAreas:', err);
@@ -595,7 +590,7 @@ export async function getCitizenLeaderboard() {
   try {
     const { data, error } = await supabase
       .from('profiles')
-      .select('id, name, area_id, eco_points, areas(name)')
+      .select('id, name, area_id, area, eco_points, areas(name)')
       .eq('role', 'citizen')
       .order('eco_points', { ascending: false })
       .limit(50);
@@ -605,13 +600,69 @@ export async function getCitizenLeaderboard() {
       return [];
     }
 
-    return (data || []).map((p, idx) => ({
-      id: p.id,
-      rank: idx + 1,
-      name: p.name || 'Citizen',
-      ward: formatWardName(p.area_id, p.areas?.name),
-      points: Number(p.eco_points || 0),
-    }));
+    // Fetch complaints with live geotags to extract real reporting locations
+    const { data: complaintsData } = await supabase
+      .from('complaints')
+      .select('citizen_id, latitude, longitude, geo_source, description, created_at')
+      .not('latitude', 'is', null)
+      .not('longitude', 'is', null)
+      .order('created_at', { ascending: false });
+
+    const citizenGeoMap = {};
+    const citizenCountMap = {};
+
+    (complaintsData || []).forEach((c) => {
+      if (!c.citizen_id) return;
+      citizenCountMap[c.citizen_id] = (citizenCountMap[c.citizen_id] || 0) + 1;
+
+      if (!citizenGeoMap[c.citizen_id]) {
+        let locationName = null;
+        if (c.description) {
+          const match = c.description.match(/Location:\s*([^|\n]+)/i);
+          if (match && match[1]) {
+            locationName = match[1].trim();
+          }
+        }
+        citizenGeoMap[c.citizen_id] = {
+          lat: c.latitude,
+          lng: c.longitude,
+          source: c.geo_source || 'live_photo_gps',
+          locationName,
+        };
+      }
+    });
+
+    return (data || []).map((p, idx) => {
+      const geo = citizenGeoMap[p.id];
+      const count = citizenCountMap[p.id] || 0;
+
+      let locationDisplay = '';
+      if (geo?.locationName) {
+        locationDisplay = geo.locationName;
+      } else if (geo?.lat && geo?.lng) {
+        locationDisplay = `${geo.lat.toFixed(4)}° N, ${geo.lng.toFixed(4)}° E`;
+      } else if (p.area) {
+        locationDisplay = p.area;
+      } else if (p.area_id && p.areas?.name) {
+        locationDisplay = p.areas.name;
+      } else if (p.area_id) {
+        locationDisplay = formatWardName(p.area_id, null);
+      } else {
+        locationDisplay = 'Active Contributor';
+      }
+
+      return {
+        id: p.id,
+        rank: idx + 1,
+        name: p.name || 'Citizen',
+        ward: locationDisplay,
+        hasGeotag: !!geo,
+        geotagCoords: geo?.lat && geo?.lng ? `${geo.lat.toFixed(4)}°, ${geo.lng.toFixed(4)}°` : null,
+        geotagSource: geo?.source || null,
+        reportsCount: count,
+        points: Number(p.eco_points || 0),
+      };
+    });
   } catch (e) {
     console.warn('Leaderboard fetch exception:', e);
     return [];
@@ -619,17 +670,18 @@ export async function getCitizenLeaderboard() {
 }
 
 /**
- * Fetch real ward cleanliness rankings from active & resolved complaints (Assagao Village - 7 Wards)
+ * Fetch real ward cleanliness rankings from active & resolved complaints and photo geotags
  */
 export async function getWardLeaderboard() {
   try {
-    // 1. Fetch all Assagao wards
+    // 1. Fetch all areas
     const areasList = await getAreas();
 
-    // 2. Fetch all complaints to compute actual cleanups
-    const { data: complaintsData, error: cErr } = await supabase
+    // 2. Fetch all complaints with status and geotag coordinates
+    const { data: complaintsData } = await supabase
       .from('complaints')
-      .select('id, area_id, status');
+      .select('id, area_id, status, latitude, longitude, geo_source, created_at')
+      .order('created_at', { ascending: false });
 
     const complaints = complaintsData || [];
     const wardMap = {};
@@ -640,6 +692,8 @@ export async function getWardLeaderboard() {
         name: a.name,
         total: 0,
         resolved: 0,
+        geotaggedCount: 0,
+        latestCoords: null,
       };
     });
 
@@ -648,6 +702,12 @@ export async function getWardLeaderboard() {
         wardMap[c.area_id].total += 1;
         if (c.status === 'Completed') {
           wardMap[c.area_id].resolved += 1;
+        }
+        if (c.latitude && c.longitude) {
+          wardMap[c.area_id].geotaggedCount += 1;
+          if (!wardMap[c.area_id].latestCoords) {
+            wardMap[c.area_id].latestCoords = `${c.latitude.toFixed(4)}° N, ${c.longitude.toFixed(4)}° E`;
+          }
         }
       }
     });
@@ -660,11 +720,13 @@ export async function getWardLeaderboard() {
         resolved: w.resolved,
         total: w.total,
         score,
-        active: w.total - w.resolved,
+        active: Math.max(0, w.total - w.resolved),
+        geotaggedCount: w.geotaggedCount,
+        latestCoords: w.latestCoords,
       };
     });
 
-    // Sort by resolved desc, then highest cleanliness score desc
+    // Sort by resolved desc, then highest cleanliness score desc, then id asc
     list.sort((a, b) => b.resolved - a.resolved || b.score - a.score || a.id - b.id);
 
     return list.map((w, idx) => ({
@@ -682,7 +744,7 @@ export async function getWardLeaderboard() {
  */
 export async function getCollectorCleanupStats(workerId, areaId) {
   try {
-    let query = supabase.from('complaints').select('id, status');
+    let query = supabase.from('complaints').select('id, status, latitude, longitude');
     if (workerId) {
       query = query.or(`assigned_worker_id.eq.${workerId},area_id.eq.${areaId || 0}`);
     } else if (areaId) {
@@ -692,9 +754,10 @@ export async function getCollectorCleanupStats(workerId, areaId) {
     const list = data || [];
     const completed = list.filter((c) => c.status === 'Completed').length;
     const active = list.filter((c) => c.status !== 'Completed').length;
-    return { completed, active };
+    const geotagged = list.filter((c) => c.status === 'Completed' && c.latitude && c.longitude).length;
+    return { completed, active, geotagged };
   } catch (e) {
-    return { completed: 0, active: 0 };
+    return { completed: 0, active: 0, geotagged: 0 };
   }
 }
 

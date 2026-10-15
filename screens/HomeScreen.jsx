@@ -149,7 +149,7 @@ export default function HomeScreen({ user, onLogout }) {
           loadCollectorData();
           sendLocalComplaintNotification({
             title: `🚨 New Waste Alert: ${formatWardName(user.area_id)}`,
-            body: `${payload.new.category || 'General Waste'}: ${payload.new.description || 'New report filed in Assagao.'}`,
+            body: `${payload.new.category || 'General Waste'}: ${payload.new.description || 'New waste report filed nearby.'}`,
           });
           setLiveAlert(payload.new);
         }
@@ -686,7 +686,7 @@ export default function HomeScreen({ user, onLogout }) {
                   <Text style={styles.emptyIcon}>🎉</Text>
                   <Text style={styles.emptyCollectorTitle}>No Complaints Pending</Text>
                   <Text style={styles.emptyCollectorDesc}>
-                    {user?.area || 'Assagao Village'} currently has no active waste hotspots.
+                    {user?.area || 'Your assigned sector'} currently has no active waste hotspots.
                   </Text>
                 </View>
               ) : (

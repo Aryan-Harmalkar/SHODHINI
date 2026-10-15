@@ -205,7 +205,7 @@ export default function AuthScreen({ onAuthSuccess }) {
 
         <View style={dynamicStyles.header}>
           <Text style={dynamicStyles.brandTitle}>SHODHINI</Text>
-          <Text style={dynamicStyles.brandSubtitle}>Village Panchayat Assagao • Clean Waste</Text>
+          <Text style={dynamicStyles.brandSubtitle}>Intelligent Waste Management • Civic Action</Text>
         </View>
 
         <View style={dynamicStyles.authCard}>

@@ -171,7 +171,7 @@ export default function WastePickupScreen({
           </View>
           <Text style={styles.heroTitle}>Doorstep Waste Collection</Text>
           <Text style={styles.heroDesc}>
-            Request an immediate waste collection partner directly to your doorstep in Assagao.
+            Request an immediate waste collection partner directly to your doorstep.
           </Text>
         </View>
 
@@ -292,7 +292,7 @@ export default function WastePickupScreen({
             <Text style={styles.inputLabel}>Pickup Address / House No. & Landmark</Text>
             <TextInput
               style={styles.input}
-              placeholder="e.g. House No. 42, Near Ghateshwar Nagar, Assagao"
+              placeholder="e.g. House No. 42, Green Park Avenue, Landmark"
               placeholderTextColor={colors.muted}
               value={address}
               onChangeText={setAddress}

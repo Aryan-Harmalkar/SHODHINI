@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   StyleSheet,
   Text,
@@ -23,16 +23,16 @@ export default function ScoreboardScreen({
   onOpenSidebar,
   isCollector = false,
 }) {
-  const { colors, isDark, toggleTheme } = useTheme();
+  const { colors, isDark } = useTheme();
   const styles = useMemo(() => getStyles(colors, isDark), [colors, isDark]);
 
   const isWorker = user?.role === 'worker' || isCollector;
-  const userWardName = user?.area || (user?.area_id ? formatWardName(user.area_id) : 'Assagao - Ward 1 (Ghateshwar Nagar)');
+  const userWardName = user?.area || (user?.area_id ? formatWardName(user.area_id) : '');
 
   const [tab, setTab] = useState(isWorker ? 'wards' : 'citizens');
   const [citizens, setCitizens] = useState([]);
   const [wards, setWards] = useState([]);
-  const [workerStats, setWorkerStats] = useState({ completed: 0, active: 0 });
+  const [workerStats, setWorkerStats] = useState({ completed: 0, active: 0, geotagged: 0 });
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -40,7 +40,7 @@ export default function ScoreboardScreen({
     const [citizenList, wardList, collectorData] = await Promise.all([
       getCitizenLeaderboard(),
       getWardLeaderboard(),
-      isWorker ? getCollectorCleanupStats(user?.id, user?.area_id) : Promise.resolve({ completed: 0, active: 0 }),
+      isWorker ? getCollectorCleanupStats(user?.id, user?.area_id) : Promise.resolve({ completed: 0, active: 0, geotagged: 0 }),
     ]);
 
     let finalCitizens = citizenList || [];
@@ -52,8 +52,10 @@ export default function ScoreboardScreen({
           {
             id: user.id,
             name: user.name || 'Citizen',
-            ward: userWardName,
+            ward: userWardName || 'Active Contributor',
             points: Number(ecoPoints || 0),
+            hasGeotag: false,
+            reportsCount: 0,
           },
         ].sort((a, b) => b.points - a.points).map((item, idx) => ({ ...item, rank: idx + 1 }));
       }
@@ -70,7 +72,7 @@ export default function ScoreboardScreen({
         if (mounted) {
           setCitizens(finalCitizens);
           setWards(wardList || []);
-          setWorkerStats(collectorData || { completed: 0, active: 0 });
+          setWorkerStats(collectorData || { completed: 0, active: 0, geotagged: 0 });
         }
       } catch (err) {
         console.warn('Error loading scoreboard data:', err);
@@ -91,7 +93,7 @@ export default function ScoreboardScreen({
       const { finalCitizens, wardList, collectorData } = await fetchLeaderboardData();
       setCitizens(finalCitizens);
       setWards(wardList || []);
-      setWorkerStats(collectorData || { completed: 0, active: 0 });
+      setWorkerStats(collectorData || { completed: 0, active: 0, geotagged: 0 });
     } catch (err) {
       console.warn('Error refreshing scoreboard:', err);
     } finally {
@@ -101,6 +103,7 @@ export default function ScoreboardScreen({
 
   const currentCitizenEntry = !isWorker && user?.id ? citizens.find((c) => c.id === user.id) : null;
   const userRank = currentCitizenEntry ? currentCitizenEntry.rank : 1;
+  const displayLocation = currentCitizenEntry?.ward || userWardName || 'Active Contributor';
 
   return (
     <View style={styles.container}>
@@ -128,19 +131,22 @@ export default function ScoreboardScreen({
         {/* Sleek Minimal Standing Card */}
         {isWorker ? (
           <View style={styles.standingCard}>
-            <View>
+            <View style={styles.standingInfo}>
               <Text style={styles.standingName}>👷 {user?.name || 'Worker'}</Text>
-              <Text style={styles.standingSub}>Sanitation Team • {userWardName}</Text>
+              <Text style={styles.standingSub}>Sanitation Team • {userWardName || 'Field Operations'}</Text>
             </View>
             <View style={styles.workerDutyPill}>
               <Text style={styles.workerDutyText}>{workerStats.completed} Cleanups Done</Text>
+              {workerStats.geotagged > 0 && (
+                <Text style={styles.workerDutySubText}>📍 {workerStats.geotagged} GPS Verified</Text>
+              )}
             </View>
           </View>
         ) : (
           <View style={styles.standingCard}>
-            <View>
+            <View style={styles.standingInfo}>
               <Text style={styles.standingName}>{user?.name || 'Citizen'}</Text>
-              <Text style={styles.standingSub}>Rank #{userRank} • {userWardName}</Text>
+              <Text style={styles.standingSub}>Rank #{userRank} • {displayLocation}</Text>
             </View>
             <View style={styles.ecoPill}>
               <Text style={styles.ecoPillText}>🌱 {ecoPoints} pts</Text>
@@ -156,7 +162,7 @@ export default function ScoreboardScreen({
             activeOpacity={0.7}
           >
             <Text style={[styles.tabBtnText, tab === 'wards' && styles.activeTabBtnText]}>
-              🏙️ Assagao Wards
+              🏙️ Wards & Cleanliness
             </Text>
           </TouchableOpacity>
 
@@ -166,7 +172,7 @@ export default function ScoreboardScreen({
             activeOpacity={0.7}
           >
             <Text style={[styles.tabBtnText, tab === 'citizens' && styles.activeTabBtnText]}>
-              👥 Citizens
+              👥 Citizen Champions
             </Text>
           </TouchableOpacity>
         </View>
@@ -179,19 +185,18 @@ export default function ScoreboardScreen({
           <View style={styles.listCard}>
             {/* WARD CLEANLINESS RANKING */}
             {tab === 'wards' && (
-              (() => {
-                const activeWards = wards.filter((ward) => ward.resolved > 0 || ward.active > 0);
-                if (activeWards.length === 0) {
-                  return (
-                    <View style={styles.emptyBox}>
-                      <Text style={styles.emptyText}>No ward data recorded yet.</Text>
-                    </View>
+              wards.length === 0 ? (
+                <View style={styles.emptyBox}>
+                  <Text style={styles.emptyText}>No ward cleanliness records found.</Text>
+                </View>
+              ) : (
+                wards.map((ward, index) => {
+                  const isUserWard = userWardName && (
+                    userWardName.toLowerCase() === ward.name.toLowerCase() ||
+                    ward.name.toLowerCase().includes(userWardName.toLowerCase())
                   );
-                }
-                return activeWards.map((ward, index) => {
-                  const isUserWard = userWardName.toLowerCase() === ward.name.toLowerCase();
-                  // Re-calculate visual rank for filtered list
                   const visualRank = index + 1;
+                  const isPristine = ward.total === 0;
 
                   return (
                     <View
@@ -205,23 +210,38 @@ export default function ScoreboardScreen({
                       </View>
 
                       <View style={styles.infoCol}>
-                        <Text style={[styles.itemName, isUserWard && styles.currentUserName]}>
-                          {ward.name} {isUserWard ? '(Your Ward)' : ''}
-                        </Text>
+                        <View style={styles.nameRow}>
+                          <Text style={[styles.itemName, isUserWard && styles.currentUserName]}>
+                            {ward.name} {isUserWard ? '(Your Area)' : ''}
+                          </Text>
+                          {ward.geotaggedCount > 0 && (
+                            <View style={styles.geotagBadge}>
+                              <Text style={styles.geotagBadgeText}>📸 {ward.geotaggedCount} Geotagged</Text>
+                            </View>
+                          )}
+                        </View>
                         <Text style={styles.itemSub}>
-                          {ward.resolved} cleanups • {ward.active} active
+                          {isPristine
+                            ? '✨ 0 active waste spots • 100% Pristine'
+                            : `${ward.resolved} cleanups resolved • ${ward.active} active`}
                         </Text>
+                        {ward.latestCoords && (
+                          <Text style={styles.itemMeta}>
+                            📍 Latest Live Geotag: {ward.latestCoords}
+                          </Text>
+                        )}
                       </View>
 
                       <View style={styles.metricCol}>
                         <Text style={[styles.metricVal, { color: ward.score >= 80 ? colors.accent : '#d97706' }]}>
                           {ward.score}%
                         </Text>
+                        <Text style={styles.metricSub}>Clean</Text>
                       </View>
                     </View>
                   );
-                });
-              })()
+                })
+              )
             )}
 
             {/* CITIZEN CHAMPIONS */}
@@ -249,14 +269,30 @@ export default function ScoreboardScreen({
                       </View>
 
                       <View style={styles.infoCol}>
-                        <Text style={[styles.itemName, isYou && styles.currentUserName]}>
-                          {item.name} {isYou ? '(You)' : ''}
+                        <View style={styles.nameRow}>
+                          <Text style={[styles.itemName, isYou && styles.currentUserName]}>
+                            {item.name} {isYou ? '(You)' : ''}
+                          </Text>
+                          {item.hasGeotag && (
+                            <View style={styles.geotagBadge}>
+                              <Text style={styles.geotagBadgeText}>📸 Live Geotag</Text>
+                            </View>
+                          )}
+                        </View>
+                        <Text style={styles.itemSub} numberOfLines={1}>
+                          📍 {item.ward || 'Community Contributor'}
                         </Text>
-                        <Text style={styles.itemSub}>📍 {item.ward}</Text>
+                        {item.reportsCount > 0 && (
+                          <Text style={styles.itemMeta}>
+                            {item.reportsCount} {item.reportsCount === 1 ? 'report' : 'reports'} filed
+                            {item.geotagCoords ? ` • ${item.geotagCoords}` : ''}
+                          </Text>
+                        )}
                       </View>
 
                       <View style={styles.metricCol}>
                         <Text style={styles.metricVal}>{item.points} pts</Text>
+                        <Text style={styles.metricSub}>Eco Points</Text>
                       </View>
                     </View>
                   );
@@ -293,19 +329,6 @@ const getStyles = (colors, isDark) => StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: tokens.spacing.sm,
-  },
-  themeToggleBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  themeToggleIcon: {
-    fontSize: 16,
   },
   menuBtn: {
     padding: tokens.spacing.xs,
@@ -353,6 +376,10 @@ const getStyles = (colors, isDark) => StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
   },
+  standingInfo: {
+    flex: 1,
+    marginRight: tokens.spacing.sm,
+  },
   standingName: {
     fontSize: tokens.typography.size.base,
     fontFamily: tokens.typography.family.bold,
@@ -378,14 +405,21 @@ const getStyles = (colors, isDark) => StyleSheet.create({
   },
   workerDutyPill: {
     backgroundColor: colors.accent + '20',
-    paddingVertical: 5,
+    paddingVertical: 6,
     paddingHorizontal: tokens.spacing.sm,
-    borderRadius: tokens.radius.full,
+    borderRadius: tokens.radius.md,
+    alignItems: 'flex-end',
   },
   workerDutyText: {
     color: colors.accent,
     fontSize: tokens.typography.size.xs,
     fontFamily: tokens.typography.family.bold,
+  },
+  workerDutySubText: {
+    color: colors.accent,
+    fontSize: 10,
+    marginTop: 2,
+    fontFamily: tokens.typography.family.semibold,
   },
   tabRow: {
     flexDirection: 'row',
@@ -454,6 +488,12 @@ const getStyles = (colors, isDark) => StyleSheet.create({
   infoCol: {
     flex: 1,
   },
+  nameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    flexWrap: 'wrap',
+  },
   itemName: {
     fontSize: tokens.typography.size.sm,
     fontFamily: tokens.typography.family.semibold,
@@ -463,18 +503,42 @@ const getStyles = (colors, isDark) => StyleSheet.create({
     color: colors.accent,
     fontFamily: tokens.typography.family.bold,
   },
+  geotagBadge: {
+    backgroundColor: colors.accent + '20',
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    borderRadius: tokens.radius.full,
+    borderWidth: 1,
+    borderColor: colors.accent + '40',
+  },
+  geotagBadgeText: {
+    fontSize: 10,
+    fontFamily: tokens.typography.family.bold,
+    color: colors.accent,
+  },
   itemSub: {
     fontSize: 11,
     color: colors.muted,
-    marginTop: 1,
+    marginTop: 2,
+  },
+  itemMeta: {
+    fontSize: 10,
+    color: colors.muted,
+    marginTop: 2,
   },
   metricCol: {
     alignItems: 'flex-end',
+    marginLeft: tokens.spacing.sm,
   },
   metricVal: {
     fontSize: tokens.typography.size.sm,
     fontFamily: tokens.typography.family.bold,
     color: colors.accent,
+  },
+  metricSub: {
+    fontSize: 10,
+    color: colors.muted,
+    marginTop: 1,
   },
   emptyBox: {
     padding: tokens.spacing.xl,
