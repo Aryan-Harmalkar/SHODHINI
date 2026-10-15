@@ -303,14 +303,6 @@ export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar 
         </View>
 
         <View style={styles.topRight}>
-          <TouchableOpacity
-            style={styles.themeToggleBtn}
-            onPress={toggleTheme}
-            activeOpacity={0.7}
-            accessibilityLabel="Toggle Day/Dark Theme"
-          >
-            <Text style={styles.themeToggleIcon}>{isDark ? '☀️' : '🌙'}</Text>
-          </TouchableOpacity>
           <TouchableOpacity style={styles.homeBtn} onPress={onBackToHome} activeOpacity={0.7}>
             <Text style={styles.homeBtnText}>Home</Text>
           </TouchableOpacity>

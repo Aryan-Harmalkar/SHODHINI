@@ -421,24 +421,7 @@ export default function HomeScreen({ user, onLogout }) {
           </View>
 
           <View style={styles.topRight}>
-            <TouchableOpacity
-              style={styles.themeToggleBtn}
-              onPress={toggleTheme}
-              activeOpacity={0.7}
-              accessibilityLabel="Toggle Day/Dark Theme"
-            >
-              <Text style={styles.themeToggleIcon}>{isDark ? '☀️' : '🌙'}</Text>
-            </TouchableOpacity>
-
-            {!isCollector ? (
-              <TouchableOpacity
-                style={styles.topPointsPill}
-                onPress={() => handleNavigate('waste_pickup')}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.topPointsText}>🌱 {ecoPoints} pts</Text>
-              </TouchableOpacity>
-            ) : (
+            {isCollector && (
               <TouchableOpacity
                 style={[
                   styles.topDutyPill,

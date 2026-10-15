@@ -145,14 +145,6 @@ export default function CollectorTasksScreen({
         </View>
 
         <View style={styles.topRight}>
-          <TouchableOpacity
-            style={styles.themeToggleBtn}
-            onPress={toggleTheme}
-            activeOpacity={0.7}
-            accessibilityLabel="Toggle Day/Dark Theme"
-          >
-            <Text style={styles.themeToggleIcon}>{isDark ? '☀️' : '🌙'}</Text>
-          </TouchableOpacity>
           {onRefresh && (
             <TouchableOpacity style={styles.refreshIconBtn} onPress={onRefresh} activeOpacity={0.7}>
               <Text style={styles.refreshIconText}>🔄</Text>

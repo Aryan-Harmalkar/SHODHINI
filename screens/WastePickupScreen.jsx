@@ -116,14 +116,6 @@ export default function WastePickupScreen({
           </View>
 
           <View style={styles.topRight}>
-            <TouchableOpacity
-              style={styles.themeToggleBtn}
-              onPress={toggleTheme}
-              activeOpacity={0.7}
-              accessibilityLabel={isDark ? "Switch to Day Mode" : "Switch to Night Mode"}
-            >
-              <Text style={styles.themeToggleIcon}>{isDark ? '☀️' : '🌙'}</Text>
-            </TouchableOpacity>
             <TouchableOpacity style={styles.backHomeBtn} onPress={onBackToHome} activeOpacity={0.7}>
               <Text style={styles.backHomeText}>Home</Text>
             </TouchableOpacity>
@@ -165,14 +157,6 @@ export default function WastePickupScreen({
         </View>
 
         <View style={styles.topRight}>
-          <TouchableOpacity
-            style={styles.themeToggleBtn}
-            onPress={toggleTheme}
-            activeOpacity={0.7}
-            accessibilityLabel={isDark ? "Switch to Day Mode" : "Switch to Night Mode"}
-          >
-            <Text style={styles.themeToggleIcon}>{isDark ? '☀️' : '🌙'}</Text>
-          </TouchableOpacity>
           <TouchableOpacity style={styles.backHomeBtn} onPress={onBackToHome} activeOpacity={0.7}>
             <Text style={styles.backHomeText}>Home</Text>
           </TouchableOpacity>
