@@ -51,8 +51,27 @@ export default function HomeScreen({ user, onLogout }) {
   const [ecoPoints, setEcoPoints] = useState(0);
   const [rewardsTab, setRewardsTab] = useState('redeem');
   const [collectorTasksTab, setCollectorTasksTab] = useState('available');
-  const [showAdPopup, setShowAdPopup] = useState(false);
-  const [adCanClose, setAdCanClose] = useState(true);
+  const [showAdPopup, setShowAdPopup] = useState(true);
+  const [adCanClose, setAdCanClose] = useState(false);
+  const [adCountdown, setAdCountdown] = useState(5);
+
+  useEffect(() => {
+    if (showAdPopup) {
+      setAdCanClose(false);
+      setAdCountdown(5);
+      const interval = setInterval(() => {
+        setAdCountdown((prev) => {
+          if (prev <= 1) {
+            clearInterval(interval);
+            setAdCanClose(true);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+      return () => clearInterval(interval);
+    }
+  }, [showAdPopup]);
 
   const isCollector = user?.role === 'worker';
 
@@ -779,7 +798,7 @@ export default function HomeScreen({ user, onLogout }) {
               </TouchableOpacity>
             ) : (
               <View style={styles.adCloseButtonDisabled}>
-                <ActivityIndicator size="small" color="#fff" />
+                <Text style={styles.adCountdownText}>{adCountdown}s</Text>
               </View>
             )}
           </View>
@@ -1350,6 +1369,11 @@ const getStyles = (colors, isDark) =>
     adCloseText: {
       color: '#fff',
       fontSize: 16,
+      fontFamily: tokens.typography.family.bold,
+    },
+    adCountdownText: {
+      color: '#fff',
+      fontSize: 12,
       fontFamily: tokens.typography.family.bold,
     },
   });
