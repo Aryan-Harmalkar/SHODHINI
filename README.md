@@ -84,4 +84,5 @@ Refer to [`DEPLOY.md`](./DEPLOY.md) for building and deploying:
 - Android: Google Play production build via EAS CLI (`npx eas-cli build -p android --profile production`)
 
 By Team : The Trend Breakers 
+
 Team Members : Mandar , Aryan , Shaurya , Drishti ,Krishna
