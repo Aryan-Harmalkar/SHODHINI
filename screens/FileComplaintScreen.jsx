@@ -432,9 +432,9 @@ export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar,
                     )}
 
                     <View style={[styles.geotagMetaRow, { marginTop: 4 }]}>
-                      <Text style={styles.geotagWard}>
+                    {/*<Text style={styles.geotagWard}>
                         {selectedAreaName ? `Ward: ${selectedAreaName}` : 'Live GPS Geotag'}
-                      </Text>
+                      </Text>*/}
                       {geotag ? (
                         <Text style={styles.geotagAccuracy}>
                         {/* 🎯 ±{Math.round(geotag.accuracy_m || 10)}m • */} {geotag.source === 'photo_exif' ? 'Photo EXIF' : 'Live GPS'}
@@ -1247,6 +1247,7 @@ const getStyles = (colors, isDark) =>
   },
   submitBtnText: {
     color: isDark ? '#000' : '#fff',
+    textAlign: 'center',
     fontSize: tokens.typography.size.sm,
     fontFamily: tokens.typography.family.bold,
   },
