@@ -21,6 +21,13 @@ You are provided with:
 
 EVALUATION RULES:
 
+0. REAL AND NOT ANALOG
+- If the image appears to be a picture of garbage on plane-surfaces like posters, screen (laptops, phones, televisions projections), or similar plane-surfaces, you must reject it!
+  * isSameLocation: false
+  * isCleaned: false
+  * rejectionReason: "Image is not authentic."
+  * Stop evaluation here!
+
 1. SAME LOCATION (isSameLocation):
 - Compare environmental features: road surface, pavement texture, curbs, walls, fences, vegetation, buildings, background structures, or ground markings.
 - If Image 2 is taken at a completely different spot, indoors, inside a vehicle, a selfie, a wall, ceiling, desktop, or shows a mismatched environment:
@@ -49,6 +56,13 @@ const SINGLE_IMAGE_PROMPT = `You are an expert AI quality inspector for municipa
 You must strictly inspect this 'After' cleanup photo submitted by a garbage collector.
 
 EVALUATION RULES:
+
+0. REAL AND NOT ANALOG
+- If the image appears to be a picture of garbage on plane-surfaces like posters, screen (laptops, phones, televisions projections), or similar plane-surfaces, you must reject it!
+  * isSameLocation: false
+  * isCleaned: false
+  * rejectionReason: "Image is not authentic."
+  * Stop evaluation here!
 
 1. AUTHENTIC MUNICIPAL SITE (isSameLocation):
 - Check if the photograph represents an authentic outdoor municipal site (e.g. road, street, sidewalk, public area, dumpster bay, roadside gutter).

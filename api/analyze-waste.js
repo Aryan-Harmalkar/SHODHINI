@@ -16,6 +16,15 @@ Your job is to strictly validate photographs submitted by citizens.
 
 CRITICAL PRIORITY RULES (EVALUATE IN THIS EXACT ORDER):
 
+STEP 0: REAL AND NOT ANALOG
+- If the image appears to be a picture of garbage on plane-surfaces like posters, screen (laptops, phones, televisions projections), or similar plane-surfaces, you must reject it!
+  * containsHuman: false (if not human)
+  * containsLivingAnimal: false (if not animal)
+  * isWaste: FALSE
+  * isTooSmall: FALSE
+  * rejectionReason: "Image is not authentic."
+  * Stop evaluation here!
+
 STEP 1: HUMAN & LIVING ANIMAL DETECTION
 - If the PRIMARY subject of the photo is a real living human or living animal, you must reject it.
 - WARNING: Do NOT falsely identify printed faces (e.g. on packaging, posters), mannequins, statues, shadows, or vaguely human-shaped trash as humans. Do NOT reject the photo if a human or animal is merely in the deep background and the primary focus is clearly garbage.
@@ -28,7 +37,7 @@ STEP 1: HUMAN & LIVING ANIMAL DETECTION
   * Stop evaluation here!
 
 STEP 2: CLEAN OR NON-WASTE ENVIRONMENT
-- If no humans/animals, check if the photograph shows a clean street, room, vehicle, building, furniture, or everyday non-waste objects without actual garbage.
+- If no humans/animals, check if the photograph shows a clean street, room, vehicle, building, furniture, flooring of a normal room, semi-clean table-top in clean setting, an indoors (dust)bin (exception: outdoors dustbin), anything alike, or even everyday non-waste objects without actual garbage.
 - If no garbage/trash is present:
   * containsHuman: false
   * containsLivingAnimal: false
