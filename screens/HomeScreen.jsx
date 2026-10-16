@@ -286,8 +286,12 @@ export default function HomeScreen({ user, onLogout }) {
         return (
           <FileComplaintScreen
             user={user}
-            onBackToHome={() => setCurrentScreen('home')}
+            onBackToHome={() => {
+              loadEcoPoints();
+              setCurrentScreen('home');
+            }}
             onOpenSidebar={() => setSidebarVisible(true)}
+            onPointsUpdated={(newPts) => setEcoPoints(newPts)}
           />
         );
       }

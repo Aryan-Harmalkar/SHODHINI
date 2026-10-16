@@ -545,17 +545,41 @@ export async function getUserComplaints(userId) {
 export async function getUserEcoPoints(userId) {
   if (!userId) return 0;
   try {
-    const { data, error } = await supabase
+    const { data: profile, error } = await supabase
       .from('profiles')
       .select('eco_points, role')
       .eq('id', userId)
       .maybeSingle();
 
-    if (error || !data || data.role === 'worker') {
+    if (error || !profile || profile.role === 'worker') {
       return 0;
     }
 
-    return data?.eco_points || 0;
+    let currentPoints = Number(profile?.eco_points ?? 0);
+
+    // Calculate points earned from completed complaints (15 points per verified resolution)
+    const { data: completedComplaints } = await supabase
+      .from('complaints')
+      .select('id, eco_points, status')
+      .eq('citizen_id', userId)
+      .eq('status', 'Completed');
+
+    const totalFromComplaints = (completedComplaints || []).reduce(
+      (sum, c) => sum + (Number(c.eco_points) || 15),
+      0
+    );
+
+    // If profile points are lagging behind verified complaint earnings (e.g. worker was blocked by RLS),
+    // automatically sync the citizen's profile points!
+    if (totalFromComplaints > 0 && currentPoints < totalFromComplaints) {
+      currentPoints = totalFromComplaints;
+      await supabase
+        .from('profiles')
+        .update({ eco_points: currentPoints })
+        .eq('id', userId);
+    }
+
+    return currentPoints;
   } catch (e) {
     console.warn('Error in getUserEcoPoints:', e);
     return 0;
@@ -568,15 +592,22 @@ export async function getUserEcoPoints(userId) {
 export async function updateUserEcoPoints(userId, deltaPoints) {
   if (!userId) return 0;
   try {
-    const { data: profile, error: fetchErr } = await supabase
-      .from('profiles')
-      .select('eco_points')
-      .eq('id', userId)
-      .maybeSingle();
+    // 1. Try RPC function award_eco_points (SECURITY DEFINER bypasses RLS)
+    try {
+      const { data: rpcRes, error: rpcErr } = await supabase.rpc('award_eco_points', {
+        target_citizen_id: userId,
+        points_to_add: deltaPoints,
+      });
+      if (!rpcErr && typeof rpcRes === 'number') {
+        return rpcRes;
+      }
+    } catch (e) {
+      // Fall through to client-side update
+    }
 
-    if (fetchErr || !profile) return 0;
-
-    let newPoints = (profile.eco_points || 0) + deltaPoints;
+    // 2. Client-side update
+    const currentBaseline = await getUserEcoPoints(userId);
+    let newPoints = currentBaseline + deltaPoints;
     if (newPoints < 0) newPoints = 0;
 
     const { error: updateErr } = await supabase
@@ -586,9 +617,9 @@ export async function updateUserEcoPoints(userId, deltaPoints) {
 
     if (updateErr) {
       console.warn('Error updating eco points:', updateErr.message);
-      return profile.eco_points || 0;
+      return currentBaseline;
     }
-    
+
     return newPoints;
   } catch (e) {
     console.warn('Exception in updateUserEcoPoints:', e);
@@ -872,9 +903,9 @@ export async function updateComplaintStatus({ complaintId, status, workerId, col
     updatePayload.collector_longitude = collectorLongitude;
   }
 
-  // Award points if transitioning to Completed
+  // Award points if status is Completed
   let pointsAwarded = 0;
-  if (status === 'Completed' && oldData?.status !== 'Completed' && !oldData?.eco_points) {
+  if (status === 'Completed') {
     updatePayload.eco_points = 15;
     pointsAwarded = 15;
   }
@@ -890,19 +921,34 @@ export async function updateComplaintStatus({ complaintId, status, workerId, col
     throw new Error(error.message || 'Failed to update complaint status.');
   }
 
-  // If points were awarded, update the citizen's profile
-  if (pointsAwarded > 0 && oldData?.citizen_id) {
-    const { data: profile } = await supabase
-      .from('profiles')
-      .select('eco_points')
-      .eq('id', oldData.citizen_id)
-      .single();
-    
-    if (profile) {
-      await supabase
-        .from('profiles')
-        .update({ eco_points: (profile.eco_points || 0) + pointsAwarded })
-        .eq('id', oldData.citizen_id);
+  // Award points to the citizen in profiles table
+  const citizenId = oldData?.citizen_id || data?.citizen_id;
+  if (pointsAwarded > 0 && citizenId) {
+    // 1. Try RPC function award_eco_points (bypasses RLS with SECURITY DEFINER)
+    try {
+      await supabase.rpc('award_eco_points', {
+        target_citizen_id: citizenId,
+        points_to_add: pointsAwarded,
+      });
+    } catch (rpcErr) {
+      console.warn('RPC award_eco_points fallback to direct:', rpcErr);
+      // 2. Direct update fallback
+      try {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('eco_points')
+          .eq('id', citizenId)
+          .single();
+
+        if (profile) {
+          await supabase
+            .from('profiles')
+            .update({ eco_points: (profile.eco_points || 0) + pointsAwarded })
+            .eq('id', citizenId);
+        }
+      } catch (profileErr) {
+        console.warn('Direct profile update note:', profileErr);
+      }
     }
   }
 

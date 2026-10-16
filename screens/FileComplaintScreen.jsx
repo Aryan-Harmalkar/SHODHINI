@@ -26,7 +26,7 @@ import {
   getImmediateDeviceLocation,
 } from '../lib/geotag';
 
-export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar }) {
+export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar, onPointsUpdated }) {
   const { colors, isDark, toggleTheme } = useTheme();
   const styles = useMemo(() => getStyles(colors, isDark), [colors, isDark]);
 
@@ -52,6 +52,8 @@ export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar 
   // AI Analysis States
   const [analyzingAi, setAnalyzingAi] = useState(false);
   const [aiResult, setAiResult] = useState(null);
+  const [penaltyMessage, setPenaltyMessage] = useState('');
+  const penalizedPhotoRef = useRef(null);
 
   // Form States (Description is strictly optional)
   const [description, setDescription] = useState('');
@@ -190,6 +192,7 @@ export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar 
   const runGeminiAnalysis = async (base64Data, uri) => {
     setAnalyzingAi(true);
     setErrorMessage('');
+    setPenaltyMessage('');
 
     try {
       const analysis = await analyzeWasteImageWithGemini({
@@ -198,8 +201,22 @@ export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar 
       });
       setAiResult(analysis);
 
-      if (analysis && !analysis.isWaste && !analysis.isTooSmall && currentUser?.id) {
-        await updateUserEcoPoints(currentUser.id, -5);
+      // If Gemini detects non-waste / false image (human, pet, clean room/street, selfie)
+      if (analysis && !analysis.isWaste) {
+        const activeUserId = currentUser?.id || user?.id;
+        if (activeUserId && penalizedPhotoRef.current !== uri) {
+          penalizedPhotoRef.current = uri;
+          const newPts = await updateUserEcoPoints(activeUserId, -5);
+          if (onPointsUpdated) {
+            onPointsUpdated(newPts);
+          }
+          setPenaltyMessage('⚠️ 5 Eco Points deducted: The uploaded image does not contain valid civic waste.');
+          Alert.alert(
+            '⚠️ False Report Penalty (-5 Eco Points)',
+            (analysis.rejectionReason || 'No legitimate civic garbage or waste detected in this photo.') +
+              '\n\n5 Eco Points have been deducted from your account as a penalty for submitting an invalid report.'
+          );
+        }
       }
     } catch (err) {
       console.warn('Gemini AI Analysis warning:', err);
@@ -227,8 +244,16 @@ export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar 
 
     // Reject non-waste items (living animals, humans, clean areas)
     if (!aiResult.isWaste) {
+      const activeUserId = currentUser?.id || user?.id;
+      if (activeUserId && penalizedPhotoRef.current !== photoUri) {
+        penalizedPhotoRef.current = photoUri;
+        const newPts = await updateUserEcoPoints(activeUserId, -5);
+        if (onPointsUpdated) {
+          onPointsUpdated(newPts);
+        }
+      }
       setErrorMessage(
-        aiResult.rejectionReason || 'Non-waste item detected. Complaints can only be filed for garbage or deceased animal carcasses.'
+        (aiResult.rejectionReason || 'Non-waste item detected.') + ' 5 Eco Points penalty has been deducted.'
       );
       return;
     }
@@ -346,6 +371,12 @@ export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar 
             {errorMessage ? (
               <View style={styles.errorBox}>
                 <Text style={styles.errorText}>⚠️ {errorMessage}</Text>
+              </View>
+            ) : null}
+
+            {penaltyMessage ? (
+              <View style={styles.penaltyNoticeBox}>
+                <Text style={styles.penaltyNoticeText}>{penaltyMessage}</Text>
               </View>
             ) : null}
 
@@ -700,6 +731,20 @@ const getStyles = (colors, isDark) =>
     color: colors.danger,
     fontSize: tokens.typography.size.xs,
     fontFamily: tokens.typography.family.semibold,
+  },
+  penaltyNoticeBox: {
+    backgroundColor: isDark ? 'rgba(239, 68, 68, 0.2)' : '#fee2e2',
+    borderWidth: 1.5,
+    borderColor: '#ef4444',
+    borderRadius: tokens.radius.lg,
+    padding: tokens.spacing.sm,
+    marginBottom: tokens.spacing.md,
+  },
+  penaltyNoticeText: {
+    color: '#dc2626',
+    fontSize: tokens.typography.size.xs,
+    fontFamily: tokens.typography.family.bold,
+    lineHeight: 18,
   },
   sectionCard: {
     marginBottom: tokens.spacing.md,
