@@ -353,8 +353,8 @@ export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar,
                 ✅ Status: Dispatched
               </Text>
             </View>
-            <TouchableOpacity 
-              style={[styles.submitBtn, { marginTop: 24, paddingHorizontal: 32 }]} 
+            <TouchableOpacity
+              style={[styles.submitBtn, { marginTop: 24, paddingHorizontal: 32 }]}
               onPress={onBackToHome}
               activeOpacity={0.8}
             >
@@ -437,7 +437,7 @@ export default function FileComplaintScreen({ user, onBackToHome, onOpenSidebar,
                       </Text>
                       {geotag ? (
                         <Text style={styles.geotagAccuracy}>
-                          🎯 ±{Math.round(geotag.accuracy_m || 10)}m • {geotag.source === 'photo_exif' ? 'Photo EXIF' : 'Live GPS'}
+                        {/* 🎯 ±{Math.round(geotag.accuracy_m || 10)}m • */} {geotag.source === 'photo_exif' ? 'Photo EXIF' : 'Live GPS'}
                         </Text>
                       ) : null}
                     </View>
