@@ -82,3 +82,5 @@ Refer to [`TESTING.md`](./TESTING.md) for step-by-step test scenarios verifying 
 Refer to [`DEPLOY.md`](./DEPLOY.md) for building and deploying:
 - Web: Vercel / Netlify static export (`npx expo export -p web`)
 - Android: Google Play production build via EAS CLI (`npx eas-cli build -p android --profile production`)
+
+By Team : The Trend Breakers 
