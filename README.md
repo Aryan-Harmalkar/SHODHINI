@@ -83,6 +83,9 @@ Refer to [`DEPLOY.md`](./DEPLOY.md) for building and deploying:
 - Web: Vercel / Netlify static export (`npx expo export -p web`)
 - Android: Google Play production build via EAS CLI (`npx eas-cli build -p android --profile production`)
 
+
+## 📦 Team Info
+
 - By Team : The Trend Breakers 
 
 - Team Members : Mandar , Aryan , Shaurya , Drishti ,Krishna
