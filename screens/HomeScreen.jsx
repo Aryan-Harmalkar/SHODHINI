@@ -79,8 +79,8 @@ export default function HomeScreen({ user, onLogout }) {
     if (isCollector && (screen === 'rewards' || screen.startsWith('rewards_') || screen === 'complaint' || screen === 'waste_pickup' || screen === 'recycle')) {
       return;
     }
-    if (screen === 'rewards' || screen.startsWith('rewards_')) {
-      setCurrentScreen('waste_pickup');
+    if (screen === 'rewards' || screen.startsWith('rewards_') || screen === 'eco_rewards') {
+      setCurrentScreen('rewards');
     } else if (screen === 'collector_tasks_available') {
       setCollectorTasksTab('available');
       setCurrentScreen('collector_tasks');
@@ -335,6 +335,20 @@ export default function HomeScreen({ user, onLogout }) {
         );
       }
 
+      if (currentScreen === 'rewards' || currentScreen === 'eco_rewards') {
+        return (
+          <RewardsScreen
+            user={user}
+            ecoPoints={ecoPoints}
+            onBackToHome={() => setCurrentScreen('home')}
+            onOpenSidebar={() => setSidebarVisible(true)}
+            onPointsUpdated={(newPts) => setEcoPoints(newPts)}
+            onNavigatePickup={() => setCurrentScreen('waste_pickup')}
+            onNavigateReport={() => setCurrentScreen('complaint')}
+          />
+        );
+      }
+
       if (currentScreen === 'supervisor_dashboard') {
         return (
           <SupervisorDashboardScreen
@@ -523,6 +537,15 @@ export default function HomeScreen({ user, onLogout }) {
                 >
                   <Text style={styles.gridCardIcon}>🚚</Text>
                   <Text style={styles.gridCardTitle}>Doorstep Pickup</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.gridCard}
+                  onPress={() => handleNavigate('rewards')}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.gridCardIcon}>🎁</Text>
+                  <Text style={styles.gridCardTitle}>Eco Rewards</Text>
                 </TouchableOpacity>
 
                 {/* <TouchableOpacity

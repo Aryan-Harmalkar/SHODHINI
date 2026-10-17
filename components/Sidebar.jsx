@@ -104,12 +104,12 @@ export default function Sidebar({
             style={styles.ecoPointsStrip}
             activeOpacity={0.7}
             onPress={() => {
-              onNavigate('waste_pickup');
+              onNavigate('rewards');
               onClose();
             }}
           >
             <Text style={styles.ecoPointsText}>🌱 {ecoPoints} Eco Points</Text>
-            <Text style={styles.ecoPointsArrow}>Use for Pickup →</Text>
+            <Text style={styles.ecoPointsArrow}>Redeem Rewards →</Text>
           </TouchableOpacity>
         )}
 
@@ -240,6 +240,17 @@ export default function Sidebar({
                 <Text style={styles.menuIcon}>🚚</Text>
                 <Text style={[styles.menuText, currentScreen === 'waste_pickup' && styles.activeMenuText]}>
                   Doorstep Pickup
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.menuItem, (currentScreen === 'rewards' || currentScreen === 'eco_rewards') && styles.activeMenuItem]}
+                onPress={() => { onNavigate('rewards'); onClose(); }}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.menuIcon}>🎁</Text>
+                <Text style={[styles.menuText, (currentScreen === 'rewards' || currentScreen === 'eco_rewards') && styles.activeMenuText]}>
+                  Eco Rewards & Perks
                 </Text>
               </TouchableOpacity>
 
