@@ -108,8 +108,13 @@ export default function Sidebar({
               onClose();
             }}
           >
-            <Text style={styles.ecoPointsText}>🌱 {ecoPoints} Eco Points</Text>
-            <Text style={styles.ecoPointsArrow}>Redeem Rewards →</Text>
+            <View>
+              <Text style={styles.ecoPointsText}>🌱 {ecoPoints} Eco Points</Text>
+              <Text style={{ fontSize: 10, color: colors.muted, fontWeight: '600', marginTop: 1 }}>
+                ≈ ₹{(ecoPoints * 0.30).toFixed(2)} (30p/pt)
+              </Text>
+            </View>
+            <Text style={styles.ecoPointsArrow}>Redeem →</Text>
           </TouchableOpacity>
         )}
 

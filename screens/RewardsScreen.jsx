@@ -8,114 +8,171 @@ import {
   Alert,
   Modal,
   Platform,
+  useWindowDimensions,
 } from 'react-native';
 import * as SecureStore from 'expo-secure-store';
 import { tokens, useTheme } from '../lib/theme';
 import { updateUserEcoPoints } from '../db/database';
 
+// Global conversion: 1 Eco Point = 0.30 paise (₹0.30)
+export const ECO_POINT_VAL_INR = 0.30;
+
 const VOUCHERS_STORAGE_KEY = 'shodhini_user_vouchers_';
 
 const REWARDS_CATALOG = [
+  // --- UTILITY BILL WAIVERS ---
   {
-    id: 'elec_100',
-    title: 'Electricity Bill Waiver - ₹100 Off',
-    points: 50,
+    id: 'elec_15',
+    title: 'Electricity Bill Waiver - ₹15 Off',
+    points: 50, // 50 * 0.30 = ₹15.00
     icon: '⚡',
     category: 'utilities',
-    discountVal: '₹100 Waiver',
+    discountVal: '₹15.00 Waiver',
     tag: 'Popular',
-    description: 'Direct ₹100 deduction voucher for your monthly State Electricity Board or Panchayat energy bill. Valid for all residential meters.',
+    description: 'Direct ₹15 deduction voucher for your monthly State Electricity Board or Panchayat energy bill.',
     terms: 'Present voucher code at the local electricity sub-station counter or apply during online bill payment.',
     expiryDays: 60,
   },
   {
-    id: 'elec_250',
-    title: 'Electricity Bill Waiver - ₹250 Off',
-    points: 100,
+    id: 'elec_30',
+    title: 'Electricity Bill Waiver - ₹30 Off',
+    points: 100, // 100 * 0.30 = ₹30.00
     icon: '⚡',
     category: 'utilities',
-    discountVal: '₹250 Waiver',
+    discountVal: '₹30.00 Waiver',
     tag: 'Best Value',
-    description: 'Substantial ₹250 rebate voucher on your residential power invoice under the Green Citizen Clean Energy Subsidy.',
-    terms: 'Valid on bills above ₹300. One voucher allowed per billing cycle per meter number.',
+    description: 'Save ₹30 on your residential power invoice under the Green Citizen Clean Energy Subsidy scheme.',
+    terms: 'Valid on domestic electricity meters. One voucher allowed per billing cycle.',
     expiryDays: 60,
   },
   {
-    id: 'elec_500',
-    title: 'Electricity Bill Waiver - ₹500 Off',
-    points: 200,
+    id: 'elec_60',
+    title: 'Electricity Bill Waiver - ₹60 Off',
+    points: 200, // 200 * 0.30 = ₹60.00
     icon: '⚡',
     category: 'utilities',
-    discountVal: '₹500 Waiver',
-    tag: 'Mega Saver',
-    description: 'Major ₹500 power bill discount for top eco champions. Direct municipal power subsidy credit.',
-    terms: 'Applicable on any domestic electricity bill. Valid for 90 days from redemption.',
+    discountVal: '₹60.00 Waiver',
+    tag: 'Super Saver',
+    description: 'Substantial ₹60 power rebate voucher for household electricity meters. High impact civic credit.',
+    terms: 'Applicable on any residential electricity bill. Valid for 90 days from redemption.',
     expiryDays: 90,
   },
   {
-    id: 'paper_bags',
-    title: 'Biodegradable Paper Bags (Pack of 20)',
-    points: 25,
+    id: 'elec_150',
+    title: 'Electricity Bill Waiver - ₹150 Off',
+    points: 500, // 500 * 0.30 = ₹150.00
+    icon: '⚡',
+    category: 'utilities',
+    discountVal: '₹150.00 Waiver',
+    tag: 'Mega Subsidy',
+    description: 'Major ₹150 municipal electricity bill grant for top community eco champions.',
+    terms: 'Sanctioned under Panchayat Swachh Urja mission. Submit copy at billing desk.',
+    expiryDays: 90,
+  },
+
+  // --- ECO PRODUCTS & ESSENTIALS ---
+  {
+    id: 'paper_bags_5',
+    title: 'Biodegradable Paper Bags (Pack of 5)',
+    points: 25, // 25 * 0.30 = ₹7.50
     icon: '🛍️',
     category: 'essentials',
-    discountVal: 'Free Pack (20 Bags)',
+    discountVal: 'Pack of 5 Bags',
     tag: 'Zero Plastic',
-    description: 'Heavy-duty recycled brown kraft paper grocery bags with twisted handles. 100% plastic-free and reusable.',
-    terms: 'Collect your sealed pack from the Village Panchayat Office or partnered municipal eco-kiosks.',
+    description: 'Heavy-duty recycled brown kraft grocery bags with handles. 100% plastic-free and reusable.',
+    terms: 'Collect sealed pack from Village Panchayat Office or partnered municipal eco-kiosks.',
     expiryDays: 45,
   },
   {
-    id: 'handwash',
-    title: 'Organic Herbal Handwash (500ml Bottle)',
-    points: 35,
+    id: 'paper_bags_10',
+    title: 'Biodegradable Paper Bags (Pack of 10)',
+    points: 50, // 50 * 0.30 = ₹15.00
+    icon: '🛍️',
+    category: 'essentials',
+    discountVal: 'Pack of 10 Bags',
+    tag: 'Eco Essential',
+    description: 'Set of 10 reinforced kraft paper bags to eliminate single-use plastic grocery bags.',
+    terms: 'Collect from local Panchayat distribution center or participating grocery stores.',
+    expiryDays: 45,
+  },
+  {
+    id: 'handwash_refill',
+    title: 'Organic Herbal Handwash (200ml Refill)',
+    points: 35, // 35 * 0.30 = ₹10.50
     icon: '🧴',
     category: 'essentials',
-    discountVal: 'Free 500ml Bottle',
+    discountVal: '200ml Refill',
     tag: 'Eco Hygiene',
-    description: 'Antibacterial handwash crafted from organic neem, tulsi & aloe vera in a refillable biodegradable pump bottle.',
-    terms: 'Show voucher barcode at the Primary Health Center (PHC) counter or Gram Panchayat store.',
+    description: 'Antibacterial herbal handwash pouch made with neem, tulsi & aloe extracts in recyclable pouch.',
+    terms: 'Redeem at Primary Health Center (PHC) counter or Gram Panchayat store.',
     expiryDays: 45,
   },
   {
-    id: 'compost',
-    title: 'Organic Farm Compost Fertilizer (5kg)',
-    points: 40,
+    id: 'handwash_dispenser',
+    title: 'Organic Herbal Handwash (500ml Dispenser)',
+    points: 70, // 70 * 0.30 = ₹21.00
+    icon: '🧴',
+    category: 'essentials',
+    discountVal: '500ml Dispenser',
+    tag: 'Family Pack',
+    description: 'Family-size organic neem handwash in a 100% recyclable pump bottle dispenser.',
+    terms: 'Collect at the Gram Panchayat dispensary or municipal health desk.',
+    expiryDays: 60,
+  },
+  {
+    id: 'compost_2kg',
+    title: 'Organic Farm Compost Fertilizer (2kg)',
+    points: 30, // 30 * 0.30 = ₹9.00
     icon: '🪴',
     category: 'essentials',
-    discountVal: 'Free 5kg Sack',
+    discountVal: '2kg Sack',
     tag: 'Soil Booster',
-    description: 'Nutrient-dense organic compost produced locally from segregated bio-waste. Ideal for kitchen gardens & crops.',
+    description: 'Nutrient-rich municipal organic compost produced locally from segregated bio-waste.',
     terms: 'Collect from the Municipal Solid Waste Processing Yard or community composting unit.',
     expiryDays: 60,
   },
   {
+    id: 'compost_5kg',
+    title: 'Organic Farm Compost Fertilizer (5kg)',
+    points: 60, // 60 * 0.30 = ₹18.00
+    icon: '🪴',
+    category: 'essentials',
+    discountVal: '5kg Sack',
+    tag: 'Garden Kit',
+    description: 'Heavy 5kg sack of cured bio-compost for kitchen gardens, potted plants & fruit trees.',
+    terms: 'Collect from the Municipal Solid Waste Processing Yard or community composting unit.',
+    expiryDays: 60,
+  },
+
+  // --- CIVIC PERKS ---
+  {
     id: 'doorstep_pickup',
     title: 'Free Priority Doorstep Waste Pickup',
-    points: 30,
+    points: 40, // 40 * 0.30 = ₹12.00
     icon: '🚚',
     category: 'civic',
     discountVal: '1 Free Booking',
     tag: 'Priority Service',
-    description: 'Dedicated electric vehicle collection team visits your residence to pick up segregated dry waste, scrap & e-waste.',
+    description: 'Dedicated electric vehicle collection team visits your residence to pick up segregated dry waste & scrap.',
     terms: 'Redeemable instantly via the Doorstep Pickup tab in the app with zero fee.',
     expiryDays: 30,
   },
   {
     id: 'tax_rebate',
-    title: 'Panchayat Property Tax Rebate - ₹200',
-    points: 150,
+    title: 'Panchayat Property Tax Rebate - ₹45 Off',
+    points: 150, // 150 * 0.30 = ₹45.00
     icon: '🏛️',
     category: 'civic',
-    discountVal: '₹200 Tax Rebate',
+    discountVal: '₹45.00 Tax Rebate',
     tag: 'Civic Perk',
-    description: 'Official ₹200 rebate certificate towards your annual Gram Panchayat house/property tax assessment.',
+    description: 'Official ₹45 rebate certificate towards your annual Gram Panchayat house/property tax assessment.',
     terms: 'Submit printed voucher or code copy at the Panchayat Tax Collection counter.',
     expiryDays: 180,
   },
   {
     id: 'plant_tree',
-    title: 'Plant a Geo-Tagged Tree in Your Name',
-    points: 80,
+    title: 'Plant a Geo-Tagged Village Tree',
+    points: 100, // 100 * 0.30 = ₹30.00
     icon: '🌳',
     category: 'civic',
     discountVal: 'Certificate + Tag',
@@ -132,6 +189,7 @@ const INITIAL_HISTORY = [
     title: 'Waste Report Resolved: Cleaned by Collector',
     date: 'Today, 2:30 PM',
     points: '+15',
+    inrVal: '+₹4.50',
     type: 'credit',
     icon: '✅',
   },
@@ -140,6 +198,7 @@ const INITIAL_HISTORY = [
     title: 'Scrap Handover: 12kg Recycled Dry Waste',
     date: 'Yesterday, 11:15 AM',
     points: '+25',
+    inrVal: '+₹7.50',
     type: 'credit',
     icon: '♻️',
   },
@@ -148,6 +207,7 @@ const INITIAL_HISTORY = [
     title: 'Waste Report Resolved: Market Road Bin',
     date: '12 Oct 2026',
     points: '+15',
+    inrVal: '+₹4.50',
     type: 'credit',
     icon: '✅',
   },
@@ -156,6 +216,7 @@ const INITIAL_HISTORY = [
     title: 'Waste Report Resolved: School Playground Corner',
     date: '08 Oct 2026',
     points: '+15',
+    inrVal: '+₹4.50',
     type: 'credit',
     icon: '✅',
   },
@@ -171,7 +232,14 @@ export default function RewardsScreen({
   onNavigateReport,
 }) {
   const { colors, isDark } = useTheme();
-  const styles = useMemo(() => getStyles(colors, isDark), [colors, isDark]);
+  const { width } = useWindowDimensions();
+  const isDesktop = width >= 768;
+  const isWideDesktop = width >= 1150;
+
+  const styles = useMemo(
+    () => getStyles(colors, isDark, isDesktop, isWideDesktop),
+    [colors, isDark, isDesktop, isWideDesktop]
+  );
 
   const [activeTab, setActiveTab] = useState('catalog'); // 'catalog' | 'vouchers' | 'history'
   const [selectedCategory, setSelectedCategory] = useState('all'); // 'all' | 'utilities' | 'essentials' | 'civic'
@@ -183,6 +251,7 @@ export default function RewardsScreen({
   const [copiedCodeId, setCopiedCodeId] = useState(null);
 
   const storageKey = `${VOUCHERS_STORAGE_KEY}${user?.id || 'guest'}`;
+  const totalRupeeValue = useMemo(() => (ecoPoints * ECO_POINT_VAL_INR).toFixed(2), [ecoPoints]);
 
   // Load saved vouchers from storage
   useEffect(() => {
@@ -214,21 +283,24 @@ export default function RewardsScreen({
   }, [storageKey]);
 
   // Save vouchers to storage
-  const saveVouchers = useCallback(async (updatedList) => {
-    try {
-      setVouchers(updatedList);
-      const str = JSON.stringify(updatedList);
-      if (Platform.OS === 'web') {
-        if (typeof localStorage !== 'undefined') {
-          localStorage.setItem(storageKey, str);
+  const saveVouchers = useCallback(
+    async (updatedList) => {
+      try {
+        setVouchers(updatedList);
+        const str = JSON.stringify(updatedList);
+        if (Platform.OS === 'web') {
+          if (typeof localStorage !== 'undefined') {
+            localStorage.setItem(storageKey, str);
+          }
+        } else {
+          await SecureStore.setItemAsync(storageKey, str);
         }
-      } else {
-        await SecureStore.setItemAsync(storageKey, str);
+      } catch (err) {
+        console.warn('Failed to persist vouchers:', err);
       }
-    } catch (err) {
-      console.warn('Failed to persist vouchers:', err);
-    }
-  }, [storageKey]);
+    },
+    [storageKey]
+  );
 
   // Filter rewards by category
   const filteredRewards = useMemo(() => {
@@ -239,28 +311,29 @@ export default function RewardsScreen({
   // Citizen Eco Tier calculation
   const tierInfo = useMemo(() => {
     if (ecoPoints >= 200) {
-      return { title: 'Village Eco Hero', badge: '👑', nextMilestone: null, color: '#f59e0b' };
+      return { title: 'Village Eco Hero', badge: '👑', color: '#f59e0b' };
     }
     if (ecoPoints >= 100) {
-      return { title: 'Eco Champion', badge: '🌟', nextMilestone: 200, color: '#10b981' };
+      return { title: 'Eco Champion', badge: '🌟', color: '#10b981' };
     }
     if (ecoPoints >= 50) {
-      return { title: 'Green Guardian', badge: '🌿', nextMilestone: 100, color: '#3b82f6' };
+      return { title: 'Green Guardian', badge: '🌿', color: '#3b82f6' };
     }
-    return { title: 'Seedling Citizen', badge: '🌱', nextMilestone: 50, color: colors.accent };
+    return { title: 'Seedling Citizen', badge: '🌱', color: colors.accent };
   }, [ecoPoints, colors.accent]);
 
   // Handle Redeem click
   const handleInitiateRedeem = (reward) => {
     if (ecoPoints < reward.points) {
-      const deficit = reward.points - ecoPoints;
+      const deficitPts = reward.points - ecoPoints;
+      const deficitInr = (deficitPts * ECO_POINT_VAL_INR).toFixed(2);
       Alert.alert(
         'Insufficient Eco Points',
-        `You have ${ecoPoints} Eco Points. You need ${deficit} more points to redeem ${reward.title}.\n\n💡 Earn points by reporting waste (+15 pts) or recycling dry waste (+25 pts)!`,
+        `You have ${ecoPoints} Eco Points (₹${totalRupeeValue}).\nYou need ${deficitPts} more points (₹${deficitInr}) to redeem ${reward.title}.\n\n💡 1 Eco Point = ₹0.30 (30 paise).\nEarn points by reporting waste (+15 pts / ₹4.50) or recycling scrap (+25 pts / ₹7.50)!`,
         [
           { text: 'Cancel', style: 'cancel' },
           {
-            text: '📸 Report Waste',
+            text: '📸 Report Waste Spot',
             onPress: () => {
               if (onNavigateReport) onNavigateReport();
               else if (onBackToHome) onBackToHome();
@@ -295,7 +368,8 @@ export default function RewardsScreen({
 
       // 2. Generate a voucher code
       const randomSuffix = Math.floor(1000 + Math.random() * 9000);
-      const prefix = reward.category === 'utilities' ? 'ELEC' : reward.category === 'essentials' ? 'ECO' : 'CIVIC';
+      const prefix =
+        reward.category === 'utilities' ? 'ELEC' : reward.category === 'essentials' ? 'ECO' : 'CIVIC';
       const voucherCode = `SHODH-${prefix}-${reward.points}-${randomSuffix}`;
 
       const expiryDate = new Date();
@@ -318,6 +392,7 @@ export default function RewardsScreen({
         code: voucherCode,
         discountVal: reward.discountVal,
         pointsSpent: reward.points,
+        inrValue: (reward.points * ECO_POINT_VAL_INR).toFixed(2),
         category: reward.category,
         icon: reward.icon,
         description: reward.description,
@@ -337,6 +412,7 @@ export default function RewardsScreen({
           title: `Redeemed: ${reward.title}`,
           date: 'Just now',
           points: `-${reward.points}`,
+          inrVal: `-₹${(reward.points * ECO_POINT_VAL_INR).toFixed(2)}`,
           type: 'debit',
           icon: '🎟️',
         },
@@ -358,7 +434,10 @@ export default function RewardsScreen({
     setTimeout(() => {
       setCopiedCodeId(null);
     }, 2500);
-    Alert.alert('Voucher Code Copied!', `Code: ${voucher.code}\n\nPresent this code at the relevant counter to claim your reward.`);
+    Alert.alert(
+      'Voucher Code Copied!',
+      `Code: ${voucher.code}\nValue: ${voucher.discountVal}\n\nPresent this code at the relevant counter or electricity sub-station to claim your reward.`
+    );
   };
 
   return (
@@ -366,371 +445,427 @@ export default function RewardsScreen({
       {/* Top Header */}
       <View style={styles.topBar}>
         <View style={styles.topLeft}>
-          <TouchableOpacity style={styles.menuBtn} onPress={onOpenSidebar} activeOpacity={0.7}>
+          <TouchableOpacity
+            style={styles.menuBtn}
+            onPress={onOpenSidebar}
+            activeOpacity={0.7}
+            accessibilityLabel="Open Sidebar Menu"
+          >
             <Text style={styles.menuIcon}>☰</Text>
           </TouchableOpacity>
           <Text style={styles.screenTitle}>🎁 Eco Rewards & Perks</Text>
         </View>
 
         <View style={styles.topRight}>
-          <TouchableOpacity style={styles.backHomeBtn} onPress={onBackToHome} activeOpacity={0.7}>
+          <TouchableOpacity
+            style={styles.backHomeBtn}
+            onPress={onBackToHome}
+            activeOpacity={0.7}
+            accessibilityLabel="Return to Home Screen"
+          >
             <Text style={styles.backHomeText}>🏠 Home</Text>
           </TouchableOpacity>
         </View>
       </View>
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
-        {/* Hero Eco Balance & Tier Card */}
-        <View style={styles.heroBalanceCard}>
-          <View style={styles.heroCardTop}>
-            <View>
+        <View style={styles.contentWrapper}>
+          {/* HERO BANNER CARD */}
+          <View style={styles.heroCard}>
+            <View style={styles.heroLeftCol}>
               <Text style={styles.heroSubLabel}>Available Eco Balance</Text>
-              <View style={styles.pointsNumberRow}>
+              <View style={styles.pointsRow}>
                 <Text style={styles.heroPointsValue}>🌱 {ecoPoints}</Text>
                 <Text style={styles.heroPointsUnit}>pts</Text>
               </View>
+
+              {/* Conversion Valuation Pill */}
+              <View style={styles.cashValPill}>
+                <Text style={styles.cashValAmount}>≈ ₹{totalRupeeValue}</Text>
+                <View style={styles.rateDivider} />
+                <Text style={styles.rateNote}>1 pt = ₹0.30 (30p)</Text>
+              </View>
             </View>
-            <View style={[styles.tierBadge, { borderColor: tierInfo.color }]}>
-              <Text style={styles.tierBadgeIcon}>{tierInfo.badge}</Text>
-              <Text style={[styles.tierBadgeText, { color: tierInfo.color }]}>{tierInfo.title}</Text>
-            </View>
-          </View>
 
-          <View style={styles.heroStatsRow}>
-            <View style={styles.heroStatItem}>
-              <Text style={styles.heroStatNumber}>{vouchers.length}</Text>
-              <Text style={styles.heroStatLabel}>Vouchers Won</Text>
-            </View>
-            <View style={styles.heroStatDivider} />
-            <View style={styles.heroStatItem}>
-              <Text style={styles.heroStatNumber}>₹100 - ₹500</Text>
-              <Text style={styles.heroStatLabel}>Bill Waivers</Text>
-            </View>
-            <View style={styles.heroStatDivider} />
-            <View style={styles.heroStatItem}>
-              <Text style={styles.heroStatNumber}>100%</Text>
-              <Text style={styles.heroStatLabel}>Panchayat Verified</Text>
-            </View>
-          </View>
+            <View style={styles.heroRightCol}>
+              <View style={[styles.tierBadge, { borderColor: tierInfo.color }]}>
+                <Text style={styles.tierBadgeIcon}>{tierInfo.badge}</Text>
+                <Text style={[styles.tierBadgeText, { color: tierInfo.color }]}>{tierInfo.title}</Text>
+              </View>
 
-          <View style={styles.heroActionsRow}>
-            <TouchableOpacity
-              style={styles.heroActionBtnPrimary}
-              onPress={() => {
-                if (onNavigateReport) onNavigateReport();
-                else if (onBackToHome) onBackToHome();
-              }}
-              activeOpacity={0.8}
-            >
-              <Text style={styles.heroActionBtnPrimaryText}>📸 + Earn Points (Report Waste)</Text>
-            </TouchableOpacity>
-
-            {onNavigatePickup && (
-              <TouchableOpacity
-                style={styles.heroActionBtnSecondary}
-                onPress={onNavigatePickup}
-                activeOpacity={0.8}
-              >
-                <Text style={styles.heroActionBtnSecondaryText}>🚚 Pickup</Text>
-              </TouchableOpacity>
-            )}
-          </View>
-        </View>
-
-        {/* Navigation Tabs */}
-        <View style={styles.tabBar}>
-          <TouchableOpacity
-            style={[styles.tabButton, activeTab === 'catalog' && styles.activeTabButton]}
-            onPress={() => setActiveTab('catalog')}
-            activeOpacity={0.7}
-          >
-            <Text style={[styles.tabButtonText, activeTab === 'catalog' && styles.activeTabButtonText]}>
-              🎁 Rewards Catalog
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.tabButton, activeTab === 'vouchers' && styles.activeTabButton]}
-            onPress={() => setActiveTab('vouchers')}
-            activeOpacity={0.7}
-          >
-            <Text style={[styles.tabButtonText, activeTab === 'vouchers' && styles.activeTabButtonText]}>
-              🎟️ My Vouchers ({vouchers.length})
-            </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.tabButton, activeTab === 'history' && styles.activeTabButton]}
-            onPress={() => setActiveTab('history')}
-            activeOpacity={0.7}
-          >
-            <Text style={[styles.tabButtonText, activeTab === 'history' && styles.activeTabButtonText]}>
-              📜 Points Log
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* TAB 1: REWARDS CATALOG */}
-        {activeTab === 'catalog' && (
-          <View>
-            {/* Category Filter Pills */}
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.categoryPillsContainer}
-            >
-              <TouchableOpacity
-                style={[styles.categoryPill, selectedCategory === 'all' && styles.activeCategoryPill]}
-                onPress={() => setSelectedCategory('all')}
-                activeOpacity={0.7}
-              >
-                <Text style={[styles.categoryPillText, selectedCategory === 'all' && styles.activeCategoryPillText]}>
-                  🌟 All Rewards ({REWARDS_CATALOG.length})
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[styles.categoryPill, selectedCategory === 'utilities' && styles.activeCategoryPill]}
-                onPress={() => setSelectedCategory('utilities')}
-                activeOpacity={0.7}
-              >
-                <Text style={[styles.categoryPillText, selectedCategory === 'utilities' && styles.activeCategoryPillText]}>
-                  ⚡ Electricity Waivers
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[styles.categoryPill, selectedCategory === 'essentials' && styles.activeCategoryPill]}
-                onPress={() => setSelectedCategory('essentials')}
-                activeOpacity={0.7}
-              >
-                <Text style={[styles.categoryPillText, selectedCategory === 'essentials' && styles.activeCategoryPillText]}>
-                  🌿 Eco Products
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={[styles.categoryPill, selectedCategory === 'civic' && styles.activeCategoryPill]}
-                onPress={() => setSelectedCategory('civic')}
-                activeOpacity={0.7}
-              >
-                <Text style={[styles.categoryPillText, selectedCategory === 'civic' && styles.activeCategoryPillText]}>
-                  🏛️ Civic Perks
-                </Text>
-              </TouchableOpacity>
-            </ScrollView>
-
-            {/* Catalog Reward Cards */}
-            <View style={styles.catalogList}>
-              {filteredRewards.map((reward) => {
-                const canAfford = ecoPoints >= reward.points;
-                const deficit = reward.points - ecoPoints;
-                const progressPct = Math.min(100, Math.round((ecoPoints / reward.points) * 100));
-
-                return (
-                  <View key={reward.id} style={styles.rewardCard}>
-                    <View style={styles.rewardCardHeader}>
-                      <View style={styles.rewardIconBadge}>
-                        <Text style={styles.rewardIconText}>{reward.icon}</Text>
-                      </View>
-                      <View style={styles.rewardHeaderDetails}>
-                        <View style={styles.rewardTagRow}>
-                          <View style={styles.tagPill}>
-                            <Text style={styles.tagPillText}>{reward.tag}</Text>
-                          </View>
-                          <View style={styles.costBadge}>
-                            <Text style={styles.costBadgeText}>🌱 {reward.points} pts</Text>
-                          </View>
-                        </View>
-                        <Text style={styles.rewardTitle}>{reward.title}</Text>
-                      </View>
-                    </View>
-
-                    <Text style={styles.rewardDescription}>{reward.description}</Text>
-
-                    <View style={styles.termsRow}>
-                      <Text style={styles.termsLabel}>📍 {reward.terms}</Text>
-                    </View>
-
-                    {/* Progress Bar if not enough points */}
-                    {!canAfford && (
-                      <View style={styles.progressContainer}>
-                        <View style={styles.progressHeader}>
-                          <Text style={styles.progressLabel}>Progress: {progressPct}%</Text>
-                          <Text style={styles.progressDeficit}>Need {deficit} more pts</Text>
-                        </View>
-                        <View style={styles.progressBarTrack}>
-                          <View style={[styles.progressBarFill, { width: `${progressPct}%` }]} />
-                        </View>
-                      </View>
-                    )}
-
-                    <TouchableOpacity
-                      style={[styles.redeemButton, !canAfford && styles.redeemButtonDisabled]}
-                      onPress={() => handleInitiateRedeem(reward)}
-                      activeOpacity={0.8}
-                    >
-                      <Text style={[styles.redeemButtonText, !canAfford && styles.redeemButtonTextDisabled]}>
-                        {canAfford ? `🎉 Redeem for ${reward.points} Points` : `🔒 Need ${deficit} More Points`}
-                      </Text>
-                    </TouchableOpacity>
-                  </View>
-                );
-              })}
-            </View>
-          </View>
-        )}
-
-        {/* TAB 2: MY VOUCHERS */}
-        {activeTab === 'vouchers' && (
-          <View style={styles.vouchersContainer}>
-            {vouchers.length === 0 ? (
-              <View style={styles.emptyVouchersCard}>
-                <Text style={styles.emptyVouchersIcon}>🎟️</Text>
-                <Text style={styles.emptyVouchersTitle}>No Redeemed Vouchers Yet</Text>
-                <Text style={styles.emptyVouchersSub}>
-                  Use your Eco Points in the catalog to unlock electricity bill waivers, paper bags, organic handwash, and compost!
-                </Text>
+              <View style={styles.heroActionsRow}>
                 <TouchableOpacity
-                  style={styles.browseCatalogCta}
-                  onPress={() => setActiveTab('catalog')}
+                  style={styles.heroActionBtnPrimary}
+                  onPress={() => {
+                    if (onNavigateReport) onNavigateReport();
+                    else if (onBackToHome) onBackToHome();
+                  }}
                   activeOpacity={0.8}
                 >
-                  <Text style={styles.browseCatalogCtaText}>Explore Rewards Catalog →</Text>
+                  <Text style={styles.heroActionBtnPrimaryText}>📸 + Earn Points</Text>
                 </TouchableOpacity>
+
+                {onNavigatePickup && (
+                  <TouchableOpacity
+                    style={styles.heroActionBtnSecondary}
+                    onPress={onNavigatePickup}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={styles.heroActionBtnSecondaryText}>🚚 Pickup</Text>
+                  </TouchableOpacity>
+                )}
               </View>
-            ) : (
-              <View style={styles.vouchersList}>
-                {vouchers.map((voucher) => {
-                  const isCopied = copiedCodeId === voucher.id;
+            </View>
+          </View>
+
+          {/* TAB SWITCHER */}
+          <View style={styles.tabBarWrapper}>
+            <View style={styles.tabBar}>
+              <TouchableOpacity
+                style={[styles.tabButton, activeTab === 'catalog' && styles.activeTabButton]}
+                onPress={() => setActiveTab('catalog')}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.tabButtonText, activeTab === 'catalog' && styles.activeTabButtonText]}>
+                  🎁 Rewards Catalog
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.tabButton, activeTab === 'vouchers' && styles.activeTabButton]}
+                onPress={() => setActiveTab('vouchers')}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.tabButtonText, activeTab === 'vouchers' && styles.activeTabButtonText]}>
+                  🎟️ My Vouchers ({vouchers.length})
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity
+                style={[styles.tabButton, activeTab === 'history' && styles.activeTabButton]}
+                onPress={() => setActiveTab('history')}
+                activeOpacity={0.7}
+              >
+                <Text style={[styles.tabButtonText, activeTab === 'history' && styles.activeTabButtonText]}>
+                  📜 Points History
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          {/* TAB 1: REWARDS CATALOG */}
+          {activeTab === 'catalog' && (
+            <View>
+              {/* Category Filter Pills */}
+              <View style={styles.categoriesWrapper}>
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.categoryPillsContainer}
+                >
+                  <TouchableOpacity
+                    style={[styles.categoryPill, selectedCategory === 'all' && styles.activeCategoryPill]}
+                    onPress={() => setSelectedCategory('all')}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.categoryPillText, selectedCategory === 'all' && styles.activeCategoryPillText]}>
+                      🌟 All Perks ({REWARDS_CATALOG.length})
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[styles.categoryPill, selectedCategory === 'utilities' && styles.activeCategoryPill]}
+                    onPress={() => setSelectedCategory('utilities')}
+                    activeOpacity={0.7}
+                  >
+                    <Text
+                      style={[
+                        styles.categoryPillText,
+                        selectedCategory === 'utilities' && styles.activeCategoryPillText,
+                      ]}
+                    >
+                      ⚡ Electricity Waivers
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[styles.categoryPill, selectedCategory === 'essentials' && styles.activeCategoryPill]}
+                    onPress={() => setSelectedCategory('essentials')}
+                    activeOpacity={0.7}
+                  >
+                    <Text
+                      style={[
+                        styles.categoryPillText,
+                        selectedCategory === 'essentials' && styles.activeCategoryPillText,
+                      ]}
+                    >
+                      🌿 Eco Products
+                    </Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={[styles.categoryPill, selectedCategory === 'civic' && styles.activeCategoryPill]}
+                    onPress={() => setSelectedCategory('civic')}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.categoryPillText, selectedCategory === 'civic' && styles.activeCategoryPillText]}>
+                      🏛️ Civic Perks
+                    </Text>
+                  </TouchableOpacity>
+                </ScrollView>
+              </View>
+
+              {/* Catalog Grid */}
+              <View style={styles.catalogGrid}>
+                {filteredRewards.map((reward) => {
+                  const canAfford = ecoPoints >= reward.points;
+                  const deficitPts = reward.points - ecoPoints;
+                  const progressPct = Math.min(100, Math.round((ecoPoints / reward.points) * 100));
+                  const inrValue = (reward.points * ECO_POINT_VAL_INR).toFixed(2);
+                  const deficitInr = (deficitPts * ECO_POINT_VAL_INR).toFixed(2);
+
                   return (
-                    <View key={voucher.id} style={styles.voucherTicketCard}>
-                      <View style={styles.ticketHeader}>
-                        <View style={styles.ticketBadgeRow}>
-                          <View style={styles.activeStatusPill}>
-                            <Text style={styles.activeStatusText}>🟢 ACTIVE VOUCHER</Text>
+                    <View key={reward.id} style={styles.rewardCard}>
+                      {/* Card Header */}
+                      <View style={styles.cardHeaderRow}>
+                        <View style={styles.rewardIconBadge}>
+                          <Text style={styles.rewardIconText}>{reward.icon}</Text>
+                        </View>
+                        <View style={styles.cardHeaderTitleGroup}>
+                          <View style={styles.tagBadge}>
+                            <Text style={styles.tagBadgeText}>{reward.tag}</Text>
                           </View>
-                          <Text style={styles.voucherDate}>Redeemed {voucher.redeemedAt}</Text>
+                          <Text style={styles.rewardTitle} numberOfLines={2}>
+                            {reward.title}
+                          </Text>
                         </View>
-                        <Text style={styles.voucherTitle}>{voucher.icon} {voucher.title}</Text>
-                        <Text style={styles.voucherDiscountVal}>{voucher.discountVal}</Text>
                       </View>
 
-                      {/* Ticket Perforation Line */}
-                      <View style={styles.ticketDividerWrap}>
-                        <View style={styles.ticketNotchLeft} />
-                        <View style={styles.ticketDashedLine} />
-                        <View style={styles.ticketNotchRight} />
+                      {/* Valuation Strip: Points + Rupees */}
+                      <View style={styles.valuationStrip}>
+                        <View style={styles.costPointPill}>
+                          <Text style={styles.costPointText}>🌱 {reward.points} pts</Text>
+                        </View>
+                        <View style={styles.costInrPill}>
+                          <Text style={styles.costInrText}>Worth ₹{inrValue}</Text>
+                        </View>
                       </View>
 
-                      <View style={styles.ticketBody}>
-                        <Text style={styles.voucherCodeLabel}>VOUCHER CODE</Text>
-                        <View style={styles.codeBoxRow}>
-                          <Text style={styles.voucherCodeText}>{voucher.code}</Text>
-                          <TouchableOpacity
-                            style={[styles.copyButton, isCopied && styles.copyButtonDone]}
-                            onPress={() => handleCopyCode(voucher)}
-                            activeOpacity={0.7}
-                          >
-                            <Text style={[styles.copyButtonText, isCopied && styles.copyButtonTextDone]}>
-                              {isCopied ? '✓ Copied' : '📋 Copy'}
-                            </Text>
-                          </TouchableOpacity>
-                        </View>
+                      <Text style={styles.rewardDescription}>{reward.description}</Text>
 
-                        {/* Barcode visual simulation */}
-                        <View style={styles.barcodeVisual}>
-                          <View style={[styles.bar, { width: 4 }]} />
-                          <View style={[styles.bar, { width: 2 }]} />
-                          <View style={[styles.bar, { width: 6 }]} />
-                          <View style={[styles.bar, { width: 3 }]} />
-                          <View style={[styles.bar, { width: 8 }]} />
-                          <View style={[styles.bar, { width: 2 }]} />
-                          <View style={[styles.bar, { width: 5 }]} />
-                          <View style={[styles.bar, { width: 7 }]} />
-                          <View style={[styles.bar, { width: 3 }]} />
-                          <View style={[styles.bar, { width: 9 }]} />
-                          <View style={[styles.bar, { width: 4 }]} />
-                          <View style={[styles.bar, { width: 2 }]} />
-                          <View style={[styles.bar, { width: 5 }]} />
-                          <View style={[styles.bar, { width: 8 }]} />
-                          <View style={[styles.bar, { width: 3 }]} />
-                          <View style={[styles.bar, { width: 6 }]} />
-                          <View style={[styles.bar, { width: 2 }]} />
-                          <View style={[styles.bar, { width: 7 }]} />
-                        </View>
+                      <View style={styles.termsBox}>
+                        <Text style={styles.termsText}>📍 {reward.terms}</Text>
+                      </View>
 
-                        <View style={styles.voucherMetaRow}>
-                          <Text style={styles.voucherExpiryText}>⏳ Valid until: {voucher.expiresAt}</Text>
-                          <Text style={styles.voucherSpentText}>Cost: {voucher.pointsSpent} pts</Text>
-                        </View>
+                      {/* Bottom Footer Area with Aligned Buttons */}
+                      <View style={styles.cardFooterArea}>
+                        {!canAfford && (
+                          <View style={styles.progressContainer}>
+                            <View style={styles.progressHeader}>
+                              <Text style={styles.progressLabel}>Progress: {progressPct}%</Text>
+                              <Text style={styles.progressDeficit}>
+                                Need {deficitPts} pts (₹{deficitInr})
+                              </Text>
+                            </View>
+                            <View style={styles.progressBarTrack}>
+                              <View style={[styles.progressBarFill, { width: `${progressPct}%` }]} />
+                            </View>
+                          </View>
+                        )}
 
-                        <Text style={styles.voucherInstructions}>
-                          📌 {voucher.terms || 'Show this code at the municipal or Panchayat counter.'}
-                        </Text>
+                        <TouchableOpacity
+                          style={[styles.redeemButton, !canAfford && styles.redeemButtonDisabled]}
+                          onPress={() => handleInitiateRedeem(reward)}
+                          activeOpacity={0.8}
+                        >
+                          <Text style={[styles.redeemButtonText, !canAfford && styles.redeemButtonTextDisabled]}>
+                            {canAfford
+                              ? `🎉 Redeem for ${reward.points} pts (₹${inrValue})`
+                              : `🔒 Need ${deficitPts} More Pts`}
+                          </Text>
+                        </TouchableOpacity>
                       </View>
                     </View>
                   );
                 })}
               </View>
-            )}
-          </View>
-        )}
+            </View>
+          )}
 
-        {/* TAB 3: POINTS HISTORY */}
-        {activeTab === 'history' && (
-          <View style={styles.historyContainer}>
-            <View style={styles.historyCard}>
-              {pointsHistory.map((h, idx) => {
-                const isCredit = h.type === 'credit';
-                const isLast = idx === pointsHistory.length - 1;
-                return (
-                  <View key={h.id} style={[styles.historyRow, isLast && { borderBottomWidth: 0 }]}>
-                    <View style={[styles.historyIconCircle, { backgroundColor: isCredit ? '#10b98115' : '#ef444415' }]}>
-                      <Text style={styles.historyIcon}>{h.icon}</Text>
+          {/* TAB 2: MY VOUCHERS */}
+          {activeTab === 'vouchers' && (
+            <View style={styles.vouchersContainer}>
+              {vouchers.length === 0 ? (
+                <View style={styles.emptyVouchersCard}>
+                  <Text style={styles.emptyVouchersIcon}>🎟️</Text>
+                  <Text style={styles.emptyVouchersTitle}>No Redeemed Vouchers Yet</Text>
+                  <Text style={styles.emptyVouchersSub}>
+                    You have {ecoPoints} Eco Points (worth ₹{totalRupeeValue}). Explore the rewards catalog to redeem
+                    electricity bill waivers, paper bag packs, organic handwash, and compost!
+                  </Text>
+                  <TouchableOpacity
+                    style={styles.browseCatalogCta}
+                    onPress={() => setActiveTab('catalog')}
+                    activeOpacity={0.8}
+                  >
+                    <Text style={styles.browseCatalogCtaText}>Explore Rewards Catalog →</Text>
+                  </TouchableOpacity>
+                </View>
+              ) : (
+                <View style={styles.vouchersGrid}>
+                  {vouchers.map((voucher) => {
+                    const isCopied = copiedCodeId === voucher.id;
+                    return (
+                      <View key={voucher.id} style={styles.voucherCard}>
+                        {/* Ticket Top */}
+                        <View style={styles.ticketHeader}>
+                          <View style={styles.ticketBadgeRow}>
+                            <View style={styles.activeStatusPill}>
+                              <Text style={styles.activeStatusText}>🟢 ACTIVE VOUCHER</Text>
+                            </View>
+                            <Text style={styles.voucherDate}>Redeemed {voucher.redeemedAt}</Text>
+                          </View>
+                          <Text style={styles.voucherTitle}>
+                            {voucher.icon} {voucher.title}
+                          </Text>
+                          <Text style={styles.voucherDiscountVal}>{voucher.discountVal}</Text>
+                        </View>
+
+                        {/* Ticket Notch Line */}
+                        <View style={styles.ticketDividerWrap}>
+                          <View style={styles.ticketNotchLeft} />
+                          <View style={styles.ticketDashedLine} />
+                          <View style={styles.ticketNotchRight} />
+                        </View>
+
+                        {/* Ticket Bottom */}
+                        <View style={styles.ticketBody}>
+                          <Text style={styles.voucherCodeLabel}>VOUCHER CODE</Text>
+                          <View style={styles.codeBoxRow}>
+                            <Text style={styles.voucherCodeText}>{voucher.code}</Text>
+                            <TouchableOpacity
+                              style={[styles.copyButton, isCopied && styles.copyButtonDone]}
+                              onPress={() => handleCopyCode(voucher)}
+                              activeOpacity={0.7}
+                            >
+                              <Text style={[styles.copyButtonText, isCopied && styles.copyButtonTextDone]}>
+                                {isCopied ? '✓ Copied' : '📋 Copy'}
+                              </Text>
+                            </TouchableOpacity>
+                          </View>
+
+                          <View style={styles.barcodeVisual}>
+                            <View style={[styles.bar, { width: 4 }]} />
+                            <View style={[styles.bar, { width: 2 }]} />
+                            <View style={[styles.bar, { width: 6 }]} />
+                            <View style={[styles.bar, { width: 3 }]} />
+                            <View style={[styles.bar, { width: 8 }]} />
+                            <View style={[styles.bar, { width: 2 }]} />
+                            <View style={[styles.bar, { width: 5 }]} />
+                            <View style={[styles.bar, { width: 7 }]} />
+                            <View style={[styles.bar, { width: 3 }]} />
+                            <View style={[styles.bar, { width: 9 }]} />
+                            <View style={[styles.bar, { width: 4 }]} />
+                            <View style={[styles.bar, { width: 2 }]} />
+                            <View style={[styles.bar, { width: 5 }]} />
+                            <View style={[styles.bar, { width: 8 }]} />
+                            <View style={[styles.bar, { width: 3 }]} />
+                            <View style={[styles.bar, { width: 6 }]} />
+                          </View>
+
+                          <View style={styles.voucherMetaRow}>
+                            <Text style={styles.voucherExpiryText}>⏳ Valid until: {voucher.expiresAt}</Text>
+                            <Text style={styles.voucherSpentText}>
+                              {voucher.pointsSpent} pts (₹{voucher.inrValue})
+                            </Text>
+                          </View>
+
+                          <Text style={styles.voucherInstructions}>
+                            📌 {voucher.terms || 'Present this code at the municipal or electricity sub-station counter.'}
+                          </Text>
+                        </View>
+                      </View>
+                    );
+                  })}
+                </View>
+              )}
+            </View>
+          )}
+
+          {/* TAB 3: POINTS HISTORY */}
+          {activeTab === 'history' && (
+            <View style={styles.historyContainer}>
+              <View style={styles.historyCard}>
+                <View style={styles.historyHeaderRow}>
+                  <Text style={styles.historyHeaderTitle}>Activity Log</Text>
+                  <Text style={styles.historyHeaderRate}>Rate: 1 pt = ₹0.30</Text>
+                </View>
+                {pointsHistory.map((h, idx) => {
+                  const isCredit = h.type === 'credit';
+                  const isLast = idx === pointsHistory.length - 1;
+                  return (
+                    <View key={h.id} style={[styles.historyRow, isLast && { borderBottomWidth: 0 }]}>
+                      <View
+                        style={[
+                          styles.historyIconCircle,
+                          { backgroundColor: isCredit ? '#10b98118' : '#ef444418' },
+                        ]}
+                      >
+                        <Text style={styles.historyIcon}>{h.icon}</Text>
+                      </View>
+                      <View style={styles.historyInfo}>
+                        <Text style={styles.historyTitle}>{h.title}</Text>
+                        <Text style={styles.historyDate}>{h.date}</Text>
+                      </View>
+                      <View style={styles.historyPointsWrap}>
+                        <Text style={[styles.historyPoints, { color: isCredit ? '#10b981' : '#ef4444' }]}>
+                          {h.points} pts
+                        </Text>
+                        {h.inrVal && (
+                          <Text style={[styles.historyInrVal, { color: isCredit ? '#10b981' : '#ef4444' }]}>
+                            {h.inrVal}
+                          </Text>
+                        )}
+                      </View>
                     </View>
-                    <View style={styles.historyInfo}>
-                      <Text style={styles.historyTitle}>{h.title}</Text>
-                      <Text style={styles.historyDate}>{h.date}</Text>
-                    </View>
-                    <View style={styles.historyPointsWrap}>
-                      <Text style={[styles.historyPoints, { color: isCredit ? '#10b981' : '#ef4444' }]}>
-                        {h.points}
-                      </Text>
-                      <Text style={styles.historyPtsLabel}>pts</Text>
-                    </View>
+                  );
+                })}
+              </View>
+
+              {/* How points work card */}
+              <View style={styles.howItWorksCard}>
+                <Text style={styles.howItWorksTitle}>🌱 How to Earn More Eco Points & Cash Credits</Text>
+                <View style={styles.howItWorksItem}>
+                  <Text style={styles.howItWorksEmoji}>📸</Text>
+                  <View style={styles.howItWorksTextGroup}>
+                    <Text style={styles.howItWorksItemTitle}>Report Waste Spot (+15 pts ≈ ₹4.50)</Text>
+                    <Text style={styles.howItWorksItemSub}>
+                      Points credited once area garbage collector cleans and completes photo resolution.
+                    </Text>
                   </View>
-                );
-              })}
-            </View>
-
-            {/* How Points Work Explanation Card */}
-            <View style={styles.howItWorksCard}>
-              <Text style={styles.howItWorksTitle}>🌱 How to Earn More Eco Points</Text>
-              <View style={styles.howItWorksItem}>
-                <Text style={styles.howItWorksEmoji}>📸</Text>
-                <View style={styles.howItWorksTextGroup}>
-                  <Text style={styles.howItWorksItemTitle}>Report Waste Spot (+15 pts)</Text>
-                  <Text style={styles.howItWorksItemSub}>Points credited as soon as area collector cleans & completes resolution.</Text>
                 </View>
-              </View>
-              <View style={styles.howItWorksItem}>
-                <Text style={styles.howItWorksEmoji}>♻️</Text>
-                <View style={styles.howItWorksTextGroup}>
-                  <Text style={styles.howItWorksItemTitle}>Recycle Dry Waste & Scrap (+25 pts)</Text>
-                  <Text style={styles.howItWorksItemSub}>Hand over sorted paper, cardboard, plastics or metal to pickup teams.</Text>
+                <View style={styles.howItWorksItem}>
+                  <Text style={styles.howItWorksEmoji}>♻️</Text>
+                  <View style={styles.howItWorksTextGroup}>
+                    <Text style={styles.howItWorksItemTitle}>Recycle Dry Waste & Scrap (+25 pts ≈ ₹7.50)</Text>
+                    <Text style={styles.howItWorksItemSub}>
+                      Hand over sorted paper, cardboard, plastic, or e-waste to doorstep collection vans.
+                    </Text>
+                  </View>
                 </View>
-              </View>
-              <View style={styles.howItWorksItem}>
-                <Text style={styles.howItWorksEmoji}>⚠️</Text>
-                <View style={styles.howItWorksTextGroup}>
-                  <Text style={styles.howItWorksItemTitle}>False Report Penalty (-5 pts)</Text>
-                  <Text style={styles.howItWorksItemSub}>Submitting fake or non-waste photos leads to point deduction.</Text>
+                <View style={styles.howItWorksItem}>
+                  <Text style={styles.howItWorksEmoji}>⚠️</Text>
+                  <View style={styles.howItWorksTextGroup}>
+                    <Text style={styles.howItWorksItemTitle}>False Report Deduction (-5 pts ≈ -₹1.50)</Text>
+                    <Text style={styles.howItWorksItemSub}>
+                      Submitting fake, repeated, or non-waste images will trigger automatic point deductions.
+                    </Text>
+                  </View>
                 </View>
               </View>
             </View>
-          </View>
-        )}
+          )}
+        </View>
       </ScrollView>
 
       {/* MODAL 1: CONFIRM REDEMPTION */}
@@ -747,28 +882,30 @@ export default function RewardsScreen({
             </View>
 
             <Text style={styles.modalTitle}>Confirm Redemption</Text>
-            <Text style={styles.modalSubtitle}>
-              Are you sure you want to redeem this reward?
-            </Text>
+            <Text style={styles.modalSubtitle}>Claim this reward using your earned Eco Points</Text>
 
             <View style={styles.modalRewardSummary}>
               <Text style={styles.modalRewardTitle}>{selectedRewardToRedeem?.title}</Text>
               <Text style={styles.modalRewardDiscount}>{selectedRewardToRedeem?.discountVal}</Text>
+
               <View style={styles.modalPointsRow}>
-                <Text style={styles.modalPointsLabel}>Deduction:</Text>
-                <Text style={styles.modalPointsValue}>- {selectedRewardToRedeem?.points} Eco Points</Text>
+                <Text style={styles.modalPointsLabel}>Cost in Points:</Text>
+                <Text style={styles.modalPointsValue}>
+                  - {selectedRewardToRedeem?.points} pts (-₹
+                  {((selectedRewardToRedeem?.points || 0) * ECO_POINT_VAL_INR).toFixed(2)})
+                </Text>
               </View>
+
               <View style={styles.modalPointsRow}>
                 <Text style={styles.modalPointsLabel}>Remaining Balance:</Text>
                 <Text style={styles.modalPointsRemaining}>
-                  🌱 {Math.max(0, ecoPoints - (selectedRewardToRedeem?.points || 0))} pts
+                  🌱 {Math.max(0, ecoPoints - (selectedRewardToRedeem?.points || 0))} pts (≈ ₹
+                  {(Math.max(0, ecoPoints - (selectedRewardToRedeem?.points || 0)) * ECO_POINT_VAL_INR).toFixed(2)})
                 </Text>
               </View>
             </View>
 
-            <Text style={styles.modalTermsNote}>
-              📌 {selectedRewardToRedeem?.terms}
-            </Text>
+            <Text style={styles.modalTermsNote}>📌 {selectedRewardToRedeem?.terms}</Text>
 
             <View style={styles.modalButtonsRow}>
               <TouchableOpacity
@@ -795,7 +932,7 @@ export default function RewardsScreen({
         </View>
       </Modal>
 
-      {/* MODAL 2: REDEMPTION SUCCESS CELEBRATION */}
+      {/* MODAL 2: SUCCESS CELEBRATION */}
       <Modal
         visible={Boolean(newlyRedeemedVoucher)}
         transparent={true}
@@ -804,10 +941,10 @@ export default function RewardsScreen({
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContentCard}>
-            <Text style={{ fontSize: 44, textAlign: 'center', marginBottom: 8 }}>🎉</Text>
+            <Text style={{ fontSize: 44, textAlign: 'center', marginBottom: 6 }}>🎉</Text>
             <Text style={styles.modalTitle}>Reward Unlocked!</Text>
             <Text style={styles.modalSubtitle}>
-              Congratulations! Your voucher has been generated and added to your wallet.
+              Your voucher has been generated and saved to your wallet.
             </Text>
 
             <View style={styles.successTicketBox}>
@@ -817,7 +954,7 @@ export default function RewardsScreen({
               <Text style={styles.successTicketDiscount}>{newlyRedeemedVoucher?.discountVal}</Text>
 
               <View style={styles.successCodeContainer}>
-                <Text style={styles.successCodeLabel}>YOUR VOUCHER CODE</Text>
+                <Text style={styles.successCodeLabel}>VOUCHER CODE</Text>
                 <Text style={styles.successCodeText}>{newlyRedeemedVoucher?.code}</Text>
               </View>
 
@@ -829,9 +966,7 @@ export default function RewardsScreen({
             <View style={styles.modalButtonsRow}>
               <TouchableOpacity
                 style={styles.modalCancelBtn}
-                onPress={() => {
-                  handleCopyCode(newlyRedeemedVoucher);
-                }}
+                onPress={() => handleCopyCode(newlyRedeemedVoucher)}
                 activeOpacity={0.7}
               >
                 <Text style={styles.modalCancelBtnText}>📋 Copy Code</Text>
@@ -855,7 +990,7 @@ export default function RewardsScreen({
   );
 }
 
-const getStyles = (colors, isDark) =>
+const getStyles = (colors, isDark, isDesktop, isWideDesktop) =>
   StyleSheet.create({
     container: {
       flex: 1,
@@ -865,7 +1000,7 @@ const getStyles = (colors, isDark) =>
       flexDirection: 'row',
       justifyContent: 'space-between',
       alignItems: 'center',
-      paddingHorizontal: tokens.spacing.md,
+      paddingHorizontal: isDesktop ? tokens.spacing.xl : tokens.spacing.md,
       paddingVertical: tokens.spacing.sm,
       backgroundColor: colors.card,
       borderBottomWidth: 1,
@@ -898,9 +1033,9 @@ const getStyles = (colors, isDark) =>
       color: colors.accent,
     },
     backHomeBtn: {
-      paddingVertical: 6,
-      paddingHorizontal: tokens.spacing.sm,
-      borderRadius: tokens.radius.lg,
+      paddingVertical: 7,
+      paddingHorizontal: tokens.spacing.md,
+      borderRadius: tokens.radius.full,
       backgroundColor: colors.surface,
       borderWidth: 1,
       borderColor: colors.border,
@@ -911,23 +1046,32 @@ const getStyles = (colors, isDark) =>
       fontFamily: tokens.typography.family.semibold,
     },
     scrollContent: {
-      padding: tokens.spacing.md,
+      paddingVertical: tokens.spacing.md,
+      paddingHorizontal: isDesktop ? tokens.spacing.xl : tokens.spacing.md,
       paddingBottom: tokens.spacing.xxl,
+      alignItems: 'center',
     },
-    heroBalanceCard: {
+    contentWrapper: {
+      width: '100%',
+      maxWidth: 1140,
+    },
+
+    // HERO CARD
+    heroCard: {
       backgroundColor: colors.card,
       borderRadius: tokens.radius.xl,
-      padding: tokens.spacing.md,
+      padding: isDesktop ? tokens.spacing.lg : tokens.spacing.md,
       marginBottom: tokens.spacing.md,
       borderWidth: 1,
       borderColor: colors.border,
+      flexDirection: isDesktop ? 'row' : 'column',
+      justifyContent: isDesktop ? 'space-between' : 'flex-start',
+      alignItems: isDesktop ? 'center' : 'stretch',
+      gap: isDesktop ? tokens.spacing.lg : tokens.spacing.md,
       ...tokens.shadow.sm,
     },
-    heroCardTop: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'flex-start',
-      marginBottom: tokens.spacing.md,
+    heroLeftCol: {
+      flex: isDesktop ? 1.2 : 0,
     },
     heroSubLabel: {
       fontSize: tokens.typography.size.xs,
@@ -935,12 +1079,13 @@ const getStyles = (colors, isDark) =>
       fontFamily: tokens.typography.family.medium,
       marginBottom: 2,
     },
-    pointsNumberRow: {
+    pointsRow: {
       flexDirection: 'row',
       alignItems: 'baseline',
+      marginBottom: 6,
     },
     heroPointsValue: {
-      fontSize: 32,
+      fontSize: isDesktop ? 36 : 30,
       fontFamily: tokens.typography.family.extrabold,
       color: colors.text,
     },
@@ -950,11 +1095,45 @@ const getStyles = (colors, isDark) =>
       color: colors.muted,
       marginLeft: 6,
     },
+    cashValPill: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      alignSelf: 'flex-start',
+      backgroundColor: '#10b98115',
+      borderWidth: 1,
+      borderColor: '#10b98135',
+      paddingVertical: 5,
+      paddingHorizontal: tokens.spacing.sm,
+      borderRadius: tokens.radius.full,
+      marginTop: 2,
+    },
+    cashValAmount: {
+      fontSize: tokens.typography.size.sm,
+      fontFamily: tokens.typography.family.extrabold,
+      color: '#10b981',
+    },
+    rateDivider: {
+      width: 1,
+      height: 12,
+      backgroundColor: '#10b98140',
+      marginHorizontal: 8,
+    },
+    rateNote: {
+      fontSize: 11,
+      fontFamily: tokens.typography.family.semibold,
+      color: colors.muted,
+    },
+    heroRightCol: {
+      flex: isDesktop ? 1 : 0,
+      alignItems: isDesktop ? 'flex-end' : 'stretch',
+      gap: tokens.spacing.sm,
+    },
     tierBadge: {
       flexDirection: 'row',
       alignItems: 'center',
-      paddingVertical: 5,
-      paddingHorizontal: tokens.spacing.sm,
+      alignSelf: isDesktop ? 'flex-end' : 'flex-start',
+      paddingVertical: 6,
+      paddingHorizontal: tokens.spacing.md,
       borderRadius: tokens.radius.full,
       backgroundColor: colors.surface,
       borderWidth: 1.5,
@@ -967,54 +1146,26 @@ const getStyles = (colors, isDark) =>
       fontSize: tokens.typography.size.xs,
       fontFamily: tokens.typography.family.bold,
     },
-    heroStatsRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-      backgroundColor: colors.surface,
-      borderRadius: tokens.radius.lg,
-      paddingVertical: tokens.spacing.sm,
-      paddingHorizontal: tokens.spacing.md,
-      marginBottom: tokens.spacing.md,
-      borderWidth: 1,
-      borderColor: colors.border,
-    },
-    heroStatItem: {
-      alignItems: 'center',
-      flex: 1,
-    },
-    heroStatNumber: {
-      fontSize: tokens.typography.size.sm,
-      fontFamily: tokens.typography.family.extrabold,
-      color: colors.text,
-    },
-    heroStatLabel: {
-      fontSize: 10,
-      color: colors.muted,
-      fontFamily: tokens.typography.family.medium,
-      marginTop: 2,
-    },
-    heroStatDivider: {
-      width: 1,
-      height: 24,
-      backgroundColor: colors.border,
-    },
     heroActionsRow: {
       flexDirection: 'row',
-      gap: tokens.spacing.sm,
+      gap: tokens.spacing.xs,
+      width: isDesktop ? 'auto' : '100%',
     },
     heroActionBtnPrimary: {
-      flex: 1,
+      flex: isDesktop ? 0 : 1,
       backgroundColor: colors.accent,
       paddingVertical: 10,
+      paddingHorizontal: tokens.spacing.md,
       borderRadius: tokens.radius.lg,
       alignItems: 'center',
       justifyContent: 'center',
+      minHeight: 42,
     },
     heroActionBtnPrimaryText: {
       color: isDark ? '#000000' : '#ffffff',
       fontSize: tokens.typography.size.xs,
       fontFamily: tokens.typography.family.bold,
+      textAlign: 'center',
     },
     heroActionBtnSecondary: {
       backgroundColor: colors.surface,
@@ -1025,26 +1176,34 @@ const getStyles = (colors, isDark) =>
       borderColor: colors.border,
       alignItems: 'center',
       justifyContent: 'center',
+      minHeight: 42,
     },
     heroActionBtnSecondaryText: {
       color: colors.text,
       fontSize: tokens.typography.size.xs,
       fontFamily: tokens.typography.family.bold,
     },
+
+    // TAB BAR
+    tabBarWrapper: {
+      alignItems: 'center',
+      marginBottom: tokens.spacing.md,
+    },
     tabBar: {
       flexDirection: 'row',
       backgroundColor: colors.surface,
       borderWidth: 1,
       borderColor: colors.border,
-      borderRadius: tokens.radius.xl,
+      borderRadius: tokens.radius.full,
       padding: 4,
-      marginBottom: tokens.spacing.md,
+      width: '100%',
+      maxWidth: isDesktop ? 560 : '100%',
     },
     tabButton: {
       flex: 1,
       paddingVertical: 8,
       alignItems: 'center',
-      borderRadius: tokens.radius.lg,
+      borderRadius: tokens.radius.full,
     },
     activeTabButton: {
       backgroundColor: colors.card,
@@ -1059,15 +1218,20 @@ const getStyles = (colors, isDark) =>
       color: colors.accent,
       fontFamily: tokens.typography.family.extrabold,
     },
+
+    // CATEGORIES
+    categoriesWrapper: {
+      marginBottom: tokens.spacing.md,
+      alignItems: isDesktop ? 'center' : 'stretch',
+    },
     categoryPillsContainer: {
       flexDirection: 'row',
       gap: tokens.spacing.xs,
-      paddingBottom: tokens.spacing.sm,
-      marginBottom: tokens.spacing.xs,
+      paddingBottom: 4,
     },
     categoryPill: {
-      paddingVertical: 6,
-      paddingHorizontal: tokens.spacing.sm,
+      paddingVertical: 7,
+      paddingHorizontal: tokens.spacing.md,
       borderRadius: tokens.radius.full,
       backgroundColor: colors.card,
       borderWidth: 1,
@@ -1086,26 +1250,32 @@ const getStyles = (colors, isDark) =>
       color: isDark ? '#000000' : '#ffffff',
       fontFamily: tokens.typography.family.bold,
     },
-    catalogList: {
+
+    // CATALOG GRID (RESPONSIVE)
+    catalogGrid: {
+      flexDirection: isDesktop ? 'row' : 'column',
+      flexWrap: isDesktop ? 'wrap' : 'nowrap',
       gap: tokens.spacing.md,
     },
     rewardCard: {
+      width: isDesktop ? (isWideDesktop ? '31.8%' : '48.6%') : '100%',
       backgroundColor: colors.card,
       borderRadius: tokens.radius.xl,
       padding: tokens.spacing.md,
       borderWidth: 1,
       borderColor: colors.border,
+      flexDirection: 'column',
       ...tokens.shadow.sm,
     },
-    rewardCardHeader: {
+    cardHeaderRow: {
       flexDirection: 'row',
       alignItems: 'flex-start',
-      marginBottom: tokens.spacing.sm,
+      marginBottom: tokens.spacing.xs,
     },
     rewardIconBadge: {
-      width: 48,
-      height: 48,
-      borderRadius: 24,
+      width: 44,
+      height: 44,
+      borderRadius: 22,
       backgroundColor: colors.surface,
       borderWidth: 1,
       borderColor: colors.border,
@@ -1114,70 +1284,92 @@ const getStyles = (colors, isDark) =>
       marginRight: tokens.spacing.sm,
     },
     rewardIconText: {
-      fontSize: 24,
+      fontSize: 22,
     },
-    rewardHeaderDetails: {
+    cardHeaderTitleGroup: {
       flex: 1,
     },
-    rewardTagRow: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      marginBottom: 4,
-    },
-    tagPill: {
+    tagBadge: {
+      alignSelf: 'flex-start',
       backgroundColor: colors.accentLight || 'rgba(0,0,0,0.05)',
       paddingVertical: 2,
       paddingHorizontal: 8,
       borderRadius: tokens.radius.full,
+      marginBottom: 3,
     },
-    tagPillText: {
-      fontSize: 10,
+    tagBadgeText: {
+      fontSize: 9,
       fontFamily: tokens.typography.family.bold,
       color: colors.accent,
       textTransform: 'uppercase',
-    },
-    costBadge: {
-      backgroundColor: '#10b98120',
-      paddingVertical: 3,
-      paddingHorizontal: 8,
-      borderRadius: tokens.radius.full,
-    },
-    costBadgeText: {
-      fontSize: tokens.typography.size.xs,
-      fontFamily: tokens.typography.family.extrabold,
-      color: '#10b981',
     },
     rewardTitle: {
       fontSize: tokens.typography.size.sm,
       fontFamily: tokens.typography.family.bold,
       color: colors.text,
-      lineHeight: 20,
+      lineHeight: 18,
+    },
+    valuationStrip: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: tokens.spacing.xs,
+      marginVertical: tokens.spacing.xs,
+    },
+    costPointPill: {
+      backgroundColor: '#10b98118',
+      paddingVertical: 3,
+      paddingHorizontal: 8,
+      borderRadius: tokens.radius.full,
+    },
+    costPointText: {
+      fontSize: 11,
+      fontFamily: tokens.typography.family.extrabold,
+      color: '#10b981',
+    },
+    costInrPill: {
+      backgroundColor: colors.surface,
+      borderWidth: 1,
+      borderColor: colors.border,
+      paddingVertical: 3,
+      paddingHorizontal: 8,
+      borderRadius: tokens.radius.full,
+    },
+    costInrText: {
+      fontSize: 11,
+      fontFamily: tokens.typography.family.bold,
+      color: colors.text,
     },
     rewardDescription: {
       fontSize: tokens.typography.size.xs,
       color: colors.muted,
-      lineHeight: 18,
-      marginBottom: tokens.spacing.sm,
+      lineHeight: 17,
+      marginBottom: tokens.spacing.xs,
     },
-    termsRow: {
+    termsBox: {
       backgroundColor: colors.surface,
       padding: tokens.spacing.xs,
       borderRadius: tokens.radius.md,
       marginBottom: tokens.spacing.sm,
     },
-    termsLabel: {
-      fontSize: 11,
+    termsText: {
+      fontSize: 10,
       color: colors.muted,
       fontFamily: tokens.typography.family.medium,
+      lineHeight: 14,
+    },
+
+    // Card Footer Area with perfectly aligned button
+    cardFooterArea: {
+      marginTop: 'auto',
+      paddingTop: tokens.spacing.xs,
     },
     progressContainer: {
-      marginBottom: tokens.spacing.sm,
+      marginBottom: tokens.spacing.xs,
     },
     progressHeader: {
       flexDirection: 'row',
       justifyContent: 'space-between',
-      marginBottom: 4,
+      marginBottom: 3,
     },
     progressLabel: {
       fontSize: 10,
@@ -1190,7 +1382,7 @@ const getStyles = (colors, isDark) =>
       color: colors.accent,
     },
     progressBarTrack: {
-      height: 6,
+      height: 5,
       backgroundColor: colors.surface,
       borderRadius: 3,
       overflow: 'hidden',
@@ -1205,6 +1397,8 @@ const getStyles = (colors, isDark) =>
       paddingVertical: 10,
       borderRadius: tokens.radius.lg,
       alignItems: 'center',
+      justifyContent: 'center',
+      minHeight: 42,
     },
     redeemButtonDisabled: {
       backgroundColor: colors.surface,
@@ -1215,12 +1409,29 @@ const getStyles = (colors, isDark) =>
       color: isDark ? '#000000' : '#ffffff',
       fontSize: tokens.typography.size.xs,
       fontFamily: tokens.typography.family.bold,
+      textAlign: 'center',
     },
     redeemButtonTextDisabled: {
       color: colors.muted,
     },
+
+    // VOUCHERS WALLET
     vouchersContainer: {
+      width: '100%',
+    },
+    vouchersGrid: {
+      flexDirection: isDesktop ? 'row' : 'column',
+      flexWrap: isDesktop ? 'wrap' : 'nowrap',
       gap: tokens.spacing.md,
+    },
+    voucherCard: {
+      width: isDesktop ? '48.8%' : '100%',
+      backgroundColor: colors.card,
+      borderRadius: tokens.radius.xl,
+      borderWidth: 1,
+      borderColor: colors.border,
+      overflow: 'hidden',
+      ...tokens.shadow.sm,
     },
     emptyVouchersCard: {
       backgroundColor: colors.card,
@@ -1246,11 +1457,12 @@ const getStyles = (colors, isDark) =>
       textAlign: 'center',
       lineHeight: 18,
       marginBottom: tokens.spacing.md,
+      maxWidth: 440,
     },
     browseCatalogCta: {
       backgroundColor: colors.accent,
-      paddingVertical: 8,
-      paddingHorizontal: tokens.spacing.md,
+      paddingVertical: 9,
+      paddingHorizontal: tokens.spacing.lg,
       borderRadius: tokens.radius.lg,
     },
     browseCatalogCtaText: {
@@ -1258,20 +1470,9 @@ const getStyles = (colors, isDark) =>
       fontSize: tokens.typography.size.xs,
       fontFamily: tokens.typography.family.bold,
     },
-    vouchersList: {
-      gap: tokens.spacing.md,
-    },
-    voucherTicketCard: {
-      backgroundColor: colors.card,
-      borderRadius: tokens.radius.xl,
-      borderWidth: 1,
-      borderColor: colors.border,
-      overflow: 'hidden',
-      ...tokens.shadow.sm,
-    },
     ticketHeader: {
       padding: tokens.spacing.md,
-      paddingBottom: tokens.spacing.sm,
+      paddingBottom: tokens.spacing.xs,
     },
     ticketBadgeRow: {
       flexDirection: 'row',
@@ -1356,7 +1557,7 @@ const getStyles = (colors, isDark) =>
       borderColor: colors.accent,
       borderRadius: tokens.radius.lg,
       paddingHorizontal: tokens.spacing.md,
-      paddingVertical: 8,
+      paddingVertical: 7,
       marginBottom: tokens.spacing.sm,
     },
     voucherCodeText: {
@@ -1371,7 +1572,7 @@ const getStyles = (colors, isDark) =>
       backgroundColor: colors.card,
       borderWidth: 1,
       borderColor: colors.border,
-      paddingVertical: 4,
+      paddingVertical: 5,
       paddingHorizontal: 10,
       borderRadius: tokens.radius.md,
     },
@@ -1392,17 +1593,17 @@ const getStyles = (colors, isDark) =>
       justifyContent: 'center',
       alignItems: 'center',
       gap: 3,
-      height: 28,
+      height: 26,
       backgroundColor: colors.surface,
       borderRadius: tokens.radius.sm,
       paddingHorizontal: tokens.spacing.md,
       marginBottom: tokens.spacing.sm,
     },
     bar: {
-      height: 22,
+      height: 20,
       backgroundColor: colors.text,
       borderRadius: 1,
-      opacity: 0.85,
+      opacity: 0.8,
     },
     voucherMetaRow: {
       flexDirection: 'row',
@@ -1427,21 +1628,43 @@ const getStyles = (colors, isDark) =>
       padding: tokens.spacing.xs,
       borderRadius: tokens.radius.md,
     },
+
+    // HISTORY
     historyContainer: {
       gap: tokens.spacing.md,
+      width: '100%',
     },
     historyCard: {
       backgroundColor: colors.card,
       borderRadius: tokens.radius.xl,
-      paddingHorizontal: tokens.spacing.md,
+      padding: tokens.spacing.md,
       borderWidth: 1,
       borderColor: colors.border,
       ...tokens.shadow.sm,
     },
+    historyHeaderRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingBottom: tokens.spacing.sm,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+      marginBottom: tokens.spacing.xs,
+    },
+    historyHeaderTitle: {
+      fontSize: tokens.typography.size.sm,
+      fontFamily: tokens.typography.family.bold,
+      color: colors.text,
+    },
+    historyHeaderRate: {
+      fontSize: 11,
+      fontFamily: tokens.typography.family.medium,
+      color: colors.muted,
+    },
     historyRow: {
       flexDirection: 'row',
       alignItems: 'center',
-      paddingVertical: tokens.spacing.md,
+      paddingVertical: tokens.spacing.sm,
       borderBottomWidth: 1,
       borderBottomColor: colors.border,
     },
@@ -1473,13 +1696,13 @@ const getStyles = (colors, isDark) =>
       alignItems: 'flex-end',
     },
     historyPoints: {
-      fontSize: tokens.typography.size.base,
+      fontSize: tokens.typography.size.sm,
       fontFamily: tokens.typography.family.extrabold,
     },
-    historyPtsLabel: {
-      fontSize: 9,
-      color: colors.muted,
-      fontFamily: tokens.typography.family.medium,
+    historyInrVal: {
+      fontSize: 10,
+      fontFamily: tokens.typography.family.bold,
+      marginTop: 1,
     },
     howItWorksCard: {
       backgroundColor: colors.card,
@@ -1520,6 +1743,8 @@ const getStyles = (colors, isDark) =>
       color: colors.muted,
       lineHeight: 16,
     },
+
+    // MODALS
     modalOverlay: {
       flex: 1,
       backgroundColor: 'rgba(0, 0, 0, 0.65)',
@@ -1529,7 +1754,7 @@ const getStyles = (colors, isDark) =>
     },
     modalContentCard: {
       width: '100%',
-      maxWidth: 420,
+      maxWidth: 440,
       backgroundColor: colors.card,
       borderRadius: tokens.radius.xl,
       padding: tokens.spacing.lg,
@@ -1539,9 +1764,9 @@ const getStyles = (colors, isDark) =>
       ...tokens.shadow.md,
     },
     modalIconCircle: {
-      width: 60,
-      height: 60,
-      borderRadius: 30,
+      width: 58,
+      height: 58,
+      borderRadius: 29,
       backgroundColor: colors.surface,
       borderWidth: 1,
       borderColor: colors.border,
@@ -1550,7 +1775,7 @@ const getStyles = (colors, isDark) =>
       marginBottom: tokens.spacing.sm,
     },
     modalIconText: {
-      fontSize: 32,
+      fontSize: 30,
     },
     modalTitle: {
       fontSize: tokens.typography.size.base,
@@ -1622,10 +1847,11 @@ const getStyles = (colors, isDark) =>
       backgroundColor: colors.surface,
       borderWidth: 1,
       borderColor: colors.border,
-      paddingVertical: 10,
+      paddingVertical: 11,
       borderRadius: tokens.radius.lg,
       alignItems: 'center',
       justifyContent: 'center',
+      minHeight: 44,
     },
     modalCancelBtnText: {
       fontSize: tokens.typography.size.xs,
@@ -1633,12 +1859,13 @@ const getStyles = (colors, isDark) =>
       color: colors.text,
     },
     modalConfirmBtn: {
-      flex: 1.5,
+      flex: 1,
       backgroundColor: colors.accent,
-      paddingVertical: 10,
+      paddingVertical: 11,
       borderRadius: tokens.radius.lg,
       alignItems: 'center',
       justifyContent: 'center',
+      minHeight: 44,
     },
     modalConfirmBtnText: {
       fontSize: tokens.typography.size.xs,
