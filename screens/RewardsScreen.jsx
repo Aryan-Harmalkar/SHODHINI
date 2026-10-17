@@ -14,7 +14,7 @@ import * as SecureStore from 'expo-secure-store';
 import { tokens, useTheme } from '../lib/theme';
 import { updateUserEcoPoints } from '../db/database';
 
-// Global conversion: 1 Eco Point = 0.30 paise (₹0.30)
+// Global valuation: 1 Eco Point = 0.30 paise (₹0.30)
 export const ECO_POINT_VAL_INR = 0.30;
 
 const VOUCHERS_STORAGE_KEY = 'shodhini_user_vouchers_';
@@ -30,7 +30,7 @@ const REWARDS_CATALOG = [
     discountVal: '₹15.00 Waiver',
     tag: 'Popular',
     description: 'Direct ₹15 deduction voucher for your monthly State Electricity Board or Panchayat energy bill.',
-    terms: 'Present voucher code at the local electricity sub-station counter or apply during online bill payment.',
+    terms: 'Present code at the electricity sub-station counter or enter during online payment.',
     expiryDays: 60,
   },
   {
@@ -41,8 +41,8 @@ const REWARDS_CATALOG = [
     category: 'utilities',
     discountVal: '₹30.00 Waiver',
     tag: 'Best Value',
-    description: 'Save ₹30 on your residential power invoice under the Green Citizen Clean Energy Subsidy scheme.',
-    terms: 'Valid on domestic electricity meters. One voucher allowed per billing cycle.',
+    description: 'Save ₹30 on your residential power invoice under the Green Citizen Clean Energy Subsidy.',
+    terms: 'Valid on domestic electricity meters. One voucher per billing cycle.',
     expiryDays: 60,
   },
   {
@@ -80,7 +80,7 @@ const REWARDS_CATALOG = [
     discountVal: 'Pack of 5 Bags',
     tag: 'Zero Plastic',
     description: 'Heavy-duty recycled brown kraft grocery bags with handles. 100% plastic-free and reusable.',
-    terms: 'Collect sealed pack from Village Panchayat Office or partnered municipal eco-kiosks.',
+    terms: 'Collect sealed pack from Village Panchayat Office or partnered eco-kiosks.',
     expiryDays: 45,
   },
   {
@@ -233,12 +233,14 @@ export default function RewardsScreen({
 }) {
   const { colors, isDark } = useTheme();
   const { width } = useWindowDimensions();
-  const isDesktop = width >= 768;
-  const isWideDesktop = width >= 1150;
+
+  const isSmallMobile = width < 380;
+  const isTablet = width >= 640 && width < 1024;
+  const isDesktop = width >= 1024;
 
   const styles = useMemo(
-    () => getStyles(colors, isDark, isDesktop, isWideDesktop),
-    [colors, isDark, isDesktop, isWideDesktop]
+    () => getStyles(colors, isDark, isSmallMobile, isTablet, isDesktop),
+    [colors, isDark, isSmallMobile, isTablet, isDesktop]
   );
 
   const [activeTab, setActiveTab] = useState('catalog'); // 'catalog' | 'vouchers' | 'history'
@@ -366,7 +368,7 @@ export default function RewardsScreen({
         onPointsUpdated(updatedTotal);
       }
 
-      // 2. Generate a voucher code
+      // 2. Generate voucher code
       const randomSuffix = Math.floor(1000 + Math.random() * 9000);
       const prefix =
         reward.category === 'utilities' ? 'ELEC' : reward.category === 'essentials' ? 'ECO' : 'CIVIC';
@@ -470,51 +472,54 @@ export default function RewardsScreen({
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <View style={styles.contentWrapper}>
-          {/* HERO BANNER CARD */}
+          {/* HERO BANNER CARD - ROBUST RESPONSIVE DESIGN */}
           <View style={styles.heroCard}>
-            <View style={styles.heroLeftCol}>
-              <Text style={styles.heroSubLabel}>Available Eco Balance</Text>
-              <View style={styles.pointsRow}>
-                <Text style={styles.heroPointsValue}>🌱 {ecoPoints}</Text>
-                <Text style={styles.heroPointsUnit}>pts</Text>
+            {/* Top row: Balance on left, Tier badge on right */}
+            <View style={styles.heroTopRow}>
+              <View style={styles.heroBalanceGroup}>
+                <Text style={styles.heroSubLabel}>Available Eco Balance</Text>
+                <View style={styles.pointsRow}>
+                  <Text style={styles.heroPointsValue}>🌱 {ecoPoints}</Text>
+                  <Text style={styles.heroPointsUnit}>pts</Text>
+                </View>
               </View>
 
-              {/* Conversion Valuation Pill */}
-              <View style={styles.cashValPill}>
-                <Text style={styles.cashValAmount}>≈ ₹{totalRupeeValue}</Text>
-                <View style={styles.rateDivider} />
-                <Text style={styles.rateNote}>1 pt = ₹0.30 (30p)</Text>
-              </View>
-            </View>
-
-            <View style={styles.heroRightCol}>
               <View style={[styles.tierBadge, { borderColor: tierInfo.color }]}>
                 <Text style={styles.tierBadgeIcon}>{tierInfo.badge}</Text>
                 <Text style={[styles.tierBadgeText, { color: tierInfo.color }]}>{tierInfo.title}</Text>
               </View>
+            </View>
 
-              <View style={styles.heroActionsRow}>
+            {/* Middle row: Rupee valuation banner */}
+            <View style={styles.cashValBanner}>
+              <View style={styles.cashValPill}>
+                <Text style={styles.cashValAmount}>≈ ₹{totalRupeeValue}</Text>
+              </View>
+              <Text style={styles.rateNote}>1 Eco Point = ₹0.30 (30 paise)</Text>
+            </View>
+
+            {/* Bottom row: Action Buttons */}
+            <View style={styles.heroActionsRow}>
+              <TouchableOpacity
+                style={styles.heroActionBtnPrimary}
+                onPress={() => {
+                  if (onNavigateReport) onNavigateReport();
+                  else if (onBackToHome) onBackToHome();
+                }}
+                activeOpacity={0.8}
+              >
+                <Text style={styles.heroActionBtnPrimaryText}>📸 + Earn Points</Text>
+              </TouchableOpacity>
+
+              {onNavigatePickup && (
                 <TouchableOpacity
-                  style={styles.heroActionBtnPrimary}
-                  onPress={() => {
-                    if (onNavigateReport) onNavigateReport();
-                    else if (onBackToHome) onBackToHome();
-                  }}
+                  style={styles.heroActionBtnSecondary}
+                  onPress={onNavigatePickup}
                   activeOpacity={0.8}
                 >
-                  <Text style={styles.heroActionBtnPrimaryText}>📸 + Earn Points</Text>
+                  <Text style={styles.heroActionBtnSecondaryText}>🚚 Pickup</Text>
                 </TouchableOpacity>
-
-                {onNavigatePickup && (
-                  <TouchableOpacity
-                    style={styles.heroActionBtnSecondary}
-                    onPress={onNavigatePickup}
-                    activeOpacity={0.8}
-                  >
-                    <Text style={styles.heroActionBtnSecondaryText}>🚚 Pickup</Text>
-                  </TouchableOpacity>
-                )}
-              </View>
+              )}
             </View>
           </View>
 
@@ -526,8 +531,11 @@ export default function RewardsScreen({
                 onPress={() => setActiveTab('catalog')}
                 activeOpacity={0.7}
               >
-                <Text style={[styles.tabButtonText, activeTab === 'catalog' && styles.activeTabButtonText]}>
-                  🎁 Rewards Catalog
+                <Text
+                  style={[styles.tabButtonText, activeTab === 'catalog' && styles.activeTabButtonText]}
+                  numberOfLines={1}
+                >
+                  {isSmallMobile ? '🎁 Catalog' : '🎁 Rewards'}
                 </Text>
               </TouchableOpacity>
 
@@ -536,8 +544,11 @@ export default function RewardsScreen({
                 onPress={() => setActiveTab('vouchers')}
                 activeOpacity={0.7}
               >
-                <Text style={[styles.tabButtonText, activeTab === 'vouchers' && styles.activeTabButtonText]}>
-                  🎟️ My Vouchers ({vouchers.length})
+                <Text
+                  style={[styles.tabButtonText, activeTab === 'vouchers' && styles.activeTabButtonText]}
+                  numberOfLines={1}
+                >
+                  {isSmallMobile ? `🎟️ (${vouchers.length})` : `🎟️ Vouchers (${vouchers.length})`}
                 </Text>
               </TouchableOpacity>
 
@@ -546,8 +557,11 @@ export default function RewardsScreen({
                 onPress={() => setActiveTab('history')}
                 activeOpacity={0.7}
               >
-                <Text style={[styles.tabButtonText, activeTab === 'history' && styles.activeTabButtonText]}>
-                  📜 Points History
+                <Text
+                  style={[styles.tabButtonText, activeTab === 'history' && styles.activeTabButtonText]}
+                  numberOfLines={1}
+                >
+                  📜 History
                 </Text>
               </TouchableOpacity>
             </View>
@@ -657,7 +671,7 @@ export default function RewardsScreen({
                         <Text style={styles.termsText}>📍 {reward.terms}</Text>
                       </View>
 
-                      {/* Bottom Footer Area with Aligned Buttons */}
+                      {/* Footer Area with Aligned Buttons */}
                       <View style={styles.cardFooterArea}>
                         {!canAfford && (
                           <View style={styles.progressContainer}>
@@ -731,12 +745,8 @@ export default function RewardsScreen({
                           <Text style={styles.voucherDiscountVal}>{voucher.discountVal}</Text>
                         </View>
 
-                        {/* Ticket Notch Line */}
-                        <View style={styles.ticketDividerWrap}>
-                          <View style={styles.ticketNotchLeft} />
-                          <View style={styles.ticketDashedLine} />
-                          <View style={styles.ticketNotchRight} />
-                        </View>
+                        {/* Clean Ticket Divider */}
+                        <View style={styles.cleanTicketDivider} />
 
                         {/* Ticket Bottom */}
                         <View style={styles.ticketBody}>
@@ -755,22 +765,22 @@ export default function RewardsScreen({
                           </View>
 
                           <View style={styles.barcodeVisual}>
-                            <View style={[styles.bar, { width: 4 }]} />
-                            <View style={[styles.bar, { width: 2 }]} />
-                            <View style={[styles.bar, { width: 6 }]} />
                             <View style={[styles.bar, { width: 3 }]} />
-                            <View style={[styles.bar, { width: 8 }]} />
-                            <View style={[styles.bar, { width: 2 }]} />
+                            <View style={[styles.bar, { width: 1.5 }]} />
                             <View style={[styles.bar, { width: 5 }]} />
+                            <View style={[styles.bar, { width: 2 }]} />
+                            <View style={[styles.bar, { width: 7 }]} />
+                            <View style={[styles.bar, { width: 1.5 }]} />
+                            <View style={[styles.bar, { width: 4 }]} />
+                            <View style={[styles.bar, { width: 6 }]} />
+                            <View style={[styles.bar, { width: 2 }]} />
                             <View style={[styles.bar, { width: 7 }]} />
                             <View style={[styles.bar, { width: 3 }]} />
-                            <View style={[styles.bar, { width: 9 }]} />
+                            <View style={[styles.bar, { width: 1.5 }]} />
                             <View style={[styles.bar, { width: 4 }]} />
+                            <View style={[styles.bar, { width: 6 }]} />
                             <View style={[styles.bar, { width: 2 }]} />
                             <View style={[styles.bar, { width: 5 }]} />
-                            <View style={[styles.bar, { width: 8 }]} />
-                            <View style={[styles.bar, { width: 3 }]} />
-                            <View style={[styles.bar, { width: 6 }]} />
                           </View>
 
                           <View style={styles.voucherMetaRow}>
@@ -990,7 +1000,7 @@ export default function RewardsScreen({
   );
 }
 
-const getStyles = (colors, isDark, isDesktop, isWideDesktop) =>
+const getStyles = (colors, isDark, isSmallMobile, isTablet, isDesktop) =>
   StyleSheet.create({
     container: {
       flex: 1,
@@ -1009,10 +1019,12 @@ const getStyles = (colors, isDark, isDesktop, isWideDesktop) =>
     topLeft: {
       flexDirection: 'row',
       alignItems: 'center',
+      flexShrink: 1,
     },
     topRight: {
       flexDirection: 'row',
       alignItems: 'center',
+      marginLeft: tokens.spacing.sm,
     },
     menuBtn: {
       padding: tokens.spacing.xs,
@@ -1028,13 +1040,14 @@ const getStyles = (colors, isDark, isDesktop, isWideDesktop) =>
       fontFamily: tokens.typography.family.bold,
     },
     screenTitle: {
-      fontSize: tokens.typography.size.base,
+      fontSize: isSmallMobile ? 14 : tokens.typography.size.base,
       fontFamily: tokens.typography.family.extrabold,
       color: colors.accent,
+      flexShrink: 1,
     },
     backHomeBtn: {
-      paddingVertical: 7,
-      paddingHorizontal: tokens.spacing.md,
+      paddingVertical: 6,
+      paddingHorizontal: tokens.spacing.sm,
       borderRadius: tokens.radius.full,
       backgroundColor: colors.surface,
       borderWidth: 1,
@@ -1053,10 +1066,10 @@ const getStyles = (colors, isDark, isDesktop, isWideDesktop) =>
     },
     contentWrapper: {
       width: '100%',
-      maxWidth: 1140,
+      maxWidth: 1100,
     },
 
-    // HERO CARD
+    // HERO CARD - BULLETPROOF NO-OVERLAP STYLES
     heroCard: {
       backgroundColor: colors.card,
       borderRadius: tokens.radius.xl,
@@ -1064,14 +1077,18 @@ const getStyles = (colors, isDark, isDesktop, isWideDesktop) =>
       marginBottom: tokens.spacing.md,
       borderWidth: 1,
       borderColor: colors.border,
-      flexDirection: isDesktop ? 'row' : 'column',
-      justifyContent: isDesktop ? 'space-between' : 'flex-start',
-      alignItems: isDesktop ? 'center' : 'stretch',
-      gap: isDesktop ? tokens.spacing.lg : tokens.spacing.md,
       ...tokens.shadow.sm,
     },
-    heroLeftCol: {
-      flex: isDesktop ? 1.2 : 0,
+    heroTopRow: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'flex-start',
+      flexWrap: 'wrap',
+      gap: tokens.spacing.xs,
+      marginBottom: tokens.spacing.sm,
+    },
+    heroBalanceGroup: {
+      flexShrink: 1,
     },
     heroSubLabel: {
       fontSize: tokens.typography.size.xs,
@@ -1082,10 +1099,9 @@ const getStyles = (colors, isDark, isDesktop, isWideDesktop) =>
     pointsRow: {
       flexDirection: 'row',
       alignItems: 'baseline',
-      marginBottom: 6,
     },
     heroPointsValue: {
-      fontSize: isDesktop ? 36 : 30,
+      fontSize: isSmallMobile ? 26 : isDesktop ? 34 : 28,
       fontFamily: tokens.typography.family.extrabold,
       color: colors.text,
     },
@@ -1095,67 +1111,62 @@ const getStyles = (colors, isDark, isDesktop, isWideDesktop) =>
       color: colors.muted,
       marginLeft: 6,
     },
-    cashValPill: {
+    tierBadge: {
       flexDirection: 'row',
       alignItems: 'center',
-      alignSelf: 'flex-start',
-      backgroundColor: '#10b98115',
-      borderWidth: 1,
-      borderColor: '#10b98135',
       paddingVertical: 5,
       paddingHorizontal: tokens.spacing.sm,
       borderRadius: tokens.radius.full,
-      marginTop: 2,
+      backgroundColor: colors.surface,
+      borderWidth: 1.5,
+      alignSelf: 'flex-start',
+    },
+    tierBadgeIcon: {
+      fontSize: 15,
+      marginRight: 5,
+    },
+    tierBadgeText: {
+      fontSize: 11,
+      fontFamily: tokens.typography.family.bold,
+    },
+    cashValBanner: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: '#10b98115',
+      borderWidth: 1,
+      borderColor: '#10b98130',
+      paddingVertical: 6,
+      paddingHorizontal: tokens.spacing.sm,
+      borderRadius: tokens.radius.lg,
+      marginBottom: tokens.spacing.md,
+      flexWrap: 'wrap',
+      gap: tokens.spacing.xs,
+    },
+    cashValPill: {
+      backgroundColor: '#10b98125',
+      paddingVertical: 2,
+      paddingHorizontal: 8,
+      borderRadius: tokens.radius.full,
     },
     cashValAmount: {
       fontSize: tokens.typography.size.sm,
       fontFamily: tokens.typography.family.extrabold,
       color: '#10b981',
     },
-    rateDivider: {
-      width: 1,
-      height: 12,
-      backgroundColor: '#10b98140',
-      marginHorizontal: 8,
-    },
     rateNote: {
       fontSize: 11,
-      fontFamily: tokens.typography.family.semibold,
+      fontFamily: tokens.typography.family.medium,
       color: colors.muted,
-    },
-    heroRightCol: {
-      flex: isDesktop ? 1 : 0,
-      alignItems: isDesktop ? 'flex-end' : 'stretch',
-      gap: tokens.spacing.sm,
-    },
-    tierBadge: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      alignSelf: isDesktop ? 'flex-end' : 'flex-start',
-      paddingVertical: 6,
-      paddingHorizontal: tokens.spacing.md,
-      borderRadius: tokens.radius.full,
-      backgroundColor: colors.surface,
-      borderWidth: 1.5,
-    },
-    tierBadgeIcon: {
-      fontSize: 16,
-      marginRight: 6,
-    },
-    tierBadgeText: {
-      fontSize: tokens.typography.size.xs,
-      fontFamily: tokens.typography.family.bold,
     },
     heroActionsRow: {
       flexDirection: 'row',
-      gap: tokens.spacing.xs,
-      width: isDesktop ? 'auto' : '100%',
+      gap: tokens.spacing.sm,
     },
     heroActionBtnPrimary: {
-      flex: isDesktop ? 0 : 1,
+      flex: 1.4,
       backgroundColor: colors.accent,
       paddingVertical: 10,
-      paddingHorizontal: tokens.spacing.md,
+      paddingHorizontal: tokens.spacing.sm,
       borderRadius: tokens.radius.lg,
       alignItems: 'center',
       justifyContent: 'center',
@@ -1163,14 +1174,15 @@ const getStyles = (colors, isDark, isDesktop, isWideDesktop) =>
     },
     heroActionBtnPrimaryText: {
       color: isDark ? '#000000' : '#ffffff',
-      fontSize: tokens.typography.size.xs,
+      fontSize: isSmallMobile ? 11 : tokens.typography.size.xs,
       fontFamily: tokens.typography.family.bold,
       textAlign: 'center',
     },
     heroActionBtnSecondary: {
+      flex: 1,
       backgroundColor: colors.surface,
       paddingVertical: 10,
-      paddingHorizontal: tokens.spacing.md,
+      paddingHorizontal: tokens.spacing.sm,
       borderRadius: tokens.radius.lg,
       borderWidth: 1,
       borderColor: colors.border,
@@ -1180,8 +1192,9 @@ const getStyles = (colors, isDark, isDesktop, isWideDesktop) =>
     },
     heroActionBtnSecondaryText: {
       color: colors.text,
-      fontSize: tokens.typography.size.xs,
+      fontSize: isSmallMobile ? 11 : tokens.typography.size.xs,
       fontFamily: tokens.typography.family.bold,
+      textAlign: 'center',
     },
 
     // TAB BAR
@@ -1195,14 +1208,16 @@ const getStyles = (colors, isDark, isDesktop, isWideDesktop) =>
       borderWidth: 1,
       borderColor: colors.border,
       borderRadius: tokens.radius.full,
-      padding: 4,
+      padding: 3,
       width: '100%',
-      maxWidth: isDesktop ? 560 : '100%',
+      maxWidth: isDesktop ? 520 : '100%',
     },
     tabButton: {
       flex: 1,
       paddingVertical: 8,
+      paddingHorizontal: 4,
       alignItems: 'center',
+      justifyContent: 'center',
       borderRadius: tokens.radius.full,
     },
     activeTabButton: {
@@ -1210,7 +1225,7 @@ const getStyles = (colors, isDark, isDesktop, isWideDesktop) =>
       ...tokens.shadow.sm,
     },
     tabButtonText: {
-      fontSize: tokens.typography.size.xs,
+      fontSize: isSmallMobile ? 11 : tokens.typography.size.xs,
       fontFamily: tokens.typography.family.semibold,
       color: colors.muted,
     },
@@ -1230,8 +1245,8 @@ const getStyles = (colors, isDark, isDesktop, isWideDesktop) =>
       paddingBottom: 4,
     },
     categoryPill: {
-      paddingVertical: 7,
-      paddingHorizontal: tokens.spacing.md,
+      paddingVertical: 6,
+      paddingHorizontal: tokens.spacing.sm,
       borderRadius: tokens.radius.full,
       backgroundColor: colors.card,
       borderWidth: 1,
@@ -1251,14 +1266,14 @@ const getStyles = (colors, isDark, isDesktop, isWideDesktop) =>
       fontFamily: tokens.typography.family.bold,
     },
 
-    // CATALOG GRID (RESPONSIVE)
+    // CATALOG GRID (RESPONSIVE MULTI-COLUMN)
     catalogGrid: {
-      flexDirection: isDesktop ? 'row' : 'column',
-      flexWrap: isDesktop ? 'wrap' : 'nowrap',
+      flexDirection: isDesktop || isTablet ? 'row' : 'column',
+      flexWrap: isDesktop || isTablet ? 'wrap' : 'nowrap',
       gap: tokens.spacing.md,
     },
     rewardCard: {
-      width: isDesktop ? (isWideDesktop ? '31.8%' : '48.6%') : '100%',
+      width: isDesktop ? '31.8%' : isTablet ? '48.6%' : '100%',
       backgroundColor: colors.card,
       borderRadius: tokens.radius.xl,
       padding: tokens.spacing.md,
@@ -1420,12 +1435,12 @@ const getStyles = (colors, isDark, isDesktop, isWideDesktop) =>
       width: '100%',
     },
     vouchersGrid: {
-      flexDirection: isDesktop ? 'row' : 'column',
-      flexWrap: isDesktop ? 'wrap' : 'nowrap',
+      flexDirection: isDesktop || isTablet ? 'row' : 'column',
+      flexWrap: isDesktop || isTablet ? 'wrap' : 'nowrap',
       gap: tokens.spacing.md,
     },
     voucherCard: {
-      width: isDesktop ? '48.8%' : '100%',
+      width: isDesktop || isTablet ? '48.8%' : '100%',
       backgroundColor: colors.card,
       borderRadius: tokens.radius.xl,
       borderWidth: 1,
@@ -1506,36 +1521,13 @@ const getStyles = (colors, isDark, isDesktop, isWideDesktop) =>
       fontFamily: tokens.typography.family.extrabold,
       color: colors.accent,
     },
-    ticketDividerWrap: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      height: 20,
-      position: 'relative',
-    },
-    ticketNotchLeft: {
-      width: 14,
-      height: 24,
-      backgroundColor: colors.background,
-      borderTopRightRadius: 12,
-      borderBottomRightRadius: 12,
-      borderRightWidth: 1,
-      borderRightColor: colors.border,
-    },
-    ticketDashedLine: {
-      flex: 1,
+    cleanTicketDivider: {
       height: 1,
+      borderBottomWidth: 1.5,
       borderStyle: 'dashed',
-      borderWidth: 1,
       borderColor: colors.border,
-    },
-    ticketNotchRight: {
-      width: 14,
-      height: 24,
-      backgroundColor: colors.background,
-      borderTopLeftRadius: 12,
-      borderBottomLeftRadius: 12,
-      borderLeftWidth: 1,
-      borderLeftColor: colors.border,
+      marginHorizontal: tokens.spacing.sm,
+      marginVertical: 4,
     },
     ticketBody: {
       padding: tokens.spacing.md,
@@ -1593,14 +1585,14 @@ const getStyles = (colors, isDark, isDesktop, isWideDesktop) =>
       justifyContent: 'center',
       alignItems: 'center',
       gap: 3,
-      height: 26,
+      height: 24,
       backgroundColor: colors.surface,
       borderRadius: tokens.radius.sm,
       paddingHorizontal: tokens.spacing.md,
       marginBottom: tokens.spacing.sm,
     },
     bar: {
-      height: 20,
+      height: 18,
       backgroundColor: colors.text,
       borderRadius: 1,
       opacity: 0.8,
